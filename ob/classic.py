@@ -61,19 +61,23 @@ def classic_murn_equil_structure(murn_job):
         
     return struct_cdict
 
-def upload_classic_pyiron(pr, job, o, space, project, collection):
+def upload_classic_pyiron(pr, job, o, space, project, collection, sfb=False):
 
     structure = job.structure
     if structure:
-        
-        from ob.openbis import GenericLammpsJobObject, GenericCrystalObject, MurnaghanJobObject
+
+        if sfb: # these will probably be in the same file and solved differently hence temporary flag
+            from ob.openbis_sfb1394 import GenericLammpsJobObject, GenericCrystalObject, MurnaghanJobObject
+        else:
+            from ob.openbis_bam import GenericLammpsJobObject, GenericCrystalObject, MurnaghanJobObject
 
         # Project env file
         from ob.concept_dict import export_env
         export_env(pr.path + pr.name)
 
         struct_dict = classic_structure(pr, structure, structure_name_prefix=job.name)
-        ob_structure = GenericCrystalObject(o, space, project, collection, struct_dict, show_object=False)
+        if not sfb:
+            ob_structure = GenericCrystalObject(o, space, project, collection, struct_dict, show_object=False)
 
         if 'lammps' in job.to_dict()['TYPE']:
             job_cdict = classic_lammps(job)
@@ -91,7 +95,8 @@ def upload_classic_pyiron(pr, job, o, space, project, collection):
             print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
             return
         
-        ob_job.add_parents([ob_structure])
+        if not sfb:
+            ob_job.add_parents([ob_structure])
         ob_job.save()
         
     else:
