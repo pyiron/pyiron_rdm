@@ -2,6 +2,13 @@
 LAMMPS specific functions for parsing
 
 Use this a reference for specific implementations
+
+TODO:
+- add vasp module
+- Instead of job.to_dict() use pyiron_dataclass - convert from hdf5 to dataclass - convert to conc. dict.
+
+
+
 """
 import os
 import numpy as np
@@ -41,7 +48,7 @@ def process_murnaghan_job(job):
     add_murnaghan_contexts(method_dict)
     identify_murnaghan_method(job, method_dict)
     extract_murnaghan_calculated_quantities(job, method_dict)
-    add_murnaghan_software(job, method_dict)
+    add_simulation_software(job, method_dict)
     get_simulation_folder(job, method_dict)
     file_name = job.path + '_concept_dict.json'
     with open(file_name, 'w') as f:
@@ -58,12 +65,27 @@ def add_lammps_contexts(method_dict):
     method_dict['@context']['unit'] = 'http://purls.helmholtz-metadaten.de/asmo/hasUnit'
     method_dict['@context']['value'] = 'http://purls.helmholtz-metadaten.de/asmo/hasValue'
     method_dict['@context']['outputs'] = 'http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty'
-    #method_dict['@context']['workflow_manager'] = ''
+    method_dict['@context']['workflow_manager'] = 'http://demo.fiz-karlsruhe.de/matwerk/E457491'
     #method_dict['@context']['software'] = ''
     method_dict['@context']['molecular_dynamics'] = 'http://purls.helmholtz-metadaten.de/asmo/MolecularDynamics'
     method_dict['@context']['molecular_statics'] = 'http://purls.helmholtz-metadaten.de/asmo/MolecularStatics'
     method_dict['@context']['ensemble'] = 'http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble'
     method_dict['@context']['job_details'] = 'id-from-pmdco-pending'
+    method_dict['@context']['periodic_boundary_condition'] = 'http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition'
+    method_dict['@context']['temperature'] = 'http://purls.helmholtz-metadaten.de/asmo/Temperature'
+    method_dict['@context']['pressure'] = 'http://purls.helmholtz-metadaten.de/asmo/Pressure'
+    method_dict['@context']['ionic_energy_tolerance'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['force_tolerace'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['maximum_iterations'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['potential'] = "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential"
+    method_dict['@context']['average_total_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalEnergy'
+    method_dict['@context']['final_total_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalEnergy'
+    method_dict['@context']['final_potential_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy'
+    method_dict['@context']['average_total_volume'] = 'http://purls.helmholtz-metadaten.de/asmo/Volume'
+    method_dict['@context']['final_total_volume'] = 'http://purls.helmholtz-metadaten.de/asmo/Volume'
+    method_dict['@context']['final_maximum_force'] = 'http://purls.helmholtz-metadaten.de/asmo/Force'
+    method_dict['@context']['number_ionic_steps'] = 'http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps'
+    method_dict['@context']['LAMMPS'] = 'http://demo.fiz-karlsruhe.de/matwerk/E447986'
 
 def get_structures(job, method_dict):
     initial_pyiron_structure = job.structure
@@ -154,7 +176,6 @@ def identify_lammps_method(job, method_dict):
     temperature["value"] = temp
     temperature["unit"] = "K"
     temperature["label"] = "temperature"
-    temperature["@id"] = "id-from-asmo-pending"
 
     method_dict[md_method]['inputs'].append(temperature)
 
@@ -162,30 +183,26 @@ def identify_lammps_method(job, method_dict):
     pressure["value"] = press
     pressure["unit"] = "GigaPA"
     pressure["label"] = "pressure"
-    pressure["@id"] = "id-from-asmo-pending"
 
     method_dict[md_method]['inputs'].append(pressure)
 
     energy_tol = {}
     energy_tol["value"] = e_tol
     energy_tol["unit"] = "EV"
-    energy_tol["label"] = "ionic energy tolerance"
-    energy_tol["@id"] = "id-from-asmo-pending"
+    energy_tol["label"] = "ionic_energy_tolerance"
 
     method_dict[md_method]['inputs'].append(energy_tol)
 
     force_tol = {}
     force_tol["value"] = f_tol
     force_tol["unit"] = "EV-PER-ANGSTROM"
-    force_tol["label"] = "force tolerance"
-    force_tol["@id"] = "id-from-asmo-pending"
+    force_tol["label"] = "force_tolerance"
 
     method_dict[md_method]['inputs'].append(force_tol)
 
     maximum_iterations = {}
     maximum_iterations["value"] = maxiter
-    maximum_iterations["label"] = "maximum iterations"
-    maximum_iterations["@id"] = "id-from-asmo-pending"
+    maximum_iterations["label"] = "maximum_iterations"
 
     method_dict[md_method]['inputs'].append(maximum_iterations)
 
@@ -203,7 +220,6 @@ def identify_lammps_method(job, method_dict):
     url = None
     if "url" in potdict[list(potdict.keys())[0]].keys():
         url = potdict[list(potdict.keys())[0]]["url"]
-
     if 'meam' in ps:
         method_dict['@context']['potential'] = "http://purls.helmholtz-metadaten.de/asmo/ModifiedEmbeddedAtomModel"
     elif 'eam' in ps:
@@ -212,14 +228,11 @@ def identify_lammps_method(job, method_dict):
         method_dict['@context']['potential'] = "http://purls.helmholtz-metadaten.de/asmo/LennardJonesPotential"
     elif 'ace' in ps:
         method_dict['@context']['potential'] = "http://purls.helmholtz-metadaten.de/asmo/MachineLearningPotential"
-    else:
-        method_dict['@context']['potential'] = "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential"
-
 
     method_dict[md_method]["potential"] = {}
     method_dict[md_method]["potential"]["label"] = name
     if url is not None:
-        method_dict[md_method]["potential"]["@id"] = url
+        method_dict[md_method]["potential"]["url"] = url
 
 def extract_lammps_calculated_quantities(job, method_dict):
     """
@@ -246,64 +259,56 @@ def extract_lammps_calculated_quantities(job, method_dict):
     outputs = []
     outputs.append(
         {
-            "label": "AverageTotalEnergy",
+            "label": "average_total_energy",
             "value": np.round(aen, decimals=4),
             "unit": "EV",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "FinalTotalEnergy",
+            "label": "final_total_energy",
             "value": np.round(fen, decimals=4),
             "unit": "EV",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "FinalPotentialEnergy",
+            "label": "final_potential_energy",
             "value": np.round(fpe, decimals=4),
             "unit": "EV",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "AverageTotalVolume",
+            "label": "average_total_volume",
             "value": np.round(avol, decimals=4),
             "unit": "ANGSTROM3",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "FinalTotalVolume",
+            "label": "final_total_volume",
             "value": np.round(fvol, decimals=4),
             "unit": "ANGSTROM3",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "FinalMaximumForce",
+            "label": "final_maximum_force",
             "value": np.round(fmax, decimals=16),
             "unit": "EV-PER-ANGSTROM",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "NumberIonicSteps",
+            "label": "number_ionic_steps",
             "value": nionic,
-            "@id": "id-from-asmo-pending"
         }
     )
     method_dict['outputs'] =  outputs
 
 def add_simulation_software(job, method_dict):
     method_dict["workflow_manager"] = {}
-    method_dict["workflow_manager"]["@id"] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
     import subprocess
     import platform
     try:
@@ -418,7 +423,6 @@ def add_simulation_software(job, method_dict):
     )
  
     software = {
-        "@id": "http://demo.fiz-karlsruhe.de/matwerk/E447986",
         "label": "LAMMPS " + job.to_dict()['executable']['version'],
     }
     method_dict["software"] = [software]
@@ -438,9 +442,15 @@ def add_murnaghan_contexts(method_dict):
     method_dict['@context']['unit'] = 'http://purls.helmholtz-metadaten.de/asmo/hasUnit'
     method_dict['@context']['value'] = 'http://purls.helmholtz-metadaten.de/asmo/hasValue'
     method_dict['@context']['outputs'] = 'http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty'
-    #method_dict['@context']['workflow_manager'] = ''
+    method_dict['@context']['workflow_manager'] = 'http://demo.fiz-karlsruhe.de/matwerk/E457491'
     #method_dict['@context']['software'] = ''
     method_dict['@context']['job_details'] = 'id-from-pmdco-pending'
+    method_dict['@context']['strain_axes'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['number_of_data_points'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['volume_range'] = 'http://purls.helmholtz-metadaten.de/asmo/VolumeRange'
+    method_dict['@context']['equilibrium_bulk_modulus'] = 'http://purls.helmholtz-metadaten.de/asmo/BulkModulus'
+    method_dict['@context']['equilibrium_total_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalEnergy'
+    method_dict['@context']['equilibrium_volume'] = 'http://purls.helmholtz-metadaten.de/asmo/Volume'
     
 def identify_murnaghan_method(job, method_dict):
 
@@ -448,41 +458,37 @@ def identify_murnaghan_method(job, method_dict):
         method_dict['equation_of_state_fit'] = "http://purls.helmholtz-metadaten.de/asmo/BirchMurnaghan"
     elif job.input['fit_type'] == 'murnaghan':
         method_dict['equation_of_state_fit'] = "http://purls.helmholtz-metadaten.de/asmo/Murnaghan"
-    elif job.input['fit_type'] == 'murnaghan':
-        method_dict['equation_of_state_fit'] = "id-from-asmo-pending"
     elif job.input['fit_type'] == 'vinet':
         method_dict['equation_of_state_fit'] = "http://purls.helmholtz-metadaten.de/asmo/Vinet"
     else:
-        method_dict['equation_of_state_fit'] = "asmo-id-polynomial-needs-modification"
+        method_dict['equation_of_state_fit'] = "http://purls.helmholtz-metadaten.de/asmo/PolynomialFit"
 
     inputs = []
     if job.input['fit_type'] == 'polynomial':
         inputs.append(
             {
-                "label": "FitOrder",
+                "label": "fit_order",
                 "value": job.input['fit_order'],
-                "@id": "id-from-asmo-pending"
             }
         )
+        method_dict['@context']['fit_order'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+
     inputs.append(
         {
-            "label": "StrainAxes",
+            "label": "strain_axes",
             "value": ','.join(job.input['axes']),
-            "@id": "id-from-asmo-pending"
         }
     )
     inputs.append(
         {
-            "label": "NumberOfDataPoints",
+            "label": "number_of_data_points",
             "value": job.input['num_points'],
-            "@id": "id-from-asmo-pending"
         }
     )
     inputs.append(
         {
-            "label": "VolumeRange",
+            "label": "volume_range",
             "value": job.input['vol_range'],
-            "@id": "id-from-asmo-pending"
         }
     )
 
@@ -493,148 +499,27 @@ def extract_murnaghan_calculated_quantities(job, method_dict):
     outputs = []
     outputs.append(
         {
-            "label": "EquilibriumBulkModulus",
+            "label": "equilibrium_bulk_modulus",
             "value": np.round(job.output_to_pandas()['equilibrium_bulk_modulus'][0],4),
             "unit": "GigaPA",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "EquilibriumTotalEnergy",
+            "label": "equilibrium_total_energy",
             "value": np.round(job.output_to_pandas()['equilibrium_energy'][0],4),
             "unit": "EV",
-            "@id": "id-from-asmo-pending"
         }
     )
     outputs.append(
         {
-            "label": "EquilibriumVolume",
+            "label": "equilibrium_volume",
             "value": np.round(job.output_to_pandas()['equilibrium_volume'][0],4),
             "unit": "ANGSTROM3",
-            "@id": "id-from-asmo-pending"
         }
     )
 
     method_dict["outputs"] = outputs
-
-def add_murnaghan_software(job, method_dict):
-    method_dict["workflow_manager"] = {}
-    method_dict["workflow_manager"]["@id"] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    import subprocess
-    import platform
-    try:
-        if "Windows" in platform.system():
-            output1 = subprocess.check_output(['findstr', 'pyiron_atomistics', job.path + '_environment.yml'])
-        else:
-            output1 = subprocess.check_output(['grep', 'pyiron_atomistics', job.path + '_environment.yml'])
-        s1 = str((output1.decode('utf-8')))
-    except:
-        s1 = ''
-    try:
-        if "Windows" in platform.system():
-            output2 = subprocess.check_output(['findstr', 'pyiron_workflow', job.path + '_environment.yml'])
-        else:
-            output2 = subprocess.check_output(['grep', 'pyiron_workflow', job.path + '_environment.yml'])
-        s2 = str((output2.decode('utf-8')))
-    except:
-        s2 = ''
-    try:
-        if "Windows" in platform.system():
-            output3 = subprocess.check_output(['findstr', 'pyironflow', job.path + '_environment.yml'])
-        else:
-            output3 = subprocess.check_output(['grep', 'pyironflow', job.path + '_environment.yml'])
-        s3 = str((output3.decode('utf-8')))
-    except:
-        s3 = ''
-    try:
-        if "Windows" in platform.system():
-            output4 = subprocess.check_output(['findstr', 'executorlib', job.path + '_environment.yml'])
-        else:
-            output4 = subprocess.check_output(['grep', 'executorlib', job.path + '_environment.yml'])
-        s4 = str((output4.decode('utf-8')))
-    except:
-        s4 = ''
-
-    #hdf_ver = job.to_dict()['HDF_VERSION']
-    try:
-        st1 = 'p' + s1.split('=')[0].split('p')[1] + "=" + s1.split('=')[1] + ', '
-    except:
-        st1 = ''
-    try:
-        st2 = 'p' + s2.split('=')[0].split('p')[1] + "=" + s2.split('=')[1] + ', '
-    except:
-        st2 = ''
-    try:
-        st3 = 'p' + s3.split('=')[0].split('p')[1] + "=" + s3.split('=')[1] + ', '
-    except:
-        st3 = ''
-    try:
-        st4 = 'e' + s3.split('=')[0].split('e')[1] + "=" + s4.split('=')[1] + ', '
-    except:
-        st4 = ''
-    st = st1 + st2 + st3 + st4
-    
-    #+ ', pyiron_HDF_version=' + hdf_ver
-    method_dict["workflow_manager"]["label"] = st
-
-    pyiron_job_details = []
-    pyiron_job_details.append(
-        {
-            "label": "job_name",
-            "value": job.name,
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "project_name",
-            "value": job.project.name,
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "job_type",
-            "value": job.database_entry.hamilton,
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "job_status",
-            "value": str(job.status),
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "job_starttime",
-            "value": str(job.database_entry.timestart.strftime("%Y-%m-%d %H:%M:%S")),
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "job_stoptime",
-            "value": str(job.database_entry.timestop.strftime("%Y-%m-%d %H:%M:%S")),
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "sim_coretime_hours",
-            "value": np.round(job.database_entry.totalcputime/3600, 6),
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "number_cores",
-            "value": job.to_dict()['server']['cores'],
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "host",
-            "value": job.to_dict()['server']['host'],
-        }
-    )
-
-    method_dict["job_details"] = pyiron_job_details
 
 def get_unit_cell_parameters(structure):
     if structure.get_symmetry().spacegroup['InternationalTableSymbol'] == "Im-3m":
@@ -719,8 +604,19 @@ def add_structure_contexts(sample_dict):
     sample_dict['@context']['value'] = 'http://purls.helmholtz-metadaten.de/asmo/hasValue'
     sample_dict['@context']['vector'] = 'http://purls.helmholtz-metadaten.de/cmso/Vector'
     sample_dict['@context']['job_details'] = 'id-from-pmdco-pending'
-    #method_dict['@context']['workflow_manager'] = ''
-    #method_dict['@context']['software'] = ''
+    sample_dict['@context']['workflow_manager'] = 'http://demo.fiz-karlsruhe.de/matwerk/E457491'
+    #sample_dict['@context']['software'] = ''
+    sample_dict['@context']['lattice_parameter_a'] = 'http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter'
+    sample_dict['@context']['lattice_angle_alpha'] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
+    sample_dict['@context']['lattice_angle_beta'] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
+    sample_dict['@context']['lattice_angle_gamma'] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
+    sample_dict['@context']['lattice_volume'] = 'http://purls.helmholtz-metadaten.de/asmo/Volume'
+    sample_dict['@context']['space_group'] = 'http://purls.helmholtz-metadaten.de/cmso/hasSpaceGroup'
+    sample_dict['@context']['bravais_lattice'] = 'http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice'
+    sample_dict['@context']['simulation_cell_lengths'] = 'http://purls.helmholtz-metadaten.de/cmso/hasLength'
+    sample_dict['@context']['simulation_cell_vectors'] = 'http://purls.helmholtz-metadaten.de/cmso/hasVector'
+    sample_dict["@context"]['simulation_cell_volume'] = "http://purls.helmholtz-metadaten.de/cmso/hasVolume"  
+    sample_dict["@context"]['simulation_cell_angle'] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
 
 def identify_structure_parameters(structure_parameters, sample_dict):
     if structure_parameters == None:
@@ -733,66 +629,60 @@ def identify_structure_parameters(structure_parameters, sample_dict):
         cell_parameter_a_dict["value"] = structure_parameters['a']
         cell_parameter_a_dict["unit"] = "ANGSTROM"
         cell_parameter_a_dict["label"] = 'lattice_parameter_a'
-        cell_parameter_a_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
         unit_cell_details.append(cell_parameter_a_dict)
         if 'b' in structure_parameters.keys():
             cell_parameter_b_dict = {}
             cell_parameter_b_dict["value"] = structure_parameters['b']
             cell_parameter_b_dict["unit"] = "ANGSTROM"
             cell_parameter_b_dict["label"] = 'lattice_parameter_b'
-            cell_parameter_b_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+            sample_dict['@context']['lattice_parameter_b'] = 'http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter'
+
             unit_cell_details.append(cell_parameter_b_dict)
         if 'c' in structure_parameters.keys():
             cell_parameter_c_dict = {}
             cell_parameter_c_dict["value"] = structure_parameters['c']
             cell_parameter_c_dict["unit"] = "ANGSTROM"
             cell_parameter_c_dict["label"] = 'lattice_parameter_c'
-            cell_parameter_c_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+            sample_dict['@context']['lattice_parameter_c'] = 'http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter'
             unit_cell_details.append(cell_parameter_c_dict)
         if 'c_over_a' in structure_parameters.keys():
             cell_parameter_c_over_a_dict = {}
             cell_parameter_c_over_a_dict["value"] = structure_parameters['c_over_a']
             cell_parameter_c_over_a_dict["unit"] = "ANGSTROM"
             cell_parameter_c_over_a_dict["label"] = 'lattice_parameter_c_over_a'
-            cell_parameter_c_over_a_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+            sample_dict['@context']['lattice_parameter_c_over_a'] = 'http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter'
             unit_cell_details.append(cell_parameter_c_over_a_dict)
             
         cell_parameter_alpha_dict = {}
         cell_parameter_alpha_dict["value"] = structure_parameters['alpha']
         cell_parameter_alpha_dict["unit"] = "DEGREE"
         cell_parameter_alpha_dict["label"] = 'lattice_angle_alpha'
-        cell_parameter_alpha_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
         unit_cell_details.append(cell_parameter_alpha_dict)
         cell_parameter_beta_dict = {}
         cell_parameter_beta_dict["value"] = structure_parameters['beta']
         cell_parameter_beta_dict["unit"] = "DEGREE"
         cell_parameter_beta_dict["label"] = 'lattice_angle_beta'
-        cell_parameter_beta_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
         unit_cell_details.append(cell_parameter_beta_dict)
         cell_parameter_gamma_dict = {}
         cell_parameter_gamma_dict["value"] = structure_parameters['gamma']
         cell_parameter_gamma_dict["unit"] = "DEGREE"
         cell_parameter_gamma_dict["label"] = 'lattice_angle_gamma'
-        cell_parameter_gamma_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
         unit_cell_details.append(cell_parameter_gamma_dict)
 
         cell_parameter_vol_dict = {}
         cell_parameter_vol_dict["value"] = structure_parameters['volume']
         cell_parameter_vol_dict["unit"] = "ANGSTROM3"
         cell_parameter_vol_dict["label"] = 'lattice_volume'
-        cell_parameter_vol_dict["@id"] = 'id-from-cmso-pending'
         unit_cell_details.append(cell_parameter_vol_dict)
 
         cell_parameter_spg_dict = {}
         cell_parameter_spg_dict["value"] = structure_parameters['space_group']
         cell_parameter_spg_dict["label"] = 'space_group'
-        cell_parameter_spg_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasSpaceGroup"
         unit_cell_details.append(cell_parameter_spg_dict)
 
         cell_parameter_bsl_dict = {}
         cell_parameter_bsl_dict["value"] = structure_parameters['bravais_lattice']
         cell_parameter_bsl_dict["label"] = 'bravais_lattice'
-        cell_parameter_bsl_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice"
         unit_cell_details.append(cell_parameter_bsl_dict)
 
         sample_dict['unit_cell'] = unit_cell_details
@@ -826,35 +716,31 @@ def get_simulation_cell(structure, sample_dict):
     cell_lengths_dict["value"] = cell_lengths
     cell_lengths_dict["unit"] = "ANGSTROM"
     cell_lengths_dict["label"] = 'simulation_cell_lengths'
-    cell_lengths_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasLength"
     simulation_cell_details.append(cell_lengths_dict)
     
     cell_vector_dict = {}
     cell_vector_dict["value"] = cell_vectors
     cell_vector_dict["unit"] = "ANGSTROM"
     cell_vector_dict["label"] = 'simulation_cell_vectors'
-    cell_vector_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasVector"
     simulation_cell_details.append(cell_vector_dict)
 
     cell_angles_dict = {}
     cell_angles_dict["value"] = cell_angles
     cell_angles_dict["unit"] = "DEGREES"
     cell_angles_dict["label"] = 'simulation_cell_angles'
-    cell_angles_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
     simulation_cell_details.append(cell_angles_dict)
 
     cell_volume_dict = {}
     cell_volume_dict["value"] = np.round(cell_volume, decimals=4)
     cell_volume_dict["unit"] = "ANGSTROM3"
     cell_volume_dict["label"] = 'simulation_cell_volume'
-    cell_volume_dict["@id"] = "http://purls.helmholtz-metadaten.de/cmso/hasVolume"
+    
     simulation_cell_details.append(cell_volume_dict)
 
     sample_dict['simulation_cell'] = simulation_cell_details
 
-def add_structure_software(pr, structure, structure_name, structure_path, sample_dict):
+def add_structure_software(pr, structure_name, sample_dict):
     sample_dict["workflow_manager"] = {}
-    sample_dict["workflow_manager"]["@id"] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
     import subprocess
     import platform
     try:
