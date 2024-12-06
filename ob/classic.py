@@ -1,14 +1,18 @@
-def classic_structure(pr, structure, structure_name_prefix):
+def classic_structure(pr, structure, structure_name):
     structure_path = pr.name + '/'
-    structure_name = structure_name_prefix + '_input_structure'
+    # structure_name = structure_name_prefix + '_input_structure'
     
     from pyiron_base.storage.hdfio import FileHDFio
     hdf = FileHDFio(structure_path + structure_name + '.h5')
     structure.to_hdf(hdf)
 
     # Cannot guarantee this will be before manipulations hence skipping get_unit_cell_parameters
-    from ob.concept_dict import process_structure_crystal
-    struct_cdict = process_structure_crystal(pr, structure, structure_name, structure_path)
+    from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
+    try:
+        struct_params = get_unit_cell_parameters(structure)
+    except:
+        struct_params = {}
+    struct_cdict = process_structure_crystal(pr, structure, structure_name, structure_path, struct_params)
     
     return struct_cdict
 

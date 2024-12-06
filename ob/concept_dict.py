@@ -36,7 +36,7 @@ def process_structure_crystal(pr, structure, structure_name, structure_path, str
     identify_structure_parameters(structure_parameters, sample_dict)
     get_chemical_species(structure, sample_dict)
     get_simulation_cell(structure, sample_dict)
-    add_structure_software(pr, structure, structure_name, structure_path, sample_dict)
+    add_structure_software(pr, structure_name, sample_dict)
     get_structure_folder(structure_path, sample_dict)
     json_file_name = structure_path + structure_name +'_concept_dict.json'
     with open(json_file_name, 'w') as f:
@@ -422,10 +422,13 @@ def add_simulation_software(job, method_dict):
         }
     )
  
-    software = {
-        "label": "LAMMPS " + job.to_dict()['executable']['version'],
-    }
-    method_dict["software"] = [software]
+    try:
+        software = {
+            "label": job.to_dict()['executable']['name'].upper() + ' ' + job.to_dict()['executable']['version'],
+        }
+        method_dict["software"] = [software]
+    except KeyError:
+        pass
 
     method_dict["job_details"] = pyiron_job_details
 
@@ -829,6 +832,6 @@ def export_env(path):
     import os
     import platform
     if "Windows" in platform.system():
-            os.system('conda env export | findstr -v "^prefix: " > ' + path + '_environment.yml')
+        os.system('conda env export | findstr -v "^prefix: " > ' + path + '_environment.yml')
     else:
         os.system('conda env export | grep -v "^prefix: " > ' + path + '_environment.yml')

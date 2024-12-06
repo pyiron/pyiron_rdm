@@ -87,20 +87,44 @@ def openbis_upload(o, space, project, collection, concept_dict, ob_info):
     else:
         from ob.ob_cfg_bam import map_cdict_to_ob
         cdict = flatten_cdict(concept_dict)
-        props_dict = map_cdict_to_ob(o, cdict, concept_dict, add_missing=True)
+        props_dict = map_cdict_to_ob(o, cdict, concept_dict)
         parents_to_link = ob_info['parents']
         ob_parents = []
-        for k, v in parents_to_link.items():
-            parent = o.get_objects(
-                type       = k,
-                where      = {'$name': cdict[v]},
-                attrs      = ['$name']
-            )[0]         
-            if parent:
-                ob_parents.append(parent)
+        for k, v in parents_to_link.items(): # TODO refactor
+            if 'MATERIAL' in k:
+                mat_dict_pct_str = species_by_num_to_pct(props_dict)
+                parent_material = o.get_objects(
+                    type       = k,
+                    where      = {'chem_species_by_comp_in_pct': mat_dict_pct_str},
+                    attrs      = ['chem_species_by_comp_in_pct']
+                )[0]       
+                if parent_material:
+                    ob_parents.append(parent_material)
+                else:
+                    print(f"No parents of the type {k} and chemical composition {mat_dict_pct_str} found, upload will not proceed.\
+                        Please create them first and then try again.")
+            elif 'WORKFLOW_REFERENCE' in k:
+                parent = o.get_objects(
+                    type       = k,
+                    where      = {'$name': v}, # TODO map by code instead of name
+                    attrs      = ['$name']
+                )[0]         
+                if parent:
+                    ob_parents.append(parent)
+                else:
+                    print(f"No parents of the type {k} and name {v} found, upload will not proceed.\
+                        Please create them first and then try again.")
             else:
-                print(f"No parents of the type {k} and name {cdict[v]} found, upload will not proceed.\
-                      Please create them first and then try again.")
+                parent = o.get_objects(
+                    type       = k,
+                    where      = {'$name': cdict[v]}, # TODO map by code instead of name
+                    attrs      = ['$name']
+                )[0]         
+                if parent:
+                    ob_parents.append(parent)
+                else:
+                    print(f"No parents of the type {k} and name {cdict[v]} found, upload will not proceed.\
+                        Please create them first and then try again.")
         if len(ob_parents) == len(parents_to_link.keys()): # Found all parents needed
             object_ = o.new_object(
                 type       = ob_jobtype,
@@ -111,25 +135,28 @@ def openbis_upload(o, space, project, collection, concept_dict, ob_info):
             )
             object_.save()
 
-        ds_list = ob_info['datasets']
-        for ds in ds_list:
-            if ds == 'job_h5':
-                from ob.ob_cfg_bam import dataset_job_h5 as dataset_info
-                file_path = cdict['path'] + '.h5'
-            elif ds == 'structure_h5':
-                from ob.ob_cfg_bam import dataset_atom_struct_h5 as dataset_info
-                file_path = cdict['path'] + '.h5'
-            elif ds == 'env_yml':
-                from ob.ob_cfg_bam import dataset_env_yml as dataset_info
-                file_path = cdict['path'] + '_environment.yml'
-            elif ds == 'cdict_json':
-                from ob.ob_cfg_bam import dataset_cdict_jsonld as dataset_info
-                file_path = cdict['path'] + '_concept_dict.json'
-            else:
-                raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
+            ds_list = ob_info['datasets']
+            for ds in ds_list:
+                if ds == 'job_h5':
+                    from ob.ob_cfg_bam import dataset_job_h5 as dataset_info
+                    file_path = cdict['path'] + '.h5'
+                elif ds == 'structure_h5':
+                    from ob.ob_cfg_bam import dataset_atom_struct_h5 as dataset_info
+                    file_path = cdict['path'] + cdict['structure_name'] + '.h5'
+                elif ds == 'env_yml':
+                    from ob.ob_cfg_bam import dataset_env_yml as dataset_info
+                    file_path = cdict['path'] + '_environment.yml'
+                elif ds == 'cdict_json':
+                    from ob.ob_cfg_bam import dataset_cdict_jsonld as dataset_info
+                    if 'structure_name' in cdict.keys():
+                        file_path = cdict['path'] + cdict['structure_name'] + '_concept_dict.json'
+                    else:
+                        file_path = cdict['path'] + '_concept_dict.json'
+                else:
+                    raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
 
-            ds_type, ds_props = dataset_info(cdict)
-            upload_dataset(o, object_, ob_coll, ds_type, ds_props, file_path, kind)
+                ds_type, ds_props = dataset_info(cdict)
+                upload_dataset(o, object_, ob_coll, ds_type, ds_props, file_path, kind)
 
         # if show_object:
         #     from IPython.display import display
@@ -152,9 +179,11 @@ def upload_dataset(o, ob_object, collection, ds_type, ds_props, file_path, kind)
     #     print(f'Environment file not found in {file_path} and not uploaded.')
     # return ds_hdf
     
-
-
-
+def species_by_num_to_pct(props):
+    import numpy as np
+    species_by_num = eval(props['chem_species_by_n_atoms'])
+    species_by_pct = {at: np.round(species_by_num[at]*100/props['n_atoms_total'], 2) for at in species_by_num.keys()}
+    return str(species_by_pct)
 
 
 
