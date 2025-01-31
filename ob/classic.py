@@ -65,43 +65,66 @@ def classic_murn_equil_structure(murn_job):
         
     return struct_cdict
 
-def upload_classic_pyiron(pr, job, o, space, project, collection, sfb=False):
+def openbis_login(url, username, instance='bam'):
+    # TODO this shouldn't be needed, default instance like a default queue?
+    if instance != 'bam' and instance != 'sfb1394':    
+        raise ValueError(f"This script only supports upload to 'bam' and 'sfb1394' instances,\
+                         {instance} not supported.")
+    
+    if instance == 'bam':
+        mapping_path = 'ob.ob_cfg_bam'
+        OT_path = 'ob.ob_OT_bam'
+        s3_config_path = None
+    elif instance == 'sfb1394':
+        mapping_path = 'ob.ob_cfg_sfb1394'
+        OT_path = 'ob.ob_OT_sfb1394'
+        s3_config_path = "test_sfb.cfg"
+
+    from ob.ob_upload import openbis_login as ob_login
+
+    o = ob_login(url, username, s3_config_path, mapping_path, OT_path)
+    return o
+
+def upload_classic_pyiron(job, o, space, project, collection=None):
+    # TODO should this return anything?
 
     structure = job.structure
     if structure:
 
-        if sfb: # these will probably be in the same file and solved differently hence temporary flag
-            from ob.openbis_sfb1394 import GenericLammpsJobObject, GenericCrystalObject, MurnaghanJobObject
-        else:
-            from ob.openbis_bam import GenericLammpsJobObject, GenericCrystalObject, MurnaghanJobObject
-
-        # Project env file
+        # Project env file - TODO what is this for??
+        pr = job.project
         from ob.concept_dict import export_env
         export_env(pr.path + pr.name)
 
-        struct_dict = classic_structure(pr, structure, structure_name_prefix=job.name)
-        if not sfb:
-            ob_structure = GenericCrystalObject(o, space, project, collection, struct_dict, show_object=False)
+        from ob.ob_upload import openbis_upload
+
+        if not collection:
+            collection = pr.name
+
+        struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure')
+        ob_structure_id = openbis_upload(o, space, project, collection, struct_dict)
 
         if 'lammps' in job.to_dict()['TYPE']:
             job_cdict = classic_lammps(job)
-            ob_job = GenericLammpsJobObject(o, space, project, collection, job_cdict, show_object=False)
-        elif 'murn' in job.to_dict()['TYPE']:
+            ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=ob_structure_id)
+
+        elif 'murn' in job.to_dict()['TYPE']: # TODO: Is it okay to upload the murn job last ?
             job_cdict, child_jobs_cdict = classic_murn(job)
-            ob_job = MurnaghanJobObject(o, space, project, collection, job_cdict, child_jobs_cdict, show_object=False)
-
+            ob_children_ids = []
+            for child_cdict in child_jobs_cdict:
+                ob_child_id = openbis_upload(o, space, project, collection, child_cdict)
+                ob_children_ids.append(ob_child_id)
             equil_struct_dict = classic_murn_equil_structure(job)
-            ob_equil_structure = GenericCrystalObject(o, space, project, collection, equil_struct_dict, show_object=False)
+            ob_equil_struct_id = openbis_upload(o, space, project, collection, equil_struct_dict)
+            ob_children_ids.append(ob_equil_struct_id)
+            
+            ob_murn_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=ob_structure_id)
+            from ob.ob_upload import link_children
+            link_children(o, ob_murn_id, ob_children_ids)
 
-            ob_job.add_children([ob_equil_structure])
         else:
             job_type = job.to_dict()['TYPE']
             print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
-            return
-        
-        if not sfb:
-            ob_job.add_parents([ob_structure])
-        ob_job.save()
         
     else:
         print('This job does not contain a structure and will not be uploaded. \
