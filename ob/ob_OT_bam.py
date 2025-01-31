@@ -42,6 +42,12 @@ def crystal_struct_ot():
     parents = ['material']
     return object_type, datasets, parents
 
+def pyiron_job_ot():
+    object_type = 'PYIRON_JOB'
+    datasets = ['job_h5', 'env_yml', 'cdict_json']
+    parents = ['local_workstation']
+    return object_type, datasets, parents
+
 def lammps_job_ot():
     object_type = 'PYIRON_JOB.LAMMPS'
     datasets = ['job_h5', 'env_yml', 'cdict_json']
@@ -65,12 +71,17 @@ def murn_job_ot():
 def get_ot_info(cdict):
     if 'structure_name' in cdict.keys():
         return crystal_struct_ot
-    elif 'lammps' in cdict['job_type'].lower():
-        return lammps_job_ot
-    elif 'vasp' in cdict['job_type'].lower():
-        return vasp_job_ot
-    elif 'murn' in cdict['job_type'].lower():
-        return murn_job_ot
+    elif 'job_type' in cdict.keys():
+        if 'lammps' in cdict['job_type'].lower():
+            return lammps_job_ot
+        elif 'vasp' in cdict['job_type'].lower():
+            return vasp_job_ot
+        elif 'murn' in cdict['job_type'].lower():
+            return murn_job_ot
+        else:
+            return pyiron_job_ot
+    else:
+        raise ValueError('Neither structure_name nor job_type in conceptual dictionary. Cannot proceed.')
     
 def get_inv_parent(parent_name, cdict, props_dict):
     t, w, a, c = '', {}, [], ''

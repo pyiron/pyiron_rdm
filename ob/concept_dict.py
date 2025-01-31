@@ -16,6 +16,14 @@ import ast
 import json
 from typing import Optional
 
+def process_general_job(job):
+    method_dict = {}
+    add_simulation_software(job, method_dict)
+    get_simulation_folder(job, method_dict)
+    file_name = job.path + '_concept_dict.json'
+    with open(file_name, 'w') as f:
+        json.dump(method_dict, f, indent=2)
+    return method_dict
 
 def process_lammps_job(job):
     method_dict = {}

@@ -16,6 +16,14 @@ def classic_structure(pr, structure, structure_name):
     
     return struct_cdict
 
+def classic_general_job(job):
+    from ob.concept_dict import process_general_job, export_env
+
+    export_env(job.path)
+
+    job_cdict = process_general_job(job)
+    return job_cdict
+
 def classic_lammps(lammps_job):
     from ob.concept_dict import process_lammps_job, export_env
 
@@ -123,8 +131,15 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
             link_children(o, ob_murn_id, ob_children_ids)
 
         else:
+            # TODO: structure still uploaded even if job isn't - oK?
             job_type = job.to_dict()['TYPE']
             print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
+            proceed = input("Type 'yes' to proceed with an upload to general pyiron job type.")
+            if proceed.lower() == 'yes':
+                job_cdict = classic_general_job(job)
+                ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=ob_structure_id)
+            else:
+                print('Upload cancelled.')
         
     else:
         print('This job does not contain a structure and will not be uploaded. \
