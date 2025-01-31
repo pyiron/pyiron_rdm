@@ -1,6 +1,6 @@
 """
 Author: Khalil Rejiba, Ulrich Kerzel
-Date: 2024-10-25
+Date: 2024-12-20
 Description: Extension of pybis client to allow LinkedData stored in S3 
 """
 from pybis import Openbis
@@ -418,6 +418,71 @@ def register_file(
     return permid_linked_dataset
 
 
+def _type_for_id(ident, entity):
+    """Returns the data type for a given identifier/permId for use with the API call, e.g.
+    {
+        "identifier": "/DEFAULT/SAMPLE_NAME",
+        "@type": "as.dto.sample.id.SampleIdentifier"
+    }
+    or
+    {
+        "permId": "20160817175233002-331",
+        "@type": "as.dto.sample.id.SamplePermId"
+    }
+    """
+    # Tags have strange permIds...
+    ident = ident.strip()
+    if entity.lower() == "tag":
+        if "/" in ident:
+            if not ident.startswith("/"):
+                ident = "/" + ident
+            return {"permId": ident, "@type": "as.dto.tag.id.TagPermId"}
+        else:
+            return {"code": ident, "@type": "as.dto.tag.id.TagCode"}
+    if entity == "personalAccessToken":
+        return {"permId": ident, "@type": "as.dto.pat.id.PersonalAccessTokenPermId"}
+
+    entities = {
+        "sample": "Sample",
+        "dataset": "DataSet",
+        "experiment": "Experiment",
+        "plugin": "Plugin",
+        "space": "Space",
+        "project": "Project",
+        "semanticannotation": "SemanticAnnotation",
+    }
+    search_request = {}
+    if entity.lower() in entities:
+        entity_capitalize = entities[entity.lower()]
+    else:
+        entity_capitalize = entity.capitalize()
+
+    if is_identifier(ident):
+        # people tend to omit the / prefix of an identifier...
+        if not ident.startswith("/"):
+            ident = "/" + ident
+        # ELN-LIMS style contains also experiment in sample identifer, i.e. /space/project/experiment/sample_code
+        # we have to remove the experiment-code
+        if ident.count("/") == 4:
+            codes = ident.split("/")
+            ident = "/".join([codes[0], codes[1], codes[2], codes[4]])
+
+        search_request = {
+            "identifier": ident.upper(),
+            "@type": f"as.dto.{entity.lower()}.id.{entity_capitalize}Identifier",
+        }
+    else:
+        search_request = {
+            "permId": ident,
+            "@type": f"as.dto.{entity.lower()}.id.{entity_capitalize}PermId",
+        }
+    return search_request
+
+
+from pybis.definitions import get_fetchoption_for_entity
+from pybis.utils import parse_jackson, is_identifier
+
+
 class ExtendedDataSet(
     DataSet,
     entity="dataSet",
@@ -517,64 +582,74 @@ class ExtendedDataSet(
         if getattr(self, "copy_path") is None:
             self.a.__dict__["copy_path"] = []
 
-        filename = files[0]  # FIXME deal with multiple files
+        if getattr(self, "openbis_client") is None:
+            self.a.__dict__["openbis_client"] = [openbis_client]
+        
+        if data is None:
+            filename = files[0] # FIXME deal with multiple files
 
-        time_stamp = datetime.now(timezone.utc)
-        time_stamp = time_stamp.strftime("%Y-%m-%dT%H-%M-%S.%f")
-        dataset_type = type.code
-        username = openbis_client._get_username()
-        prefix = time_stamp + "_" + dataset_type + "_" + username + "_"
+            time_stamp = datetime.now(timezone.utc)
+            time_stamp = time_stamp.strftime("%Y-%m-%dT%H-%M-%S.%f")
+            dataset_type = type.code
+            username = openbis_client._get_username()
+            prefix = time_stamp + "_" + dataset_type + "_" + username + "_"
 
-        if openbis_client.standardize_filenames:
-            destination = os.path.join(
-                openbis_client.temp_dir, prefix + os.path.basename(filename)
-            )
-            shutil.copy(filename, destination)
-            filename = destination
-            self.a.__dict__["copy_path"].append(destination)
+            if openbis_client.standardize_filenames:
+                
+                destination = os.path.join(
+                    openbis_client.temp_dir, prefix + os.path.basename(filename)
+                )
+                shutil.copy(filename, destination)
+                filename = destination
+                self.a.__dict__["copy_path"].append(destination)
 
-        if kind == "LINK":
-            # upload_target=="s3" is a better choice if you have GitDataSet in addition to S3
-            s3_client = openbis_client._s3_client
+            self.__dict__["files"] = [filename]
 
-            # We need to uplaod the file to create the URL
-            self._upload_file_to_s3(filename, s3_client)
+            if kind == "LINK":
+                # upload_target=="s3" is a better choice if you have GitDataSet in addition to S3
+                s3_client = openbis_client._s3_client
 
-            # Fill s3_download_link in self.props
-            self._create_download_link(
-                filename=filename, s3_client=s3_client, validity=s3_link_validity
-            )
+                # We need to uplaod the file to create the URL
+                self._upload_file_to_s3(filename, s3_client)
 
-            props = self.props.all()
-            dms_path, dms_id = get_dms_info(
-                oBis=openbis_client, filename=filename, dms_code=openbis_client.dms_code
-            )
-            file_metadata = get_file_metadata(
-                filename=filename,
-                dms_path=dms_path,
-                compute_crc32=False,
-            )
-            experiment_name = kwargs.get("experiment")
-            sample_name = kwargs.get("sample")
-            parent_ids = kwargs.get("parent_ids")
-            dataset_code = None  # Generate a new one
-            dss_code = openbis_client.get_datastores()["code"][0]
+                # Fill s3_download_link in self.props
+                self._create_download_link(
+                    filename=filename, s3_client=s3_client, validity=s3_link_validity
+                )
 
-            self.a.__dict__["args_register_file"] = (
-                openbis_client,
-                file_metadata,
-                dms_path,
-                dms_id,
-                dss_code,
-                sample_name,
-                experiment_name,
-                props,
-                dataset_code,
-                dataset_type,
-                parent_ids,
-                openbis_client.token,
-            )
-            # Dataset is only registered in openBIS when ds.save() is called.
+                props = self.props.all()
+
+                dms_path, dms_id = get_dms_info(
+                    oBis=openbis_client, filename=os.path.basename(filename), dms_code=openbis_client.dms_code
+                )
+
+                file_metadata = get_file_metadata(
+                    filename=filename,
+                    dms_path=dms_path,
+                    compute_crc32=False,
+                )
+
+                experiment_name = kwargs.get("experiment")
+                sample_name = kwargs.get("sample")
+                parent_ids = kwargs.get("parent_ids")
+                dataset_code = None  # Generate a new one
+                dss_code = openbis_client.get_datastores()["code"][0]
+
+                self.a.__dict__["args_register_file"] = (
+                    openbis_client,
+                    file_metadata,
+                    dms_path,
+                    dms_id,
+                    dss_code,
+                    sample_name,
+                    experiment_name,
+                    props,
+                    dataset_code,
+                    dataset_type,
+                    parent_ids,
+                    openbis_client.token,
+                )
+                # Dataset is only registered in openBIS when ds.save() is called.
 
     def _upload_file_to_s3(self, filename, s3_client):
         """
@@ -639,13 +714,19 @@ class ExtendedDataSet(
             return "Dataset permId will be created after calling save()"
 
     def save(self, permId=None):
-        if self.kind == "PHYSICAL":
+        if self.permId:
             super(ExtendedDataSet, self).save()
-        elif self.kind == "LINK":
-            permId = register_file(*self.a.__dict__["args_register_file"])
-        if len(self.copy_path):
-            if os.path.exists(self.copy_path[0]):
-                os.unlink(self.copy_path[0])
+            permId = self.permId
+        else:
+            if self.kind == "PHYSICAL":
+                super(ExtendedDataSet, self).save()
+                permId = self.permId
+            elif self.kind == "LINK":
+                permId = register_file(*self.a.__dict__["args_register_file"])
+            if len(self.copy_path):
+                if os.path.exists(self.copy_path[0]):
+                    os.unlink(self.copy_path[0])
+        return permId
 
     def download(
         self,
@@ -657,8 +738,9 @@ class ExtendedDataSet(
         linked_dataset_fileservice_url=None,
         content_copy_index=0,
     ):
-        # FIXME Not tested
-        if self.kind == "PHYSICAL":
+        
+        if self.kind == "PHYSICAL"and len(self.file_list) > 1:
+            # FIXME Not tested
             super(ExtendedDataSet, self).download(
                 files,
                 destination,
@@ -668,27 +750,52 @@ class ExtendedDataSet(
                 linked_dataset_fileservice_url,
                 content_copy_index,
             )
-        elif self.kind == "LINK":
-            file_url = self.props["s3_download_link"]
-            filename = file_url.split("/")[-1].split("?")[0]
-            if destination is None:
-                destination = "data/" + self.openbis.download_prefix
+            return
 
-            if create_default_folders:
-                filename_dest = os.path.join(
-                    destination, self.permId, "original", filename
-                )
-            else:
-                filename_dest = os.path.join(filename)
-            try:
+        if self.kind == "LINK":
+            file_url = self.props["s3_download_link"]
+            source = 'S3'
+        if self.kind == "PHYSICAL":
+            openbis_client = self.openbis_client[0]
+            base_url = "/".join(openbis_client.url.split("/")[:3])
+            token = openbis_client.token
+            openbis_filename = self.file_list[0]
+            dataset_permid = self.permId
+            file_url = f'{base_url}/datastore_server/{dataset_permid}/{openbis_filename}?sessionID={token}'
+            source = 'openBIS'
+
+        filename = self.file_list[0].split("/")[-1]
+        if destination is None:
+            destination = "data/" + self.openbis.download_prefix
+        if not os.path.exists(destination):
+            os.mkdir(destination)
+
+        if create_default_folders:
+            filename_dest = os.path.join(
+                destination, self.permId, "original", filename
+            )
+        else:
+            filename_dest = os.path.join(destination, filename)
+        try:
+            max_retries = 5
+            retries = 0
+            while retries < max_retries:
                 with requests.get(file_url, stream=True) as response:
                     response.raise_for_status()
+                    expected_size = int(response.headers.get('Content-Length', 0))
                     with open(filename_dest, "wb") as file:
+                        downloaded_size = 0
                         for chunk in response.iter_content(chunk_size=8192):
                             if chunk:
                                 file.write(chunk)
-            except requests.exceptions.RequestException as e:
-                logging.error(f"Error downloading {filename} from S3:", e)
+                                downloaded_size += len(chunk)
+                        if downloaded_size != expected_size:
+                            retries += 1
+                        else:
+                            break
+            logging.info(f"Attempted downloading {filename} from {source} {retries} times")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error downloading {filename} from {source}:", e)
 
 
 class OpenbisWithS3(Openbis):
@@ -718,12 +825,11 @@ class OpenbisWithS3(Openbis):
             use_cache=use_cache,
             allow_http_but_do_not_use_this_in_production_and_only_within_safe_networks=allow_http_but_do_not_use_this_in_production_and_only_within_safe_networks,
         )
-
+        self.temp_dir = "pybisaixtented_tmp_" + str(uuid.uuid4())
         if s3_config_path is not None:
             self._configure_s3_client(s3_config_path)
-        self.standardize_filenames = standardize_filenames  # FIXME only works for S3
-        self.temp_dir = "pybisaixtented_tmp_" + str(uuid.uuid4())
-        os.mkdir(self.temp_dir)
+        self.standardize_filenames = standardize_filenames
+
 
     def _configure_s3_client(self, config_path):
         """
@@ -777,7 +883,7 @@ class OpenbisWithS3(Openbis):
                     with open(config_file, "r") as fh:
                         data_str = fh.read()
                 else:
-                    logging.critical(f"Config file {config_file} was not found.\n")
+                    raise ValueError(f"Config file {config_file} was not found")
             else:
                 # Convert to string as the file is already opened
                 stringio = StringIO(config_file.decode("utf-8"))
@@ -792,7 +898,6 @@ class OpenbisWithS3(Openbis):
                 dms_codes = []
 
             try:
-
                 # openBIS details
                 obis_dms_code = parser.get(
                     "openbis", "dms_code", fallback=None
@@ -948,7 +1053,7 @@ class OpenbisWithS3(Openbis):
 
         sample = kwargs.get("sample")
         experiment = kwargs.get("experiment")
-        assert (sample is not None) or (
+        assert (sample is not None) ^ (
             experiment is not None
         ), "Either experiment or sample should be provided as an argument"
 
@@ -967,6 +1072,9 @@ class OpenbisWithS3(Openbis):
                 raise ValueError(
                     f"Sample / Object {sample} does NOT exist for user: {self._get_username()}"
                 )
+    
+        if not os.path.exists(self.temp_dir):
+            os.mkdir(self.temp_dir)
 
         return ExtendedDataSet(
             self,
@@ -978,3 +1086,73 @@ class OpenbisWithS3(Openbis):
             s3_client=self._s3_client,
             **kwargs,
         )
+    
+
+    def get_dataset(self, permIds, only_data=False, props=None, **kvals):
+        """fetch a dataset and some metadata attached to it:
+        - properties
+        - sample
+        - parents
+        - children
+        - containers
+        - dataStore
+        - physicalData
+        - linkedData
+        :return: a DataSet object
+        """
+
+        just_one = True
+        identifiers = []
+        if isinstance(permIds, list):
+            just_one = False
+            for permId in permIds:
+                identifiers.append(_type_for_id(permId, "dataset"))
+        else:
+            identifiers.append(_type_for_id(permIds, "dataset"))
+
+        fetchopts = get_fetchoption_for_entity("dataSet")
+
+        for option in [
+            "tags",
+            "properties",
+            "dataStore",
+            "physicalData",
+            "linkedData",
+            "experiment",
+            "sample",
+            "registrator",
+            "modifier",
+        ]:
+            fetchopts[option] = get_fetchoption_for_entity(option)
+
+        request = {
+            "method": "getDataSets",
+            "params": [
+                self.token,
+                identifiers,
+                fetchopts,
+            ],
+        }
+
+        resp = self._post_request(self.as_v3, request)
+        if just_one:
+            if len(resp) == 0:
+                raise ValueError(f"no such dataset found: {permIds}")
+
+            parse_jackson(resp)
+
+            for permId in resp:
+                if only_data:
+                    return resp[permId]
+                else:
+                    return ExtendedDataSet(
+                        openbis_client=self,
+                        type=self.get_dataset_type(resp[permId]["type"]["code"]),
+                        data=resp[permId],
+                        props=props,
+                        s3_client=self._s3_client,
+                    )
+        else:
+            return self._dataset_list_for_response(
+                response=list(resp.values()), props=props, parsed=False
+            )
