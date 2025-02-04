@@ -92,12 +92,16 @@ def add_lammps_contexts(method_dict):
     method_dict['@context']['ensemble'] = 'http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble'
     method_dict['@context']['job_details'] = 'http://id-from-pmdco-pending'
     method_dict['@context']['periodic_boundary_condition'] = 'http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition'
-    method_dict['@context']['temperature'] = 'http://purls.helmholtz-metadaten.de/asmo/Temperature'
-    method_dict['@context']['pressure'] = 'http://purls.helmholtz-metadaten.de/asmo/Pressure'
+    method_dict['@context']['initial_temperature'] = 'http://purls.helmholtz-metadaten.de/asmo/Temperature'
+    method_dict['@context']['initial_pressure'] = 'http://purls.helmholtz-metadaten.de/asmo/Pressure'
+    method_dict['@context']['target_temperature'] = 'http://purls.helmholtz-metadaten.de/asmo/Temperature'
+    method_dict['@context']['target_pressure'] = 'http://purls.helmholtz-metadaten.de/asmo/Pressure'
     method_dict['@context']['ionic_energy_tolerance'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
     method_dict['@context']['force_tolerace'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
     method_dict['@context']['maximum_iterations'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
     method_dict['@context']['potential'] = "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential"
+    method_dict['@context']['average_temperature'] = 'http://purls.helmholtz-metadaten.de/asmo/Temperature'
+    method_dict['@context']['average_pressure'] = 'http://purls.helmholtz-metadaten.de/asmo/Pressure'
     method_dict['@context']['average_total_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalEnergy'
     method_dict['@context']['final_total_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalEnergy'
     method_dict['@context']['final_potential_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy'
@@ -105,6 +109,8 @@ def add_lammps_contexts(method_dict):
     method_dict['@context']['final_total_volume'] = 'http://purls.helmholtz-metadaten.de/asmo/Volume'
     method_dict['@context']['final_maximum_force'] = 'http://purls.helmholtz-metadaten.de/asmo/Force'
     method_dict['@context']['number_ionic_steps'] = 'http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps'
+    method_dict['@context']['time_step'] = 'http://purls.helmholtz-metadaten.de/asmo/TimeStep'
+    method_dict['@context']['simulation_time'] = 'http://purls.helmholtz-metadaten.de/asmo/Time'
     method_dict['@context']['LAMMPS'] = 'http://demo.fiz-karlsruhe.de/matwerk/E447986'
 
 def get_structures(job, method_dict):
@@ -123,18 +129,27 @@ def identify_lammps_method(job, method_dict):
         for x in range(len(job_dict["control_inp/data_dict"]["Parameter"]))
     }
     dof = []
+    maxiter = None
+    e_tol = None
+    f_tol = None
     temp = None
     press = None
     md_method = None
     ensemble = None
+    temp_target = None
+    press_target = None
+    timestep = None
+    simulation_time = None
 
     if "min_style" in input_dict.keys():
         dof.append("http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation")
         if job.input.control['fix___ensemble'] != 'all nve': dof.append("http://purls.helmholtz-metadaten.de/asmo/CellVolumeRelaxation")
+        raw = input_dict["fix___ensemble"].split()
         md_method = "molecular_statics"
         e_tol = float(input_dict['minimize'].split()[0])
         f_tol = float(input_dict['minimize'].split()[1])
         maxiter = int(input_dict['minimize'].split()[2])
+        if job.input.control['fix___ensemble'] != 'all nve': press_target = float(raw[3])*0.0001
 
     elif "nve" in input_dict["fix___ensemble"]:
         if int(input_dict["run"]) == 0:
@@ -145,13 +160,18 @@ def identify_lammps_method(job, method_dict):
             dof.append("http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation")
             md_method = "molecular_dynamics"
             ensemble = "http://purls.helmholtz-metadaten.de/asmo/MicrocanonicalEnsemble"
+            timestep = float(input_dict["timestep"].split()[0])
+            simulation_time = float(input_dict["run"].split()[0])*float(input_dict["timestep"].split()[0])
 
     elif "nvt" in input_dict["fix___ensemble"]:
         raw = input_dict["fix___ensemble"].split()
         temp = float(raw[3])
+        temp_target = float(raw[4])
         dof.append("http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation")
         md_method = "molecular_dynamics"
         ensemble = "http://purls.helmholtz-metadaten.de/asmo/CanonicalEnsemble"
+        timestep = float(input_dict["timestep"].split()[0])
+        simulation_time = float(input_dict["run"].split()[0])*float(input_dict["timestep"].split()[0])
 
     elif "npt" in input_dict["fix___ensemble"]:
         dof.append("http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation")
@@ -161,8 +181,12 @@ def identify_lammps_method(job, method_dict):
         md_method = "molecular_dynamics"
         raw = input_dict["fix___ensemble"].split()
         temp = float(raw[3])
-        press = float(raw[7])
+        temp_target = float(raw[4])
+        press = float(raw[7])*0.0001
+        press_target = float(raw[8])*0.0001
         ensemble = "http://purls.helmholtz-metadaten.de/asmo/IsothermalIsobaricEnsemble"
+        timestep = float(input_dict["timestep"].split()[0])
+        simulation_time = float(input_dict["run"].split()[0])*float(input_dict["timestep"].split()[0])
 
     method_dict[md_method] = {}
 
@@ -195,16 +219,30 @@ def identify_lammps_method(job, method_dict):
     temperature = {}
     temperature["value"] = temp
     temperature["unit"] = "K"
-    temperature["label"] = "temperature"
+    temperature["label"] = "initial_temperature"
 
     method_dict[md_method]['inputs'].append(temperature)
+
+    target_temperature = {}
+    target_temperature["value"] = temp_target
+    target_temperature["unit"] = "K"
+    target_temperature["label"] = "target_temperature"
+
+    method_dict[md_method]['inputs'].append(target_temperature)
 
     pressure = {}
     pressure["value"] = press
     pressure["unit"] = "GigaPA"
-    pressure["label"] = "pressure"
+    pressure["label"] = "initial_pressure"
 
     method_dict[md_method]['inputs'].append(pressure)
+
+    target_pressure = {}
+    target_pressure["value"] = press_target
+    target_pressure["unit"] = "GigaPA"
+    target_pressure["label"] = "target_pressure"
+
+    method_dict[md_method]['inputs'].append(target_pressure)
 
     energy_tol = {}
     energy_tol["value"] = e_tol
@@ -225,6 +263,20 @@ def identify_lammps_method(job, method_dict):
     maximum_iterations["label"] = "maximum_iterations"
 
     method_dict[md_method]['inputs'].append(maximum_iterations)
+
+    timestep_dict = {}
+    timestep_dict["value"] = timestep
+    timestep_dict["unit"] = "PICOSECOND"
+    timestep_dict["label"] = "timestep"
+
+    method_dict[md_method]['inputs'].append(timestep_dict)
+
+    sim_time_dict = {}
+    sim_time_dict["value"] = simulation_time
+    sim_time_dict["unit"] = "PICOSECOND"
+    sim_time_dict["label"] = "simulation_time"
+
+    method_dict[md_method]['inputs'].append(sim_time_dict)
 
     method_dict[md_method]["ensemble"] = ensemble
     
@@ -271,60 +323,107 @@ def extract_lammps_calculated_quantities(job, method_dict):
     """
     aen = np.mean(job.output.energy_tot)
     fen = job.output.energy_tot[-1]
-    fpe = job.output.energy_tot[-1] # TODO: are these always supposed to be the same?
+    fpe = job.output.energy_pot[-1]
     avol = np.mean(job.output.volume)
     fvol = job.output.volume[-1]
     fmax = job.output.force_max[-1]
     nionic = len(job.output.steps)-1
+    atemp = np.mean(job.output.temperature)
+    apress = np.mean(np.array([tensor[0, 0] for tensor in job.output.pressures]))
+    apot = np.mean(job.output.energy_pot)
     outputs = []
-    outputs.append(
-        {
-            "label": "average_total_energy",
-            "value": np.round(aen, decimals=4),
-            "unit": "EV",
-        }
-    )
-    outputs.append(
-        {
-            "label": "final_total_energy",
-            "value": np.round(fen, decimals=4),
-            "unit": "EV",
-        }
-    )
-    outputs.append(
-        {
-            "label": "final_potential_energy",
-            "value": np.round(fpe, decimals=4),
-            "unit": "EV",
-        }
-    )
-    outputs.append(
-        {
-            "label": "average_total_volume",
-            "value": np.round(avol, decimals=4),
-            "unit": "ANGSTROM3",
-        }
-    )
-    outputs.append(
-        {
-            "label": "final_total_volume",
-            "value": np.round(fvol, decimals=4),
-            "unit": "ANGSTROM3",
-        }
-    )
-    outputs.append(
-        {
-            "label": "final_maximum_force",
-            "value": np.round(fmax, decimals=16),
-            "unit": "EV-PER-ANGSTROM",
-        }
-    )
-    outputs.append(
-        {
-            "label": "number_ionic_steps",
-            "value": nionic,
-        }
-    )
+    if "molecular_statics" in method_dict.keys():
+        outputs.append(
+            {
+                "label": "average_total_energy",
+                "value": np.round(aen, decimals=4),
+                "unit": "EV",
+            }
+        )
+        outputs.append(
+            {
+                "label": "final_total_energy",
+                "value": np.round(fen, decimals=4),
+                "unit": "EV",
+            }
+        )
+        outputs.append(
+            {
+                "label": "final_potential_energy",
+                "value": np.round(fpe, decimals=4),
+                "unit": "EV",
+            }
+        )
+        outputs.append(
+            {
+                "label": "average_total_volume",
+                "value": np.round(avol, decimals=4),
+                "unit": "ANGSTROM3",
+            }
+        )
+        outputs.append(
+            {
+                "label": "final_total_volume",
+                "value": np.round(fvol, decimals=4),
+                "unit": "ANGSTROM3",
+            }
+        )
+        outputs.append(
+            {
+                "label": "final_maximum_force",
+                "value": np.round(fmax, decimals=16),
+                "unit": "EV-PER-ANGSTROM",
+            }
+        )
+        outputs.append(
+            {
+                "label": "number_ionic_steps",
+                "value": nionic,
+            }
+        )
+    else:
+        outputs.append(
+            {
+                "label": "average_total_energy",
+                "value": np.round(aen, decimals=4),
+                "unit": "EV",
+            }
+        )
+        outputs.append(
+            {
+                "label": "average_potential_energy",
+                "value": np.round(apot, decimals=4),
+                "unit": "EV",
+            }
+        )
+        outputs.append(
+            {
+                "label": "average_temperature",
+                "value": np.round(atemp, decimals=4),
+                "unit": "K",
+            }
+        )
+        outputs.append(
+            {
+                "label": "average_pressure",
+                "value": np.round(apress, decimals=4),
+                "unit": "GigaPA",
+            }
+        )
+        outputs.append(
+            {
+                "label": "average_total_volume",
+                "value": np.round(avol, decimals=4),
+                "unit": "ANGSTROM3",
+            }
+        )
+        outputs.append(
+            {
+                "label": "final_total_volume",
+                "value": np.round(fvol, decimals=4),
+                "unit": "ANGSTROM3",
+            }
+        )
     method_dict['outputs'] =  outputs
 
 def add_simulation_software(job, method_dict):
