@@ -148,11 +148,11 @@ def map_cdict_to_ob(o, cdict, concept_dict):
 
 def map_struct_to_ob(props, cdict, concept_dict):
     if 'atoms' in concept_dict.keys():
-        species = {}
-        for i in concept_dict['atoms']:
-            if i['label'] != 'total_number_atoms':
-                species[i['label']] = i['value']
-        props['chem_species_by_n_atoms'] = str(species)
+        sorted_atoms = sorted(
+            [atom for atom in concept_dict['atoms'] if atom['label'] != 'total_number_atoms'],
+            key=lambda x: x['label']
+        )
+        props['chem_species_by_n_atoms'] = str(sorted_atoms)
     if 'total_number_atoms' in cdict.keys():
         props['n_atoms_total'] = cdict['total_number_atoms']
     if 'simulation_cell_lengths' in cdict.keys():
@@ -195,8 +195,7 @@ def dataset_job_h5(cdict):
     ds_props = {
         '$name': cdict['job_name'] + '.h5',
         'production_date': datetime.strptime(cdict['job_stoptime'], "%Y-%m-%d %H:%M:%S").date().strftime("%Y-%m-%d"),
-        'file_format': 'HDF5',
-        'reference': 'https://github.com/pyiron/pyiron_atomistics/blob/main/pyiron_atomistics/lammps/base.py',
+        'file_format': 'HDF5'
     }
     ds_type = 'PYIRON_JOB'
 
