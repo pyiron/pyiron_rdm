@@ -123,9 +123,11 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
                 else:                              # TODO proper error or just a warning?
                     print(f"No objects of the type {t} and property {w} / code {c} found, \
                           upload will not proceed. Please create them first and then try again.")
+                    return
             else:
                 print(f"Not enough information to search for a parent object.\
                       Known information: type = {t}, code = {c}, attribute match: {w}")
+                return
 
         if len(ob_parents) == len(inv_parents): # Found all parents needed
             object_ = o.new_object(
@@ -171,7 +173,7 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
         #     display(object_.p)
         
         # return object_
-        return object_.identifier # or object_.permId
+            return object_.identifier # or object_.permId
     
 def link_parents(o, ob_object, parent_ids):
     if type(ob_object) == str:

@@ -112,9 +112,18 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
         struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure')
         ob_structure_id = openbis_upload(o, space, project, collection, struct_dict)
 
+        if 'rwth' in o.url: # temporary solution
+            job_parents = None            # job does not have init structure as parent
+            str_parent = ob_structure_id  # equil structure has init as parent
+            upload_final_struct = True
+        else:
+            job_parents = ob_structure_id # job has init structure as parent
+            str_parent = None             # equil structure does not have init as parent
+            upload_final_struct = False
+
         if 'lammps' in job.to_dict()['TYPE']:
             job_cdict = classic_lammps(job)
-            ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=ob_structure_id)
+            ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
 
         elif 'murn' in job.to_dict()['TYPE']: # TODO: Is it okay to upload the murn job last ?
             job_cdict, child_jobs_cdict = classic_murn(job)
@@ -123,12 +132,12 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
                 ob_child_id = openbis_upload(o, space, project, collection, child_cdict)
                 ob_children_ids.append(ob_child_id)
             equil_struct_dict = classic_murn_equil_structure(job)
-            ob_equil_struct_id = openbis_upload(o, space, project, collection, equil_struct_dict)
+            ob_equil_struct_id = openbis_upload(o, space, project, collection, equil_struct_dict, parent_ids=str_parent)
             ob_children_ids.append(ob_equil_struct_id)
             
-            ob_murn_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=ob_structure_id)
+            ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
             from ob.ob_upload import link_children
-            link_children(o, ob_murn_id, ob_children_ids)
+            link_children(o, ob_job_id, ob_children_ids)
 
         else:
             # TODO: structure still uploaded even if job isn't - oK?
@@ -137,9 +146,16 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
             proceed = input("Type 'yes' to proceed with an upload to general pyiron job type.")
             if proceed.lower() == 'yes':
                 job_cdict = classic_general_job(job)
-                ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=ob_structure_id)
+                ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
             else:
                 print('Upload cancelled.')
+
+        if upload_final_struct and (not 'murn' in job.to_dict()['TYPE']):
+            final_structure = job.get_structure()
+            final_struct_dict = classic_structure(pr, final_structure, 
+                                                 structure_name=job.name + '_final_structure')
+            ob_final_structure_id = openbis_upload(o, space, project, collection, 
+                                                   final_struct_dict, parent_ids=[ob_structure_id, ob_job_id])
         
     else:
         print('This job does not contain a structure and will not be uploaded. \
