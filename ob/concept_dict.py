@@ -329,7 +329,7 @@ def extract_lammps_calculated_quantities(job, method_dict):
     fmax = job.output.force_max[-1]
     nionic = len(job.output.steps)-1
     atemp = np.mean(job.output.temperature)
-    apress = np.mean(np.array([tensor[0, 0] for tensor in job.output.pressures]))
+    apress = np.mean(np.array([(1/3*(tensor[0, 0]+tensor[1, 1]+tensor[2, 2])) for tensor in job.output.pressures]))
     apot = np.mean(job.output.energy_pot)
     outputs = []
     if "molecular_statics" in method_dict.keys():
