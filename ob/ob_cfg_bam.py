@@ -112,6 +112,89 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props |=  {'atomistic_calc_type': 'atom_calc_struc_opt',
                     'atom_ionic_min_algo': min_algo, 
                     'description': description}
+            if 'target_pressure' in cdict.keys() and cdict['target_pressure'] is not None:
+                props['atom_targ_press_in_gpa'] = cdict['target_pressure']
+            if 'maximum_iterations' in cdict.keys():
+                props['max_iters'] = cdict['maximum_iterations']
+            if 'ionic_energy_tolerance' in cdict.keys():
+                props['atom_e_tol_ion_in_ev'] = cdict['ionic_energy_tolerance']
+            if 'force_tolerance' in cdict.keys():
+                props['atom_f_tol_in_ev_a'] = cdict['force_tolerance']
+            if 'number_ionic_steps' in cdict.keys():
+                props['atom_ionic_steps'] = cdict['number_ionic_steps']
+            if 'final_maximum_force' in cdict.keys():
+                props['atom_force_max_in_ev_a'] = cdict['final_maximum_force']
+        if 'molecular_dynamics' in concept_dict.keys() and 'http://purls.helmholtz-metadaten.de/asmo/MicrocanonicalEnsemble' in cdict['ensemble']:
+            description = f'{cdict["job_type"]} simulation using pyiron for microcanonical ensemble.' + props['description'] # TODO double check correctness
+            props['atom_md_ensemble'] = 'TD_ENSEMBLE_NVE'
+            props |= {'atomistic_calc_type': 'Atom_calc_md',
+                    'description': description}
+            if 'timestep' in cdict.keys():
+                props['atom_md_time_stp_in_ps'] = cdict['timestep']
+            if 'simulation_time' in cdict.keys():
+                props['atom_sim_time_ps_in_ps'] = cdict['simulation_time']
+            if 'average_total_energy' in cdict.keys():
+                props['atom_avg_tot_eng_in_ev'] = cdict['average_total_energy']
+            if 'average_potential_energy' in cdict.keys():
+                props['atom_avg_pot_eng_in_ev'] = cdict['average_potential_energy']
+            if 'average_temperature' in cdict.keys():
+                props['atom_md_avg_temp_in_k'] = cdict['average_temperature']
+            if 'average_pressure' in cdict.keys():
+                props['atom_avg_press_in_gpa'] = cdict['average_pressure']
+            if 'average_total_volume' in cdict.keys():
+                props['atom_avg_vol_in_a3'] = cdict['average_total_volume']
+        if 'molecular_dynamics' in concept_dict.keys() and 'http://purls.helmholtz-metadaten.de/asmo/CanonicalEnsemble' in cdict['ensemble']:
+            description = f'{cdict["job_type"]} simulation using pyiron for canonical ensemble.' + props['description'] # TODO double check correctness
+            props['atom_md_ensemble'] = 'TD_ENSEMBLE_ATOM_ENS.NVT'
+            props |= {'atomistic_calc_type': 'Atom_calc_md',
+                    'description': description}
+            if 'timestep' in cdict.keys():
+                props['atom_md_time_stp_in_ps'] = cdict['timestep']
+            if 'simulation_time' in cdict.keys():
+                props['atom_sim_time_ps_in_ps'] = cdict['simulation_time']
+            if 'initial_temperature' in cdict.keys():
+                props['atom_md_init_temp_in_k'] = cdict['initial_temperature']
+            if 'target_temperature' in cdict.keys():
+                props['atom_md_targ_temp_in_k'] = cdict['target_temperature']
+            if 'average_total_energy' in cdict.keys():
+                props['atom_avg_tot_eng_in_ev'] = cdict['average_total_energy']
+            if 'average_potential_energy' in cdict.keys():
+                props['atom_avg_pot_eng_in_ev'] = cdict['average_potential_energy']
+            if 'average_temperature' in cdict.keys():
+                props['atom_md_avg_temp_in_k'] = cdict['average_temperature']
+            if 'average_pressure' in cdict.keys():
+                props['atom_avg_press_in_gpa'] = cdict['average_pressure']
+            if 'average_total_volume' in cdict.keys():
+                props['atom_avg_vol_in_a3'] = cdict['average_total_volume']
+        if 'molecular_dynamics' in concept_dict.keys() and 'http://purls.helmholtz-metadaten.de/asmo/IsothermalIsobaricEnsemble' in cdict['ensemble']:
+            description = f'{cdict["job_type"]} simulation using pyiron for isothermal-isobaric ensemble.' + props['description'] # TODO double check correctness
+            props['atom_md_ensemble'] = 'TD_ENSEMBLE_NPT'
+            props |= {'atomistic_calc_type': 'Atom_calc_md',
+                    'description': description}
+            if 'timestep' in cdict.keys():
+                props['atom_md_time_stp_in_ps'] = cdict['timestep']
+            if 'simulation_time' in cdict.keys():
+                props['atom_sim_time_ps_in_ps'] = cdict['simulation_time']
+            if 'initial_temperature' in cdict.keys():
+                props['atom_md_init_temp_in_k'] = cdict['initial_temperature']
+            if 'target_temperature' in cdict.keys():
+                props['atom_md_targ_temp_in_k'] = cdict['target_temperature']
+            if 'initial_pressure' in cdict.keys():
+                props['atom_md_init_press_in_gpa'] = cdict['initial_pressure']
+            if 'target_pressure' in cdict.keys():
+                props['atom_targ_press_in_gpa'] = cdict['target_pressure']
+            if 'average_total_energy' in cdict.keys():
+                props['atom_avg_tot_eng_in_ev'] = cdict['average_total_energy']
+            if 'average_potential_energy' in cdict.keys():
+                props['atom_avg_pot_eng_in_ev'] = cdict['average_potential_energy']
+            if 'average_temperature' in cdict.keys():
+                props['atom_md_avg_temp_in_k'] = cdict['average_temperature']
+            if 'average_pressure' in cdict.keys():
+                props['atom_avg_press_in_gpa'] = cdict['average_pressure']
+            if 'average_total_volume' in cdict.keys():
+                props['atom_avg_vol_in_a3'] = cdict['average_total_volume']
+            
+
             
         if 'job_type' in cdict.keys() and 'Murn' in cdict['job_type']: # TODO general way to do this? Put together 
             props['description'] = 'Murnaghan job for structural optimization.' + props['description']

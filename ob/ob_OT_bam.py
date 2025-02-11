@@ -23,7 +23,7 @@ def sw_par(cdict):
 
 def localws_par(cdict):
     t = 'INSTRUMENT.LOCAL_WORKSTATION'
-    c = cdict['host']
+    c = cdict['host'].upper()  
     return t, c
 
 def wfref_par(cdict):
