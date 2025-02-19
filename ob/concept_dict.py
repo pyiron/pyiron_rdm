@@ -332,14 +332,28 @@ def extract_lammps_calculated_quantities(job, method_dict):
     apress = np.mean(np.array([(1/3*(tensor[0, 0]+tensor[1, 1]+tensor[2, 2])) for tensor in job.output.pressures]))
     apot = np.mean(job.output.energy_pot)
     outputs = []
-    if "molecular_statics" in method_dict.keys():
-        outputs.append(
+    outputs.append(
             {
                 "label": "average_total_energy",
                 "value": np.round(aen, decimals=4),
                 "unit": "EV",
             }
         )
+    outputs.append(
+        {
+            "label": "average_total_volume",
+            "value": np.round(avol, decimals=4),
+            "unit": "ANGSTROM3",
+        }
+    )
+    outputs.append(
+        {
+            "label": "final_total_volume",
+            "value": np.round(fvol, decimals=4),
+            "unit": "ANGSTROM3",
+        }
+    )
+    if "molecular_statics" in method_dict.keys():
         outputs.append(
             {
                 "label": "final_total_energy",
@@ -356,20 +370,6 @@ def extract_lammps_calculated_quantities(job, method_dict):
         )
         outputs.append(
             {
-                "label": "average_total_volume",
-                "value": np.round(avol, decimals=4),
-                "unit": "ANGSTROM3",
-            }
-        )
-        outputs.append(
-            {
-                "label": "final_total_volume",
-                "value": np.round(fvol, decimals=4),
-                "unit": "ANGSTROM3",
-            }
-        )
-        outputs.append(
-            {
                 "label": "final_maximum_force",
                 "value": np.round(fmax, decimals=16),
                 "unit": "EV-PER-ANGSTROM",
@@ -382,13 +382,6 @@ def extract_lammps_calculated_quantities(job, method_dict):
             }
         )
     else:
-        outputs.append(
-            {
-                "label": "average_total_energy",
-                "value": np.round(aen, decimals=4),
-                "unit": "EV",
-            }
-        )
         outputs.append(
             {
                 "label": "average_potential_energy",
@@ -408,20 +401,6 @@ def extract_lammps_calculated_quantities(job, method_dict):
                 "label": "average_pressure",
                 "value": np.round(apress, decimals=4),
                 "unit": "GigaPA",
-            }
-        )
-        outputs.append(
-            {
-                "label": "average_total_volume",
-                "value": np.round(avol, decimals=4),
-                "unit": "ANGSTROM3",
-            }
-        )
-        outputs.append(
-            {
-                "label": "final_total_volume",
-                "value": np.round(fvol, decimals=4),
-                "unit": "ANGSTROM3",
             }
         )
     method_dict['outputs'] =  outputs
