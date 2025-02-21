@@ -1053,9 +1053,9 @@ class OpenbisWithS3(Openbis):
 
         sample = kwargs.get("sample")
         experiment = kwargs.get("experiment")
-        assert (sample is not None) or (
+        assert (sample is not None) ^ (
             experiment is not None
-        ), "Either experiment or sample should be provided as an argument"
+        ), "Either experiment or sample (not both) should be provided as an argument"
 
         if experiment is not None:
             try:
