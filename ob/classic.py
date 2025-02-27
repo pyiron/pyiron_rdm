@@ -73,8 +73,16 @@ def classic_murn_equil_structure(murn_job):
         
     return struct_cdict
 
+def get_datamodel(o):
+    # TODO: adapt to also take url to use for openbis_login ?
+    datamodels = {'bam': 'bam', 'rwth': 'sfb1394'}
+    for key in datamodels:
+        if key in o.hostname:
+            return datamodels[key]
+    raise KeyError(f'The {o.hostname} openBIS hostname is not paired with a supported data model yet ({datamodels.values()}).')
+
 def openbis_login(url, username, instance='bam'):
-    # TODO this shouldn't be needed, default instance like a default queue?
+    instance = get_datamodel(o)
     if instance != 'bam' and instance != 'sfb1394':    
         raise ValueError(f"This script only supports upload to 'bam' and 'sfb1394' instances,\
                          {instance} not supported.")
@@ -112,11 +120,12 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
         struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure')
         ob_structure_id = openbis_upload(o, space, project, collection, struct_dict)
 
-        if 'rwth' in o.url: # temporary solution
+        datamodel = get_datamodel(o)
+        if datamodel == 'sfb1394':
             job_parents = None            # job does not have init structure as parent
             str_parent = ob_structure_id  # equil structure has init as parent
             upload_final_struct = True
-        else:
+        elif datamodel == 'bam':
             job_parents = ob_structure_id # job has init structure as parent
             str_parent = None             # equil structure does not have init as parent
             upload_final_struct = False
