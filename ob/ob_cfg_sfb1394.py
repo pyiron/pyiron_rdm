@@ -175,42 +175,6 @@ def map_struct_to_ob(props, cdict, concept_dict):
         props['sim_cell_vectors'] = cdict['simulation_cell_vectors']
     if 'space_group_number' in cdict.keys():
         props['space_group'] = cdict['space_group_number']
-    
-        # species = {}
-        # for i in concept_dict['atoms']:
-        #     if i['label'] != 'total_number_atoms':
-        #         species[i['label']] = i['value']
-        # props['chem_species_by_n_atoms'] = str(species)
-    # if 'total_number_atoms' in cdict.keys():
-    #     props['n_atoms_total'] = cdict['total_number_atoms']
-    # if 'simulation_cell_angles' in cdict.keys():
-    #     props['unit_cell_angles'] = cdict['simulation_cell_angles'].strip('[]')
-    # if 'simulation_cell_volume' in cdict.keys():
-    #     props['sim_cell_volume_in_a3'] = cdict['simulation_cell_volume']  
-    # if 'crystal_orientation' in cdict.keys(): 
-    #     props['crystal_orientation'] = cdict['crystal_orientation']
-    # if 'lattice_parameter_a' in cdict.keys(): 
-    #     props['lattice_param_a_in_a'] = cdict['lattice_parameter_a']
-    # if 'lattice_parameter_b' in cdict.keys(): 
-    #     props['lattice_param_b_in_a'] = cdict['lattice_parameter_b']
-    # if 'lattice_parameter_c' in cdict.keys(): 
-    #     props['lattice_param_c_in_a'] = cdict['lattice_parameter_c']
-    # if 'lattice_parameter_c_over_a' in cdict.keys(): 
-    #     props['lattice_c_over_a'] = cdict['lattice_parameter_c_over_a']
-    # if 'lattice_angle_alpha' in cdict.keys(): 
-    #     props['lattice_angalpha_in_deg'] = cdict['lattice_angle_alpha']
-    # if 'lattice_angle_beta' in cdict.keys(): 
-    #     props['lattice_angbeta_in_deg'] = cdict['lattice_angle_beta']
-    # if 'lattice_angle_gamma' in cdict.keys(): 
-    #     props['lattice_anggamma_in_deg'] = cdict['lattice_angle_gamma']
-    # if 'lattice_volume' in cdict.keys(): 
-    #     props['lattice_volume_in_a3'] = cdict['lattice_volume']
-    # if 'space_group' in cdict.keys():
-    #     spg_map = get_space_group_mapping(cdict['space_group'])
-    #     props['space_group'] = spg_map
-    # if 'bravais_lattice' in cdict.keys():
-    #     bvl_map = get_bravais_lattice_mapping(cdict['bravais_lattice'])
-    #     props['bravais_lattice'] = bvl_map
 
 def dataset_job_h5(cdict):
     from datetime import datetime
@@ -255,18 +219,6 @@ def dataset_atom_struct_h5(cdict):
     if 'simulation_cell_lengths' in cdict.keys():
         lengths = [float(x) for x in cdict['simulation_cell_lengths'].strip('[]').split(',')]
         ds_props['box_length_a'], ds_props['box_length_b'], ds_props['box_length_c'] = lengths
-    # if 'lattice_parameter_a' in cdict.keys(): 
-    #     props['lattice_param_a_in_a'] = cdict['lattice_parameter_a']
-    # if 'lattice_parameter_b' in cdict.keys(): 
-    #     props['lattice_param_b_in_a'] = cdict['lattice_parameter_b']
-    # if 'lattice_parameter_c' in cdict.keys(): 
-    #     props['lattice_param_c_in_a'] = cdict['lattice_parameter_c']
-    # if 'lattice_angle_alpha' in cdict.keys(): 
-    #     props['lattice_angalpha_in_deg'] = cdict['lattice_angle_alpha']
-    # if 'lattice_angle_beta' in cdict.keys(): 
-    #     props['lattice_angbeta_in_deg'] = cdict['lattice_angle_beta']
-    # if 'lattice_angle_gamma' in cdict.keys(): 
-    #     props['lattice_anggamma_in_deg'] = cdict['lattice_angle_gamma']
     if 'space_group_number' in cdict.keys():
         ds_props['space_group'] = cdict['space_group_number']
 

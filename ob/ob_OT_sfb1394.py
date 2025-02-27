@@ -96,7 +96,7 @@ def get_inv_parent(parent_name, cdict, props_dict):
     
 # else ________________________________________________________
 
-def species_by_num_to_pct(props):
-    species_by_pct = {props[f'element_{i}']: props[f'element_{i}_at_percent'] for i in range(1, 9) 
+def species_by_num_to_pct(props, max_elements = 8):
+    species_by_pct = {props[f'element_{i}']: props[f'element_{i}_at_percent'] for i in range(1, max_elements+1) 
           if f'element_{i}' in props and f'element_{i}_at_percent' in props}
     return str(species_by_pct)
