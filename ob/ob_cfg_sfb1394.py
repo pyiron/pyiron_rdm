@@ -176,24 +176,24 @@ def map_struct_to_ob(props, cdict, concept_dict):
     if 'space_group_number' in cdict.keys():
         props['space_group'] = cdict['space_group_number']
 
-def dataset_job_h5(cdict):
+def dataset_job_h5(cdict, name_suffix='_0'):
     from datetime import datetime
 
     # TODO error handling if not job
     ds_props = {
-        '$name': cdict['job_name'] + '.h5'
+        '$name': cdict['job_name'] + '.h5' + name_suffix
     }
     ds_type = 'PYIRON_HDF5'
 
     return ds_type, ds_props
 
-def dataset_atom_struct_h5(cdict):
+def dataset_atom_struct_h5(cdict, name_suffix='_0'):
     # TODO error handling if not structure
     # !!! relies on concept_dict.py first adding chemical species info before anything else
     from datetime import date
     import numpy as np
     ds_props = {
-        '$name': cdict['structure_name'] + '.h5',
+        '$name': cdict['structure_name'] + '.h5' + name_suffix,
         'date': str(date.today()),
         'file_source': 'pyiron'
     }
@@ -226,19 +226,19 @@ def dataset_atom_struct_h5(cdict):
 
     return ds_type, ds_props
 
-def dataset_env_yml(cdict):
+def dataset_env_yml(cdict, name_suffix='_0'):
     # TODO error handling if not job
-    ds_props = {'$name': cdict['job_name']+'_environment.yml', 
+    ds_props = {'$name': cdict['job_name']+'_environment.yml' + name_suffix, 
                 'env_tool': 'conda'}
     ds_type = 'COMP_ENV'
 
     return ds_type, ds_props
 
-def dataset_cdict_jsonld(cdict):
+def dataset_cdict_jsonld(cdict, name_suffix='_0'):
     if 'job_name' in cdict.keys():
-        ds_props = {'$name': cdict['job_name'] + '_concept_dict.json'}
+        ds_props = {'$name': cdict['job_name'] + '_concept_dict.json' + name_suffix}
     elif 'structure_name' in cdict.keys():
-        ds_props = {'$name': cdict['structure_name'] + '_concept_dict.json'}
+        ds_props = {'$name': cdict['structure_name'] + '_concept_dict.json' + name_suffix}
     else:
         raise KeyError('Missing job_name or structure_name key missing in conceptual dictionary. Cannot upload.')
     ds_type = 'PYIRON_CONCEPT_DICT_DATA'
