@@ -75,7 +75,7 @@ def classic_murn_equil_structure(murn_job):
 
 def get_datamodel(o):
     # TODO: adapt to also take url to use for openbis_login ?
-    datamodels = {'bam': 'bam', 'rwth': 'sfb1394'}
+    datamodels = {'bam': 'bam', 'imm.rwth': 'sfb1394'}
     for key in datamodels:
         if key in o.hostname:
             return datamodels[key]
