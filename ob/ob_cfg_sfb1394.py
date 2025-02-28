@@ -12,7 +12,6 @@ def format_json_string(json_string):
 
 def map_cdict_to_ob(o, cdict, concept_dict):
 
-    # concept_dict to be kicked out
     # cdict = flat concept_dict
 
     if 'structure_name' in cdict.keys():
@@ -20,21 +19,18 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         props = {}
     else:
         json_file = cdict['path'] + '_concept_dict.json'
-        props = {'bam_username': o.get_session_info().userName} # TODO can we avoid o as input?
+        props = {'user_name': o.get_session_info().userName}
 
     with open(json_file, 'r') as file:
         json_string = file.read()
     json_string = format_json_string(json_string)
 
     props |= {
-        'conceptual_dictionary': json_string,
-        'description': '<p><span style="color:hsl(240,75%,60%);">' + \
+        'pyiron_conceptual_dictionary': json_string,
+        'description_multiline': '<p><span style="color:hsl(240,75%,60%);">' + \
                     '<strong>Scroll down below other properties to view conceptual dictionary with ontological ids of selected properties and values.</strong></span>' + \
                     '<br>The conceptual dictionary is in JSON-LD format. Learn more about it <a href="https://www.w3.org/ns/json-ld/">here</a></p>'
             }
-    description = props['description']
-    
-    # TODO resolve whether we want to keep track of anything (from cdict) that didn't get used?
     
     if 'workflow_manager' in cdict.keys():
         props['workflow_manager'] = cdict['workflow_manager']
@@ -42,10 +38,10 @@ def map_cdict_to_ob(o, cdict, concept_dict):
     # structure
     if 'structure_name' in cdict.keys():
         props['$name'] = cdict['structure_name']
-        props['description'] = 'Crystal structure generated using pyiron.' + props['description']
+        props['description_multiline'] = 'Crystal structure generated using pyiron.' + props['description_multiline']
         map_struct_to_ob(props, cdict, concept_dict)
         return props
-
+    
     # job, project, server
     elif 'job_name' in cdict.keys():
         props['$name'] = cdict['job_name']
@@ -95,7 +91,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         if 'final_potential_energy' in cdict.keys():
             props['atom_fin_pot_eng_in_ev'] = cdict['final_potential_energy']
         if 'molecular_statics' in concept_dict.keys() and 'minimization_algorithm' in cdict.keys():
-            description = f'{cdict["job_type"]} simulation using pyiron for energy minimization/structural optimization.' + props['description'] # TODO double check correctness
+            description = f'{cdict["job_type"]} simulation using pyiron for energy minimization/structural optimization.' + props['description_multiline'] # TODO double check correctness
             if cdict['minimization_algorithm'] == 'fire':
                 min_algo = 'MIN_ALGO_FIRE'
             elif cdict['minimization_algorithm'] == 'cg':
@@ -112,48 +108,10 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 raise ValueError('Unknown minimization algorithm')
             props |=  {'atomistic_calc_type': 'atom_calc_struc_opt',
                     'atom_ionic_min_algo': min_algo, 
-                    'description': description}
-            if 'target_pressure' in cdict.keys() and cdict['target_pressure'] is not None:
-                props['atom_targ_press_in_gpa'] = cdict['target_pressure']
-        if 'molecular_dynamics' in concept_dict.keys():
-            if 'http://purls.helmholtz-metadaten.de/asmo/MicrocanonicalEnsemble' in cdict['ensemble']:
-                description = f'{cdict["job_type"]} simulation using pyiron for microcanonical ensemble.' + props['description']
-                props['atom_md_ensemble'] = 'TD_ENSEMBLE_NVE'
-            elif 'http://purls.helmholtz-metadaten.de/asmo/CanonicalEnsemble' in cdict['ensemble']:
-                description = f'{cdict["job_type"]} simulation using pyiron for canonical ensemble.' + props['description']
-                props['atom_md_ensemble'] = 'TD_ENSEMBLE_ATOM_ENS.NVT'
-            elif 'http://purls.helmholtz-metadaten.de/asmo/IsothermalIsobaricEnsemble' in cdict['ensemble']:
-                description = f'{cdict["job_type"]} simulation using pyiron for isothermal-isobaric ensemble.' + props['description'] # TODO double check correctness
-                props['atom_md_ensemble'] = 'TD_ENSEMBLE_NPT'
-            props |= {'atomistic_calc_type': 'Atom_calc_md',
-                    'description': description}
+                    'description_multiline': description}
             
-            if 'timestep' in cdict.keys():
-                props['atom_md_time_stp_in_ps'] = cdict['timestep']
-            if 'simulation_time' in cdict.keys():
-                props['atom_sim_time_ps_in_ps'] = cdict['simulation_time']
-            if 'average_total_energy' in cdict.keys():
-                props['atom_avg_tot_eng_in_ev'] = cdict['average_total_energy']
-            if 'average_potential_energy' in cdict.keys():
-                props['atom_avg_pot_eng_in_ev'] = cdict['average_potential_energy']
-            if 'average_temperature' in cdict.keys():
-                props['atom_md_avg_temp_in_k'] = cdict['average_temperature']
-            if 'average_pressure' in cdict.keys():
-                props['atom_avg_press_in_gpa'] = cdict['average_pressure']
-            if 'average_total_volume' in cdict.keys():
-                props['atom_avg_vol_in_a3'] = cdict['average_total_volume']
-            if 'initial_temperature' in cdict.keys():
-                props['atom_md_init_temp_in_k'] = cdict['initial_temperature']
-            if 'target_temperature' in cdict.keys():
-                props['atom_md_targ_temp_in_k'] = cdict['target_temperature']
-            if 'initial_pressure' in cdict.keys():
-                props['atom_md_init_press_in_gpa'] = cdict['initial_pressure']
-            if 'target_pressure' in cdict.keys():
-                props['atom_targ_press_in_gpa'] = cdict['target_pressure']
-
-            
-        if 'job_type' in cdict.keys() and 'Murn' in cdict['job_type']: # TODO general way to do this? Put together 
-            props['description'] = 'Murnaghan job for structural optimization.' + props['description']
+        if 'job_type' in cdict.keys() and 'Murn' in cdict['job_type']: 
+            props['description_multiline'] = 'Murnaghan job for structural optimization.' + props['description_multiline']
         if 'strain_axes' in cdict.keys():
             props['murn_strain_axes'] = cdict['strain_axes']
         if 'number_of_data_points' in cdict.keys():
@@ -175,118 +133,114 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 props['murn_eqn_of_state'] = 'EOS_VINET'
             elif cdict['equation_of_state_fit'] == 'http://purls.helmholtz-metadaten.de/asmo/PolynomialFit':
                 props['murn_eqn_of_state'] = 'EOS_POLYNOMIAL'
-                props['murn_fit_eqn_order'] = cdict['fit_order']  # TODO test this
+                props['murn_fit_eqn_order'] = cdict['fit_order'] 
             else: 
-                raise ValueError('Unknown equation of state')  # TODO is this necessary?
-    
+                raise ValueError('Unknown equation of state')
+            
     else:
         print("Neither structure_name nor job_name in the object conceptual dictionary. \
               OpenBIS properties most likely incomplete.")
 
     return props
-
+    
 def map_struct_to_ob(props, cdict, concept_dict):
+    props['location'] = 'virtual'
+    from datetime import date
+    props['date'] = str(date.today())
+
     if 'atoms' in concept_dict.keys():
+        import numpy as np
         sorted_atoms = sorted(
             [atom for atom in concept_dict['atoms'] if atom['label'] != 'total_number_atoms'],
             key=lambda x: x['label']
         )
-        props['chem_species_by_n_atoms'] = str(sorted_atoms)
-    if 'total_number_atoms' in cdict.keys():
-        props['n_atoms_total'] = cdict['total_number_atoms']
+        
+        props['composition_desc'] = 'ATOMIC_FRACTION'
+        i = 1
+        for species in sorted_atoms: # TODO: include break for 9+ elements (?)
+            prop_el = 'element_' + str(i)
+            prop_el_pct = 'element_' + str(i) + '_at_percent'
+            prop_el_num = 'element_' + str(i) + '_number'
+            props[prop_el] = species['label']
+            props[prop_el_pct] = np.round(species['value']*100/cdict['total_number_atoms'], 2)
+            props[prop_el_num] = species['value']
+            i += 1
+
     if 'simulation_cell_lengths' in cdict.keys():
-        props['sim_cell_lengths_in_a'] = cdict['simulation_cell_lengths']
+        dim_list = [float(x) for x in cdict['simulation_cell_lengths'].strip('[]').split(',')]
+        props['sample_dim'] = ' x '.join([f"{x} A" for x in dim_list])
+        # props['unit_cell_lengths'] = cdict['simulation_cell_lengths'].strip('[]')
+
     if 'simulation_cell_vectors' in cdict.keys():
         props['sim_cell_vectors'] = cdict['simulation_cell_vectors']
-    if 'simulation_cell_angles' in cdict.keys():
-        props['sim_cell_angles_in_deg'] = cdict['simulation_cell_angles']
-    if 'simulation_cell_volume' in cdict.keys():
-        props['sim_cell_volume_in_a3'] = cdict['simulation_cell_volume']  
-    if 'crystal_orientation' in cdict.keys(): 
-        props['crystal_orientation'] = cdict['crystal_orientation']
-    if 'lattice_parameter_a' in cdict.keys(): 
-        props['lattice_param_a_in_a'] = cdict['lattice_parameter_a']
-    if 'lattice_parameter_b' in cdict.keys(): 
-        props['lattice_param_b_in_a'] = cdict['lattice_parameter_b']
-    if 'lattice_parameter_c' in cdict.keys(): 
-        props['lattice_param_c_in_a'] = cdict['lattice_parameter_c']
-    if 'lattice_parameter_c_over_a' in cdict.keys(): 
-        props['lattice_c_over_a'] = cdict['lattice_parameter_c_over_a']
-    if 'lattice_angle_alpha' in cdict.keys(): 
-        props['lattice_angalpha_in_deg'] = cdict['lattice_angle_alpha']
-    if 'lattice_angle_beta' in cdict.keys(): 
-        props['lattice_angbeta_in_deg'] = cdict['lattice_angle_beta']
-    if 'lattice_angle_gamma' in cdict.keys(): 
-        props['lattice_anggamma_in_deg'] = cdict['lattice_angle_gamma']
-    if 'lattice_volume' in cdict.keys(): 
-        props['lattice_volume_in_a3'] = cdict['lattice_volume']
-    if 'space_group' in cdict.keys():
-        spg_map = get_space_group_mapping(cdict['space_group'])
-        props['space_group'] = spg_map
-    if 'bravais_lattice' in cdict.keys():
-        bvl_map = get_bravais_lattice_mapping(cdict['bravais_lattice'])
-        props['bravais_lattice'] = bvl_map
+    if 'space_group_number' in cdict.keys():
+        props['space_group'] = cdict['space_group_number']
 
-def dataset_job_h5(cdict):
+def dataset_job_h5(cdict, name_suffix='_0'):
     from datetime import datetime
 
     # TODO error handling if not job
     ds_props = {
-        '$name': cdict['job_name'] + '.h5',
-        'production_date': datetime.strptime(cdict['job_stoptime'], "%Y-%m-%d %H:%M:%S").date().strftime("%Y-%m-%d"),
-        'file_format': 'HDF5'
+        '$name': cdict['job_name'] + '.h5' + name_suffix
     }
-    ds_type = 'PYIRON_JOB'
+    ds_type = 'PYIRON_HDF5'
 
     return ds_type, ds_props
 
-def dataset_atom_struct_h5(cdict):
+def dataset_atom_struct_h5(cdict, name_suffix='_0'):
     # TODO error handling if not structure
+    # !!! relies on concept_dict.py first adding chemical species info before anything else
+    from datetime import date
+    import numpy as np
     ds_props = {
-        '$name': cdict['structure_name'] + '.h5',
-        'multi_mat_scale': 'Electronic/Atomistic',
-        'sw_compatibility': 'ASE',
-        'file_format': 'HDF5',
+        '$name': cdict['structure_name'] + '.h5' + name_suffix,
+        'date': str(date.today()),
+        'file_source': 'pyiron'
     }
-    ds_type = 'MAT_SIM_STRUCTURE'
+
+    from itertools import takewhile
+    sorted_atoms = dict(sorted(takewhile(lambda item: item[0] != 'total_number_atoms', cdict.items()),
+                                key=lambda x: x[0]))
+    i = 1
+    for species, count in sorted_atoms.items(): # TODO: include break for 9+ elements (?)
+        prop_el = 'element_' + str(i)
+        prop_el_pct = 'element_' + str(i) + '_at_percent'
+        prop_el_num = 'element_' + str(i) + '_number'
+        ds_props[prop_el] = species
+        ds_props[prop_el_pct] = np.round(count*100/cdict['total_number_atoms'], 2)
+        ds_props[prop_el_num] = count
+        i += 1
+    ds_props['number_of_atoms'] = cdict['total_number_atoms']
+    ds_props['number_of_atom_types'] = len(sorted_atoms.keys())
+    ds_props['list_of_atoms'] = ', '.join(sorted_atoms.keys())
+    if 'simulation_cell_angles' in cdict.keys():
+        angles = [float(x) for x in cdict['simulation_cell_angles'].strip('[]').split(',')]
+        ds_props['angle_alpha'], ds_props['angle_beta'], ds_props['angle_gamma'] = angles
+    if 'simulation_cell_lengths' in cdict.keys():
+        lengths = [float(x) for x in cdict['simulation_cell_lengths'].strip('[]').split(',')]
+        ds_props['box_length_a'], ds_props['box_length_b'], ds_props['box_length_c'] = lengths
+    if 'space_group_number' in cdict.keys():
+        ds_props['space_group'] = cdict['space_group_number']
+
+    ds_type = 'CRYS-STRUCT_DATA'
 
     return ds_type, ds_props
 
-def dataset_env_yml(cdict):
+def dataset_env_yml(cdict, name_suffix='_0'):
     # TODO error handling if not job
-    ds_props = {'$name': cdict['job_name']+'_environment.yml', 
+    ds_props = {'$name': cdict['job_name']+'_environment.yml' + name_suffix, 
                 'env_tool': 'conda'}
     ds_type = 'COMP_ENV'
 
     return ds_type, ds_props
 
-def dataset_cdict_jsonld(cdict):
-    if 'job_name' in cdict.keys(): # TODO could this just be 'name'?
-        ds_props = {'$name': cdict['job_name'] + '_concept_dict.json'}
+def dataset_cdict_jsonld(cdict, name_suffix='_0'):
+    if 'job_name' in cdict.keys():
+        ds_props = {'$name': cdict['job_name'] + '_concept_dict.json' + name_suffix}
     elif 'structure_name' in cdict.keys():
-        ds_props = {'$name': cdict['structure_name'] + '_concept_dict.json'}
+        ds_props = {'$name': cdict['structure_name'] + '_concept_dict.json' + name_suffix}
     else:
         raise KeyError('Missing job_name or structure_name key missing in conceptual dictionary. Cannot upload.')
-    ds_type = 'ATTACHMENT'
+    ds_type = 'PYIRON_CONCEPT_DICT_DATA'
 
     return ds_type, ds_props
-
-def get_space_group_mapping(spg):
-    if spg == 'Im-3m':
-        return ('SPACE_GROUP.IM-3M').lower()
-    elif spg == 'Fm-3m':
-        return ('SPACE_GROUP.FM-3M').lower()
-    elif spg == 'P6_3/mmc':
-        return ('SPACE_GROUP.P63_MMC').lower()
-    else:
-        raise ValueError(f'Invalid Bravais lattice, maybe a formatting error?')
-
-def get_bravais_lattice_mapping(bvl):
-    if bvl == 'bcc':
-        return ('BODY_CENTER_CUBIC').lower()
-    elif bvl == 'fcc':
-        return ('FACE_CENTER_CUBIC').lower()
-    elif bvl == 'hcp':
-        return ('HEX_CLOSE_PACK').lower()
-    else:
-        raise ValueError(f'Invalid Bravais lattice, maybe a formatting error?')

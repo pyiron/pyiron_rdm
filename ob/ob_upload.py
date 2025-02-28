@@ -123,9 +123,11 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
                 else:                              # TODO proper error or just a warning?
                     print(f"No objects of the type {t} and property {w} / code {c} found, \
                           upload will not proceed. Please create them first and then try again.")
+                    return
             else:
                 print(f"Not enough information to search for a parent object.\
                       Known information: type = {t}, code = {c}, attribute match: {w}")
+                return
 
         if len(ob_parents) == len(inv_parents): # Found all parents needed
             object_ = o.new_object(
@@ -171,7 +173,7 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
         #     display(object_.p)
         
         # return object_
-        return object_.identifier # or object_.permId
+            return object_.identifier # or object_.permId
     
 def link_parents(o, ob_object, parent_ids):
     if type(ob_object) == str:
@@ -201,7 +203,7 @@ def upload_dataset(o, ob_object, collection, ds_type, ds_props, file_path, kind)
     # try:
     ds_hdf = o.new_dataset(
         type       = ds_type,
-        collection = collection,
+        # collection = collection,
         object     = ob_object,
         files      = [file_path],
         kind       = kind,
@@ -211,21 +213,3 @@ def upload_dataset(o, ob_object, collection, ds_type, ds_props, file_path, kind)
     # except ValueError: # TODO handling of other errors? or none
     #     print(f'Environment file not found in {file_path} and not uploaded.')
     # return ds_hdf
-    
-# def species_by_num_to_pct(props):
-#     import numpy as np
-#     species_by_num = eval(props['chem_species_by_n_atoms'])
-#     species_by_pct = {at: np.round(species_by_num[at]*100/props['n_atoms_total'], 2) for at in species_by_num.keys()}
-#     return str(species_by_pct)
-
-
-
-
-# flat_cdict:
-#  {'temperature': None, 'pressure': None, 
-#   'ensemble': None, 
-#   'potential': '2022--Sun-Y--Fe--LAMMPS--ipr1',  
-#   'AverageTotalEnergy': -8.0433, 
-#   'AverageTotalVolume': 23.0275, 
-#   'software': 'LAMMPS 2018.03.16', 'project_name': 'test_new', 
-#   'job_type': 'Lammps', 'host': 'NB4267'}

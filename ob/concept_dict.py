@@ -41,8 +41,8 @@ def process_lammps_job(job):
 def process_structure_crystal(pr, structure, structure_name, structure_path, structure_parameters: dict = None):
     sample_dict = {}
     add_structure_contexts(sample_dict)
-    identify_structure_parameters(structure_parameters, sample_dict)
     get_chemical_species(structure, sample_dict)
+    identify_structure_parameters(structure_parameters, sample_dict)
     get_simulation_cell(structure, sample_dict)
     add_structure_software(pr, structure_name, sample_dict)
     get_structure_folder(structure_path, sample_dict)
@@ -632,6 +632,7 @@ def get_unit_cell_parameters(structure):
                 'gamma': 90.0,
                 'volume': np.round((structure.cell[1][0]*2)**3, 4),
                 'space_group': structure.get_symmetry().spacegroup['InternationalTableSymbol'],
+                'space_group_number': structure.get_symmetry().spacegroup['Number'],
                 'bravais_lattice': 'bcc'
             }
         else:
@@ -642,6 +643,7 @@ def get_unit_cell_parameters(structure):
                 'gamma': 90.0,
                 'volume': np.round(structure.get_volume(),4),
                 'space_group': structure.get_symmetry().spacegroup['InternationalTableSymbol'],
+                'space_group_number': structure.get_symmetry().spacegroup['Number'],
                 'bravais_lattice': 'bcc'
             }
     elif structure.get_symmetry().spacegroup['InternationalTableSymbol'] == "Fm-3m":
@@ -653,6 +655,7 @@ def get_unit_cell_parameters(structure):
                 'gamma': 90.0,
                 'volume': np.round((structure.cell[1][0]*2)**3, 4),
                 'space_group': structure.get_symmetry().spacegroup['InternationalTableSymbol'],
+                'space_group_number': structure.get_symmetry().spacegroup['Number'],
                 'bravais_lattice': 'fcc'
             }
         else:
@@ -663,6 +666,7 @@ def get_unit_cell_parameters(structure):
                 'gamma': 90.0,
                 'volume': np.round(structure.get_volume(),4),
                 'space_group': structure.get_symmetry().spacegroup['InternationalTableSymbol'],
+                'space_group_number': structure.get_symmetry().spacegroup['Number'],
                 'bravais_lattice': 'fcc'
             }
     elif structure.get_symmetry().spacegroup['InternationalTableSymbol'] == "P6_3/mmc":
@@ -675,6 +679,7 @@ def get_unit_cell_parameters(structure):
                 'gamma': 120.0,
                 'volume': np.round(structure.get_volume()*3,4),
                 'space_group': structure.get_symmetry().spacegroup['InternationalTableSymbol'],
+                'space_group_number': structure.get_symmetry().spacegroup['Number'],
                 'bravais_lattice': 'hcp'
             }
         else:
@@ -686,6 +691,7 @@ def get_unit_cell_parameters(structure):
                 'gamma': 120.0,
                 'volume': np.round(structure.get_volume(),4),
                 'space_group': structure.get_symmetry().spacegroup['InternationalTableSymbol'],
+                'space_group_number': structure.get_symmetry().spacegroup['Number'],
                 'bravais_lattice': 'hcp'
             }
 
@@ -720,7 +726,7 @@ def add_structure_contexts(sample_dict):
     sample_dict["@context"]['simulation_cell_angle'] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
 
 def identify_structure_parameters(structure_parameters, sample_dict):
-    if structure_parameters == None:
+    if not structure_parameters:
         return
     else:
         

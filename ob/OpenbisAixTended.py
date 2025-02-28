@@ -1055,7 +1055,7 @@ class OpenbisWithS3(Openbis):
         experiment = kwargs.get("experiment")
         assert (sample is not None) ^ (
             experiment is not None
-        ), "Either experiment or sample should be provided as an argument"
+        ), "Either experiment or sample (not both) should be provided as an argument"
 
         if experiment is not None:
             try:
@@ -1068,6 +1068,9 @@ class OpenbisWithS3(Openbis):
             try:
                 kwargs["sample"] = self.get_sample(sample).identifier
                 kwargs["experiment"] = self.get_sample(sample).experiment.identifier
+            except TypeError:
+                kwargs["sample"] = sample.identifier
+                kwargs["experiment"] = sample.experiment.identifier
             except ValueError as e:
                 raise ValueError(
                     f"Sample / Object {sample} does NOT exist for user: {self._get_username()}"
