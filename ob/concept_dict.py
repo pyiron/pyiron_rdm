@@ -337,54 +337,45 @@ def add_simulation_software(job, method_dict):
         else:
             output1 = subprocess.check_output(['grep', 'pyiron_atomistics', job.path + '_environment.yml'])
         s1 = str((output1.decode('utf-8')))
+        st1 = 'p' + s1.split('=')[0].split('p')[1] + "=" + s1.split('=')[1] + ', '
     except:
-        s1 = ''
+        st1 = ''
     try:
         if "Windows" in platform.system():
             output2 = subprocess.check_output(['findstr', 'pyiron_workflow', job.path.replace('/', '\\') + '_environment.yml'])
         else:
             output2 = subprocess.check_output(['grep', 'pyiron_workflow', job.path + '_environment.yml'])
         s2 = str((output2.decode('utf-8')))
+        st2 = 'p' + s2.split('=')[0].split('p')[1] + "=" + s2.split('=')[1] + ', '
     except:
-        s2 = ''
+        st2 = ''
     try:
         if "Windows" in platform.system():
             output3 = subprocess.check_output(['findstr', 'pyironflow', job.path.replace('/', '\\') + '_environment.yml'])
         else:
             output3 = subprocess.check_output(['grep', 'pyironflow', job.path + '_environment.yml'])
         s3 = str((output3.decode('utf-8')))
+        st3 = 'p' + s3.split('=')[0].split('p')[1] + "=" + s3.split('=')[1] + ', '
     except:
-        s3 = ''
+        st3 = ''
     try:
         if "Windows" in platform.system():
             output4 = subprocess.check_output(['findstr', 'executorlib', job.path.replace('/', '\\') + '_environment.yml'])
         else:
             output4 = subprocess.check_output(['grep', 'executorlib', job.path + '_environment.yml'])
         s4 = str((output4.decode('utf-8')))
-    except:
-        s4 = ''
-
-    #hdf_ver = job.to_dict()['HDF_VERSION']
-    try:
-        st1 = 'p' + s1.split('=')[0].split('p')[1] + "=" + s1.split('=')[1] + ', '
-    except:
-        st1 = ''
-    try:
-        st2 = 'p' + s2.split('=')[0].split('p')[1] + "=" + s2.split('=')[1] + ', '
-    except:
-        st2 = ''
-    try:
-        st3 = 'p' + s3.split('=')[0].split('p')[1] + "=" + s3.split('=')[1] + ', '
-    except:
-        st3 = ''
-    try:
         st4 = s4.split('=')[0].split('- ')[1] + "=" + s4.split('=')[1]
     except:
         st4 = ''
+
+    #hdf_ver = job.to_dict()['HDF_VERSION']
     st = st1 + st2 + st3 + st4
     
     #+ ', pyiron_HDF_version=' + hdf_ver
-    method_dict["workflow_manager"]["label"] = st
+    if st:
+        method_dict["workflow_manager"]["label"] = st
+    else:
+        method_dict["workflow_manager"]["label"] = 'pyiron'
 
     pyiron_job_details = []
     pyiron_job_details.append(
