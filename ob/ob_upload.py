@@ -19,42 +19,6 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
 
     return o
 
-# def format_json_string(json_string):
-#     json_string = json_string.replace('\n', '<br>')
-#     result = []
-#     for index, char in enumerate(json_string):
-#         if char == " " and (index == 0 or json_string[index - 1] != ":"):
-#             result.append("&nbsp;&nbsp;")
-#         else:
-#             result.append(char)
-
-#     json_string = "".join(result)
-#     return json_string
-
-def flatten_cdict(cdict):
-        flat = {}
-        for k, v in cdict.items():
-            if k != '@context':
-                if isinstance(v, dict):
-                    if 'label' in v.keys():
-                        flat[k] = v['label']
-                    else:
-                        flat = flat | flatten_cdict(v)
-                elif k == 'software':
-                    flat[k] = v[0]['label']
-                elif isinstance(v, list):
-                    for i in v: 
-                        if isinstance(i, dict):
-                            try:
-                                flat[i['label']] = i['value']
-                            except KeyError: # silently skips over terms that do not have label, value keys
-                                pass
-                        else:
-                            flat[k] = v
-                else:
-                    flat[k] = v
-        return flat
-
 def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None):
     # TODO or allow to skip the last two a flag later?
     # TODO also type checking on values
@@ -80,6 +44,7 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
     ob_coll = '/' + space + '/' + project + '/' + collection
     ob_project_obj = o.get_project('/' + space + '/' + project)
 
+    from concept_dict import flatten_cdict
     cdict = flatten_cdict(concept_dict)
     ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
 
@@ -102,10 +67,8 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
         return found_object.identifier
     
     else:
-        # from ob.ob_cfg_bam import map_cdict_to_ob
         map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
         get_inv_parent = importlib.import_module(o.ot).get_inv_parent
-        # cdict = flatten_cdict(concept_dict)
         props_dict = map_cdict_to_ob(o, cdict, concept_dict)
         ob_parents = []
         for inv_parent in inv_parents:
