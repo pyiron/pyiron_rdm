@@ -126,7 +126,7 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
                     raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
 
                 ds_type, ds_props = dataset_info(cdict)
-                upload_dataset(o, object_, ob_coll, ds_type, ds_props, file_path, kind)
+                upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
 
             if parent_ids:
                 link_parents(o, object_, parent_ids)
@@ -162,7 +162,7 @@ def link_children(o, ob_object, children_ids):
             print(f'An object with the identifier {ch} not found and hence not linked as child.')
     ob_object.save()
 
-def upload_dataset(o, ob_object, collection, ds_type, ds_props, file_path, kind):
+def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
     # try:
     ds_hdf = o.new_dataset(
         type       = ds_type,
