@@ -968,3 +968,27 @@ def export_env(path):
         os.system('conda env export | findstr -v "^prefix: " > ' + path + '_environment.yml')
     else:
         os.system('conda env export | grep -v "^prefix: " > ' + path + '_environment.yml')
+
+def flatten_cdict(cdict):
+        flat = {}
+        for k, v in cdict.items():
+            if k != '@context':
+                if isinstance(v, dict):
+                    if 'label' in v.keys():
+                        flat[k] = v['label']
+                    else:
+                        flat = flat | flatten_cdict(v)
+                elif k == 'software':
+                    flat[k] = v[0]['label']
+                elif isinstance(v, list):
+                    for i in v: 
+                        if isinstance(i, dict):
+                            try:
+                                flat[i['label']] = i['value']
+                            except KeyError: # silently skips over terms that do not have label, value keys
+                                pass
+                        else:
+                            flat[k] = v
+                else:
+                    flat[k] = v
+        return flat
