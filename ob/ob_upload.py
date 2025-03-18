@@ -44,7 +44,7 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
     ob_coll = '/' + space + '/' + project + '/' + collection
     ob_project_obj = o.get_project('/' + space + '/' + project)
 
-    from concept_dict import flatten_cdict
+    from ob.concept_dict import flatten_cdict
     cdict = flatten_cdict(concept_dict)
     ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
 

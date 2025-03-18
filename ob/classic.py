@@ -82,7 +82,7 @@ def get_datamodel(o):
     raise KeyError(f'The {o.hostname} openBIS hostname is not paired with a supported data model yet ({datamodels.values()}).')
 
 def openbis_login(url, username, instance='bam'):
-    instance = get_datamodel(o)
+    #instance = get_datamodel(o)
     if instance != 'bam' and instance != 'sfb1394':    
         raise ValueError(f"This script only supports upload to 'bam' and 'sfb1394' instances,\
                          {instance} not supported.")
