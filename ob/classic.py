@@ -16,37 +16,48 @@ def classic_structure(pr, structure, structure_name):
     
     return struct_cdict
 
-def classic_general_job(job):
-    from ob.concept_dict import process_general_job, export_env
+def classic_general_job(job, export_env_file):
+    '''export_env_file: Bool'''
+    from ob.concept_dict import process_general_job
 
-    export_env(job.path)
+    if export_env_file:
+        from ob.concept_dict import export_env
+        export_env(job.path)
 
     job_cdict = process_general_job(job)
     return job_cdict
 
-def classic_lammps(lammps_job):
-    from ob.concept_dict import process_lammps_job, export_env
+def classic_lammps(lammps_job, export_env_file):
+    '''export_env_file: Bool'''
+    from ob.concept_dict import process_lammps_job
 
-    export_env(lammps_job.path)
+    if export_env_file:
+        from ob.concept_dict import export_env
+        export_env(lammps_job.path)
 
     lammps_cdict = process_lammps_job(lammps_job)
     return lammps_cdict
 
-def classic_murn(murn_job):
-    from ob.concept_dict import export_env
-    export_env(murn_job.path)
+def classic_murn(murn_job, export_env_file):
+    # TODO this assumes only lammps child jobs - generalise!
+    '''export_env_file: Bool'''
+
+    if export_env_file:
+        from ob.concept_dict import export_env
+        export_env(murn_job.path)
 
     from ob.concept_dict import process_murnaghan_job, process_lammps_job
     child_jobs_cdict = []
     for jobs in murn_job.iter_jobs():
         # from pyiron_base.storage.hdfio import FileHDFio
-        import platform
-        if "Windows" in platform.system():
-            import shutil
-            shutil.copy(murn_job.path + '_environment.yml', jobs.path + '_environment.yml')
-        else:
-            import os
-            os.system('cp ' + murn_job.path + '_environment.yml ' + jobs.path + '_environment.yml')
+        if export_env_file:
+            import platform
+            if "Windows" in platform.system():
+                import shutil
+                shutil.copy(murn_job.path + '_environment.yml', jobs.path + '_environment.yml')
+            else:
+                import os
+                os.system('cp ' + murn_job.path + '_environment.yml ' + jobs.path + '_environment.yml')
         child_cdict = process_lammps_job(jobs)
         child_jobs_cdict.append(child_cdict)
 
@@ -81,7 +92,7 @@ def get_datamodel(o):
             return datamodels[key]
     raise KeyError(f'The {o.hostname} openBIS hostname is not paired with a supported data model yet ({datamodels.values()}).')
 
-def openbis_login(url, username, instance='bam'):
+def openbis_login(url, username, instance='bam', s3_config_path = None):
     #instance = get_datamodel(o)
     if instance != 'bam' and instance != 'sfb1394':    
         raise ValueError(f"This script only supports upload to 'bam' and 'sfb1394' instances,\
@@ -94,14 +105,15 @@ def openbis_login(url, username, instance='bam'):
     elif instance == 'sfb1394':
         mapping_path = 'ob.ob_cfg_sfb1394'
         OT_path = 'ob.ob_OT_sfb1394'
-        s3_config_path = "test_sfb.cfg"
+        if not s3_config_path:
+            s3_config_path = "test_sfb.cfg"
 
     from ob.ob_upload import openbis_login as ob_login
 
     o = ob_login(url, username, s3_config_path, mapping_path, OT_path)
     return o
 
-def upload_classic_pyiron(job, o, space, project, collection=None):
+def upload_classic_pyiron(job, o, space, project, collection=None, export_env_file=True):
     # TODO should this return anything?
 
     structure = job.structure
@@ -109,8 +121,9 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
 
         # Project env file - TODO what is this for??
         pr = job.project
-        from ob.concept_dict import export_env
-        export_env(pr.path + pr.name)
+        if export_env_file:
+            from ob.concept_dict import export_env
+            export_env(pr.path + pr.name)
 
         from ob.ob_upload import openbis_upload
 
@@ -131,11 +144,11 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
             upload_final_struct = False
 
         if 'lammps' in job.to_dict()['TYPE']:
-            job_cdict = classic_lammps(job)
+            job_cdict = classic_lammps(job, export_env_file=export_env_file)
             ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
 
         elif 'murn' in job.to_dict()['TYPE']: # TODO: Is it okay to upload the murn job last ?
-            job_cdict, child_jobs_cdict = classic_murn(job)
+            job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
             ob_children_ids = []
             for child_cdict in child_jobs_cdict:
                 ob_child_id = openbis_upload(o, space, project, collection, child_cdict)
@@ -154,7 +167,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None):
             print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
             proceed = input("Type 'yes' to proceed with an upload to general pyiron job type.")
             if proceed.lower() == 'yes':
-                job_cdict = classic_general_job(job)
+                job_cdict = classic_general_job(job, export_env_file=export_env_file)
                 ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
             else:
                 print('Upload cancelled.')

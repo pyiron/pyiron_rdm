@@ -126,7 +126,15 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
                     raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
 
                 ds_type, ds_props = dataset_info(cdict)
-                upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+                # upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+                try:
+                    upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+                except ValueError as e:
+                    if ds == 'env_yml':
+                        import warnings
+                        warnings.warn('The environment file was not uploaded.')
+                    else:
+                        raise e
 
             if parent_ids:
                 link_parents(o, object_, parent_ids)

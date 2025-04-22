@@ -191,7 +191,8 @@ def map_struct_to_ob(props, cdict, concept_dict):
             [atom for atom in concept_dict['atoms'] if atom['label'] != 'total_number_atoms'],
             key=lambda x: x['label']
         )
-        props['chem_species_by_n_atoms'] = str(sorted_atoms)
+        species = {i['label']: i['value'] for i in sorted_atoms}
+        props['chem_species_by_n_atoms'] = str(species)
     if 'total_number_atoms' in cdict.keys():
         props['n_atoms_total'] = cdict['total_number_atoms']
     if 'simulation_cell_lengths' in cdict.keys():
