@@ -1,4 +1,5 @@
-def classic_structure(pr, structure, structure_name):
+def classic_structure(pr, structure, structure_name, is_init_struct: bool, init_structure=None):
+    # TODO rename is_init_struct and init_structure to better reflect that it needs to not be manipulated (e.g. repeated)
     structure_path = pr.name + '/'
     # structure_name = structure_name_prefix + '_input_structure'
     
@@ -8,16 +9,20 @@ def classic_structure(pr, structure, structure_name):
 
     # Cannot guarantee this will be before manipulations hence skipping get_unit_cell_parameters
     from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
-    try:
-        struct_params = get_unit_cell_parameters(structure)
-    except:
+    if is_init_struct:
+        init_structure = structure
+    if init_structure:
+        try:
+            struct_params = get_unit_cell_parameters(init_structure)
+        except:
+            struct_params = {}
+    else:
         struct_params = {}
     struct_cdict = process_structure_crystal(pr, structure, structure_name, structure_path, struct_params)
     
     return struct_cdict
 
-def classic_general_job(job, export_env_file):
-    '''export_env_file: Bool'''
+def classic_general_job(job, export_env_file: bool):
     from ob.concept_dict import process_general_job
 
     if export_env_file:
@@ -65,23 +70,26 @@ def classic_murn(murn_job, export_env_file):
 
     return job_cdict, child_jobs_cdict
 
-def classic_murn_equil_structure(murn_job):
+def classic_murn_equil_structure(murn_job, is_init_struct: bool=True, init_structure=None):
 
-    from pyiron_base.storage.hdfio import FileHDFio
-    from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
+    # from pyiron_base.storage.hdfio import FileHDFio
+    # from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
 
+    if is_init_struct:
+        init_structure = murn_job.structure
     equil_structure = murn_job.get_structure()
     structure_name = murn_job.name + '_equilibrium_structure'
-    structure_path = murn_job.project.name + '/'
-    hdf_equil = FileHDFio(structure_path + structure_name + '.h5')
-    equil_structure.to_hdf(hdf_equil)
+    # structure_path = murn_job.project.name + '/'
+    # hdf_equil = FileHDFio(structure_path + structure_name + '.h5')
+    # equil_structure.to_hdf(hdf_equil)
 
     # Must be conventional unit cell or primitive cell
     # Provide the structure before repetition or any other manipulations
-    structure_parameters = get_unit_cell_parameters(equil_structure)
+    # structure_parameters = get_unit_cell_parameters(equil_structure)
     
-    struct_cdict = process_structure_crystal(murn_job.project, equil_structure, structure_name, structure_path, structure_parameters)
-        
+    # struct_cdict = process_structure_crystal(murn_job.project, equil_structure, structure_name, structure_path, structure_parameters)
+    struct_cdict = classic_structure(murn_job.project, equil_structure, structure_name, is_init_struct, init_structure)
+
     return struct_cdict
 
 def get_datamodel(o):
@@ -113,7 +121,8 @@ def openbis_login(url, username, instance='bam', s3_config_path = None):
     o = ob_login(url, username, s3_config_path, mapping_path, OT_path)
     return o
 
-def upload_classic_pyiron(job, o, space, project, collection=None, export_env_file=True):
+def upload_classic_pyiron(job, o, space, project, collection=None, export_env_file=True, 
+                          is_init_struct: bool=True, init_structure=None):
     # TODO should this return anything?
 
     structure = job.structure
@@ -130,7 +139,8 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
         if not collection:
             collection = pr.name
 
-        struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure')
+        struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure', 
+                                        is_init_struct=is_init_struct, init_structure=init_structure)
         ob_structure_id = openbis_upload(o, space, project, collection, struct_dict)
 
         datamodel = get_datamodel(o)
@@ -153,7 +163,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
             for child_cdict in child_jobs_cdict:
                 ob_child_id = openbis_upload(o, space, project, collection, child_cdict)
                 ob_children_ids.append(ob_child_id)
-            equil_struct_dict = classic_murn_equil_structure(job)
+            equil_struct_dict = classic_murn_equil_structure(job,is_init_struct, init_structure)
             ob_equil_struct_id = openbis_upload(o, space, project, collection, equil_struct_dict, parent_ids=str_parent)
             ob_children_ids.append(ob_equil_struct_id)
             
@@ -173,9 +183,12 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
                 print('Upload cancelled.')
 
         if upload_final_struct and (not 'murn' in job.to_dict()['TYPE']):
+            if is_init_struct:
+                init_structure = structure
             final_structure = job.get_structure()
             final_struct_dict = classic_structure(pr, final_structure, 
-                                                 structure_name=job.name + '_final_structure')
+                                                 structure_name=job.name + '_final_structure',
+                                                 is_init_struct=False, init_structure=init_structure)
             ob_final_structure_id = openbis_upload(o, space, project, collection, 
                                                    final_struct_dict, parent_ids=[ob_structure_id, ob_job_id])
         
