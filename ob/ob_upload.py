@@ -17,25 +17,41 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
     o.mapping = mapping_path
     o.ot = OT_path
 
+    import importlib
+    module_spec = importlib.util.find_spec(o.mapping)
+    if not module_spec:
+        raise FileNotFoundError(f"There is no openBIS '{o.mapping}' mapping file in your pyiron resources. "
+                                "Please correct this before upload.")  # TODO correct the o.mapping here to just filename after pyiron_resources thing set up
+    module_spec = importlib.util.find_spec(o.ot)
+    if not module_spec:
+        raise FileNotFoundError(f"There is no openBIS '{o.ot}' object type file in your pyiron resources. "
+                                "Please correct this before upload.")  # TODO correct the o.ot here to just filename after pyiron_resources thing set up
+
     return o
 
 def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None):
     # TODO or allow to skip the last two a flag later?
     # TODO also type checking on values
-    import importlib
-    module_spec = importlib.util.find_spec(o.mapping)
-    if not module_spec:
-        raise FileNotFoundError(f"There is no openBIS '{o.mapping}' mapping file in your pyiron resources. \
-                                Please correct this before upload.")  # TODO correct the o.mapping here to just filename after pyiron_resources thing set up
-    module_spec = importlib.util.find_spec(o.ot)
-    if not module_spec:
-        raise FileNotFoundError(f"There is no openBIS '{o.ot}' object type file in your pyiron resources. \
-                                Please correct this before upload.")  # TODO correct the o.ot here to just filename after pyiron_resources thing set up
 
-    # req_keys_ob_info = ['object_type', 'parents', 'datasets'] 
-    # if not all(k in ob_info.keys() for k in req_keys_ob_info):
-    #     raise KeyError('The ob_info dictionary must contain all following keys: object_type, parents, datasets.')
-    
+    # -------------------VALIDATION------------------------------------
+    issues = validate_ob_destination(o, space, project, collection)
+    from ob.concept_dict import flatten_cdict
+    cdict = flatten_cdict(concept_dict)
+    import importlib
+    ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
+    object_type, ds_types, inv_parents = ob_ot()
+    map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
+    props_dict = map_cdict_to_ob(o, cdict, concept_dict)
+    inv_issues, ob_parents = validate_inventory_parents(o, inv_parents, cdict, props_dict)
+    issues += inv_issues
+
+    if issues:
+        print(f"The following issues were found and need to be fixed before upload of the {concept_dict['job_details'][0]['value']} object:")
+        for issue in issues:
+            print(f'- {issue}')
+        return
+    # -----------------------------------------------------------------
+
     if 'S3' in str(type(o)):
         kind = 'LINK'
     else:
@@ -44,11 +60,11 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
     ob_coll = '/' + space + '/' + project + '/' + collection
     ob_project_obj = o.get_project('/' + space + '/' + project)
 
-    from ob.concept_dict import flatten_cdict
-    cdict = flatten_cdict(concept_dict)
-    ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
-
-    object_type, ds_types, inv_parents = ob_ot()
+    # from ob.concept_dict import flatten_cdict
+    # cdict = flatten_cdict(concept_dict)
+    # import importlib
+    # ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
+    # object_type, ds_types, inv_parents = ob_ot()
     objects = ob_project_obj.get_objects(type = object_type)
     exists = False
     for object_ in objects:
@@ -67,30 +83,30 @@ def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None)
         return found_object.identifier
     
     else:
-        map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
-        get_inv_parent = importlib.import_module(o.ot).get_inv_parent
-        props_dict = map_cdict_to_ob(o, cdict, concept_dict)
-        ob_parents = []
-        for inv_parent in inv_parents:
-            t, w, a, c = get_inv_parent(inv_parent, cdict, props_dict)
-            if c or w:
-                parent = o.get_objects(
-                    type = t,
-                    code = c,
-                    where = w,
-                    attrs = a
-                )[0]
+        # map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
+        # get_inv_parent = importlib.import_module(o.ot).get_inv_parent
+        # props_dict = map_cdict_to_ob(o, cdict, concept_dict)
+        # ob_parents = []
+        # for inv_parent in inv_parents:
+        #     t, w, a, c = get_inv_parent(inv_parent, cdict, props_dict)
+        #     if c or w:
+        #         parent = o.get_objects(
+        #             type = t,
+        #             code = c,
+        #             where = w,
+        #             attrs = a
+        #         )[0]
 
-                if parent:
-                    ob_parents.append(parent)
-                else:                              # TODO proper error or just a warning?
-                    print(f"No objects of the type {t} and property {w} / code {c} found, \
-                          upload will not proceed. Please create them first and then try again.")
-                    return
-            else:
-                print(f"Not enough information to search for a parent object.\
-                      Known information: type = {t}, code = {c}, attribute match: {w}")
-                return
+        #         if parent:
+        #             ob_parents.append(parent)
+        #         else:                              # TODO proper error or just a warning?
+        #             print(f"No objects of the type {t} and property {w} / code {c} found, \
+        #                   upload will not proceed. Please create them first and then try again.")
+        #             return
+        #     else:
+        #         print(f"Not enough information to search for a parent object.\
+        #               Known information: type = {t}, code = {c}, attribute match: {w}")
+        #         return
 
         if len(ob_parents) == len(inv_parents): # Found all parents needed
             object_ = o.new_object(
@@ -184,3 +200,43 @@ def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
     # except ValueError: # TODO handling of other errors? or none
     #     print(f'Environment file not found in {file_path} and not uploaded.')
     # return ds_hdf
+
+def validate_ob_destination(o, space, project, collection):
+    issues = []
+    try:
+        o.get_space(space)
+    except ValueError as e:
+        issues.append(str(e))
+    try:
+        o.get_project(f'/{space}/{project}')
+    except ValueError as e:
+        issues.append(str(e))
+    try:
+        o.get_collection(f'/{space}/{project}/{collection}')
+    except ValueError as e:
+        issues.append(str(e))
+    return issues
+
+def validate_inventory_parents(o, inv_parents, cdict, props_dict):
+    import importlib
+    issues = []
+    ob_parents = []
+    get_inv_parent = importlib.import_module(o.ot).get_inv_parent
+    for inv_parent in inv_parents:
+        t, w, a, c = get_inv_parent(inv_parent, cdict, props_dict)
+        if c or w:
+            parent = o.get_objects(
+                type = t,
+                code = c,
+                where = w,
+                attrs = a
+            )[0]
+    
+            if parent:
+                ob_parents.append(parent)
+            else:
+                issues.append(f'Parent object not found: No objects of the type {t} and property {w} / code {c} in inventory.')
+        else:
+            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, code = {c}, attribute match: {w}')
+
+    return issues, ob_parents
