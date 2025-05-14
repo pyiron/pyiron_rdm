@@ -211,8 +211,8 @@ def dataset_atom_struct_h5(cdict, name_suffix='_0'):
         ds_props[prop_el_num] = count
         i += 1
     ds_props['number_of_atoms'] = cdict['total_number_atoms']
-    ds_props['number_of_atom_types'] = len(sorted_atoms.keys())
-    ds_props['list_of_atoms'] = ', '.join(sorted_atoms.keys())
+    ds_props['number_of_species'] = len(sorted_atoms.keys())
+    ds_props['list_of_species'] = ', '.join(sorted_atoms.keys())
     if 'simulation_cell_angles' in cdict.keys():
         angles = [float(x) for x in cdict['simulation_cell_angles'].strip('[]').split(',')]
         ds_props['angle_alpha'], ds_props['angle_beta'], ds_props['angle_gamma'] = angles
