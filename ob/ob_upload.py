@@ -29,138 +29,131 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
 
     return o
 
-def openbis_upload(o, space, project, collection, concept_dict, parent_ids=None):
+def openbis_validate(o, space, project, collection, 
+                     concept_dicts: dict|list):
+    if isinstance(concept_dicts, dict):
+        concept_dicts = [concept_dicts]
+    all_issues = []
+    outputs = []
+    for concept_dict in concept_dicts:
+        issues = validate_ob_destination(o, space, project, collection)
+        from ob.concept_dict import flatten_cdict
+        cdict = flatten_cdict(concept_dict)
+        import importlib
+        ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
+        object_type, ds_types, inv_parents = ob_ot()
+        map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
+        props_dict = map_cdict_to_ob(o, cdict, concept_dict)
+        inv_issues, ob_parents = validate_inventory_parents(o, inv_parents, cdict, props_dict)
+        issues += inv_issues
+        object_name = concept_dict['job_details'][0]['value']
+
+        if issues:
+            issue_message = f'{object_name} object:\n' + '\n'.join(f'- {issue}' for issue in issues)
+            all_issues.append(issue_message)
+            outputs.append(())
+        else:
+            outputs.append((cdict, props_dict, object_type, ds_types, ob_parents, object_name))
+        
+    if all_issues:
+        raise ValueError('The following issues were found and need to be fixed before upload:\n\n' +
+                         '\n\n'.join(all_issues))
+        # TODO perhaps more suitable exception? Custom ValidationError(Exception)?
+    return outputs
+
+def openbis_upload(o, space, project, collection, concept_dict: dict, parent_ids=None):
+    '''Currently assumes a single concept_dict, not a list of them'''
+    cdict, props_dict, object_type, ds_types, ob_parents, object_name = openbis_validate(o, space, project, collection, concept_dict)[0]
+    object_id = openbis_upload_validated(o, space, project, collection, object_name, 
+                                  object_type, ob_parents, props_dict, ds_types, cdict, parent_ids)
+    return object_id
+
+def openbis_upload_validated(o, space, project, collection, object_name, 
+                             object_type, ob_parents, props_dict, ds_types, cdict,
+                             parent_ids=None):
     # TODO or allow to skip the last two a flag later?
     # TODO also type checking on values
-
-    # -------------------VALIDATION------------------------------------
-    issues = validate_ob_destination(o, space, project, collection)
-    from ob.concept_dict import flatten_cdict
-    cdict = flatten_cdict(concept_dict)
-    import importlib
-    ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
-    object_type, ds_types, inv_parents = ob_ot()
-    map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
-    props_dict = map_cdict_to_ob(o, cdict, concept_dict)
-    inv_issues, ob_parents = validate_inventory_parents(o, inv_parents, cdict, props_dict)
-    issues += inv_issues
-
-    if issues:
-        print(f"The following issues were found and need to be fixed before upload of the {concept_dict['job_details'][0]['value']} object:")
-        for issue in issues:
-            print(f'- {issue}')
-        return
-    # -----------------------------------------------------------------
 
     if 'S3' in str(type(o)):
         kind = 'LINK'
     else:
         kind = 'PHYSICAL'
 
-    ob_coll = '/' + space + '/' + project + '/' + collection
-    ob_project_obj = o.get_project('/' + space + '/' + project)
+    ob_coll = o.get_collection(f'/{space}/{project}/{collection}')
+    found_objects_ids = [obj.identifier for obj in ob_coll.get_objects() if obj.p['$name'] == object_name]
 
-    # from ob.concept_dict import flatten_cdict
-    # cdict = flatten_cdict(concept_dict)
-    # import importlib
-    # ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
-    # object_type, ds_types, inv_parents = ob_ot()
-    objects = ob_project_obj.get_objects(type = object_type)
-    exists = False
-    for object_ in objects:
-        object_name = concept_dict['job_details'][0]['value'] # TODO do better !!!
-        if object_.p.get('$name') == object_name:
-            exists = True
-            found_object = object_
+    # objects = ob_coll.get_objects(type = object_type)
+    # exists = False
+    # for object_ in objects:
+    #     if object_.p.get('$name') == object_name:
+    #         exists = True
+    #         found_object = object_
 
-    if exists:
+    # if exists:
+    if found_objects_ids:
         print("===================\n")
-        print(f"Object already exists! Found object in: {found_object.identifier}\n")
+        print(f"Object with name {object_name} already exists! Found object(s) in: {found_objects_ids}\n")
         print("===================\n")
-        print("Found job properties:\n")
-        from IPython.display import display
-        display(found_object.p)
-        return found_object.identifier
+        # print("Found job properties:\n")
+        # from IPython.display import display
+        # display(found_object.p)
+        return found_objects_ids   
+            # TODO: should return a single id to match 'else' return format, however, multiple objects of the same name possible
     
     else:
-        # map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
-        # get_inv_parent = importlib.import_module(o.ot).get_inv_parent
-        # props_dict = map_cdict_to_ob(o, cdict, concept_dict)
-        # ob_parents = []
-        # for inv_parent in inv_parents:
-        #     t, w, a, c = get_inv_parent(inv_parent, cdict, props_dict)
-        #     if c or w:
-        #         parent = o.get_objects(
-        #             type = t,
-        #             code = c,
-        #             where = w,
-        #             attrs = a
-        #         )[0]
+        object_ = o.new_object(
+            type       = object_type,
+            space      = space,
+            experiment = ob_coll,
+            parents    = ob_parents,
+            props      = props_dict
+        )
+        object_.save()
 
-        #         if parent:
-        #             ob_parents.append(parent)
-        #         else:                              # TODO proper error or just a warning?
-        #             print(f"No objects of the type {t} and property {w} / code {c} found, \
-        #                   upload will not proceed. Please create them first and then try again.")
-        #             return
-        #     else:
-        #         print(f"Not enough information to search for a parent object.\
-        #               Known information: type = {t}, code = {c}, attribute match: {w}")
-        #         return
-
-        if len(ob_parents) == len(inv_parents): # Found all parents needed
-            object_ = o.new_object(
-                type       = object_type,
-                space      = space,
-                experiment = ob_coll,
-                parents    = ob_parents,
-                props      = props_dict
-            )
-            object_.save()
-
-            for ds in ds_types:
-                if ds == 'job_h5':
-                    # from ob.ob_cfg_bam import dataset_job_h5 as dataset_info
-                    dataset_info = importlib.import_module(o.mapping).dataset_job_h5
-                    file_path = cdict['path'] + '.h5'
-                elif ds == 'structure_h5':
-                    # from ob.ob_cfg_bam import dataset_atom_struct_h5 as dataset_info
-                    dataset_info = importlib.import_module(o.mapping).dataset_atom_struct_h5
-                    file_path = cdict['path'] + cdict['structure_name'] + '.h5'
-                elif ds == 'env_yml':
-                    # from ob.ob_cfg_bam import dataset_env_yml as dataset_info
-                    dataset_info = importlib.import_module(o.mapping).dataset_env_yml
-                    file_path = cdict['path'] + '_environment.yml'
-                elif ds == 'cdict_json':
-                    # from ob.ob_cfg_bam import dataset_cdict_jsonld as dataset_info
-                    dataset_info = importlib.import_module(o.mapping).dataset_cdict_jsonld
-                    if 'structure_name' in cdict.keys():
-                        file_path = cdict['path'] + cdict['structure_name'] + '_concept_dict.json'
-                    else:
-                        file_path = cdict['path'] + '_concept_dict.json'
+        import importlib
+        for ds in ds_types:
+            if ds == 'job_h5':
+                # from ob.ob_cfg_bam import dataset_job_h5 as dataset_info
+                dataset_info = importlib.import_module(o.mapping).dataset_job_h5
+                file_path = cdict['path'] + '.h5'
+            elif ds == 'structure_h5':
+                # from ob.ob_cfg_bam import dataset_atom_struct_h5 as dataset_info
+                dataset_info = importlib.import_module(o.mapping).dataset_atom_struct_h5
+                file_path = cdict['path'] + cdict['structure_name'] + '.h5'
+            elif ds == 'env_yml':
+                # from ob.ob_cfg_bam import dataset_env_yml as dataset_info
+                dataset_info = importlib.import_module(o.mapping).dataset_env_yml
+                file_path = cdict['path'] + '_environment.yml'
+            elif ds == 'cdict_json':
+                # from ob.ob_cfg_bam import dataset_cdict_jsonld as dataset_info
+                dataset_info = importlib.import_module(o.mapping).dataset_cdict_jsonld
+                if 'structure_name' in cdict.keys():
+                    file_path = cdict['path'] + cdict['structure_name'] + '_concept_dict.json'
                 else:
-                    raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
+                    file_path = cdict['path'] + '_concept_dict.json'
+            else:
+                raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
 
-                ds_type, ds_props = dataset_info(cdict)
-                # upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
-                try:
-                    upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
-                except ValueError as e:
-                    if ds == 'env_yml':
-                        import warnings
-                        warnings.warn('The environment file was not uploaded.')
-                    else:
-                        raise e
+            ds_type, ds_props = dataset_info(cdict)
+            # upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+            try:
+                upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+            except ValueError as e:
+                if ds == 'env_yml':
+                    import warnings
+                    warnings.warn('The environment file was not uploaded.')
+                else:
+                    raise e
 
-            if parent_ids:
-                link_parents(o, object_, parent_ids)
+        if parent_ids:
+            link_parents(o, object_, parent_ids)
 
         # if show_object:
         #     from IPython.display import display
         #     display(object_.p)
         
         # return object_
-            return object_.identifier # or object_.permId
+        return object_.identifier # or object_.permId
     
 def link_parents(o, ob_object, parent_ids):
     if type(ob_object) == str:

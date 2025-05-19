@@ -120,78 +120,113 @@ def openbis_login(url, username, instance='bam', s3_config_path = None):
 
     o = ob_login(url, username, s3_config_path, mapping_path, OT_path)
     return o
-
+        
 def upload_classic_pyiron(job, o, space, project, collection=None, export_env_file=True, 
                           is_init_struct: bool=True, init_structure=None):
     # TODO should this return anything?
 
     structure = job.structure
-    if structure:
-
-        # Project env file - TODO what is this for??
-        pr = job.project
-        if export_env_file:
-            from ob.concept_dict import export_env
-            export_env(pr.path + pr.name)
-
-        from ob.ob_upload import openbis_upload
-
-        if not collection:
-            collection = pr.name
-
-        struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure', 
-                                        is_init_struct=is_init_struct, init_structure=init_structure)
-        ob_structure_id = openbis_upload(o, space, project, collection, struct_dict)
-
-        datamodel = get_datamodel(o)
-        if datamodel == 'sfb1394':
-            job_parents = None            # job does not have init structure as parent
-            str_parent = ob_structure_id  # equil structure has init as parent
-            upload_final_struct = True
-        elif datamodel == 'bam':
-            job_parents = ob_structure_id # job has init structure as parent
-            str_parent = None             # equil structure does not have init as parent
-            upload_final_struct = False
-
-        if 'lammps' in job.to_dict()['TYPE']:
-            job_cdict = classic_lammps(job, export_env_file=export_env_file)
-            ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
-
-        elif 'murn' in job.to_dict()['TYPE']: # TODO: Is it okay to upload the murn job last ?
-            job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
-            ob_children_ids = []
-            for child_cdict in child_jobs_cdict:
-                ob_child_id = openbis_upload(o, space, project, collection, child_cdict)
-                ob_children_ids.append(ob_child_id)
-            equil_struct_dict = classic_murn_equil_structure(job,is_init_struct, init_structure)
-            ob_equil_struct_id = openbis_upload(o, space, project, collection, equil_struct_dict, parent_ids=str_parent)
-            ob_children_ids.append(ob_equil_struct_id)
-            
-            ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
-            from ob.ob_upload import link_children
-            link_children(o, ob_job_id, ob_children_ids)
-
-        else:
-            # TODO: structure still uploaded even if job isn't - oK?
-            job_type = job.to_dict()['TYPE']
-            print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
-            proceed = input("Type 'yes' to proceed with an upload to general pyiron job type.")
-            if proceed.lower() == 'yes':
-                job_cdict = classic_general_job(job, export_env_file=export_env_file)
-                ob_job_id = openbis_upload(o, space, project, collection, job_cdict, parent_ids=job_parents)
-            else:
-                print('Upload cancelled.')
-
-        if upload_final_struct and (not 'murn' in job.to_dict()['TYPE']):
-            if is_init_struct:
-                init_structure = structure
-            final_structure = job.get_structure()
-            final_struct_dict = classic_structure(pr, final_structure, 
-                                                 structure_name=job.name + '_final_structure',
-                                                 is_init_struct=False, init_structure=init_structure)
-            ob_final_structure_id = openbis_upload(o, space, project, collection, 
-                                                   final_struct_dict, parent_ids=[ob_structure_id, ob_job_id])
-        
-    else:
+    if not structure:
         print('This job does not contain a structure and will not be uploaded. \
                 Please add structure before trying to upload.')
+        return
+    
+    # Project env file - TODO what is this for??
+    pr = job.project
+    if export_env_file:
+        from ob.concept_dict import export_env
+        export_env(pr.path + pr.name)
+
+    if not collection:
+        collection = pr.name
+
+# ------------------------------------VALIDATION----------------------------------------------
+    cdicts_to_validate = []
+
+    struct_dict = classic_structure(pr, structure, structure_name=job.name + '_structure', 
+                                    is_init_struct=is_init_struct, init_structure=init_structure)
+    cdicts_to_validate.append(struct_dict)
+
+    job_type = job.to_dict()['TYPE']
+    
+    if 'lammps' in job_type:
+        job_cdict = classic_lammps(job, export_env_file=export_env_file)
+        cdicts_to_validate.append(job_cdict)
+
+    elif 'murn' in job_type:
+        job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
+        equil_struct_dict = classic_murn_equil_structure(job, is_init_struct, init_structure)
+        cdicts_to_validate.append(job_cdict)
+        cdicts_to_validate.append(equil_struct_dict)
+        cdicts_to_validate += [child_cdict for child_cdict in child_jobs_cdict]
+
+    else:
+        print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
+        proceed = input("Type 'yes' to proceed with an upload to general pyiron job type.")
+        if proceed.lower() == 'yes':
+            job_cdict = classic_general_job(job, export_env_file=export_env_file)
+            cdicts_to_validate.append(job_cdict)
+        else:
+            print('Upload cancelled.')
+
+    datamodel = get_datamodel(o)
+    if datamodel == 'sfb1394':
+        upload_final_struct = True
+    elif datamodel == 'bam':
+        upload_final_struct = False
+
+    if upload_final_struct and (not 'murn' in job.to_dict()['TYPE']):
+        if is_init_struct:
+            init_structure = structure
+        final_structure = job.get_structure()
+        final_struct_dict = classic_structure(pr, final_structure, 
+                                                structure_name=job.name + '_final_structure',
+                                                is_init_struct=False, init_structure=init_structure)
+        cdicts_to_validate.append(final_struct_dict)
+
+    from ob.ob_upload import openbis_validate
+    validated_to_upload = openbis_validate(o, space, project, collection, cdicts_to_validate)
+#---------------------------------------------------------------------------------------------
+
+#--------------------------------------UPLOAD-------------------------------------------------
+    from ob.ob_upload import openbis_upload_validated
+
+    # Structure
+    cdict, props_dict, object_type, ds_types, ob_parents, object_name = validated_to_upload[0]
+    ob_structure_id = openbis_upload_validated(o, space, project, collection, object_name, 
+                             object_type, ob_parents, props_dict, ds_types, cdict)
+
+    if datamodel == 'sfb1394':
+        job_parents = None            # job does not have init structure as parent
+        str_parent = ob_structure_id  # equil structure has init as parent
+    elif datamodel == 'bam':
+        job_parents = ob_structure_id # job has init structure as parent
+        str_parent = None             # equil structure does not have init as parent
+
+    # (Main) job
+    cdict, props_dict, object_type, ds_types, ob_parents, object_name = validated_to_upload[1]
+    ob_job_id = openbis_upload_validated(o, space, project, collection, object_name, 
+                             object_type, ob_parents, props_dict, ds_types, cdict, parent_ids=job_parents)
+    
+    if 'murn' in job_type:
+        ob_children_ids = []
+        # Murn equilibrium structure
+        cdict, props_dict, object_type, ds_types, ob_parents, object_name = validated_to_upload[2]
+        ob_equil_struct_id = openbis_upload_validated(o, space, project, collection, object_name, 
+                                object_type, ob_parents, props_dict, ds_types, cdict, parent_ids=str_parent)
+        ob_children_ids.append(ob_equil_struct_id)
+        # Murn children jobs
+        for validated_child in validated_to_upload[3:]:
+            cdict, props_dict, object_type, ds_types, ob_parents, object_name = validated_child
+            ob_child_id = openbis_upload_validated(o, space, project, collection, object_name, 
+                                object_type, ob_parents, props_dict, ds_types, cdict, parent_ids=str_parent)
+            ob_children_ids.append(ob_child_id)
+        from ob.ob_upload import link_children
+        link_children(o, ob_job_id, ob_children_ids)
+    
+    # Final structure upload (already included as equilibrium for murn)
+    elif upload_final_struct:
+        cdict, props_dict, object_type, ds_types, ob_parents, object_name = validated_to_upload[-1]
+        ob_final_structure_id = openbis_upload_validated(o, space, project, collection, object_name, 
+                             object_type, ob_parents, props_dict, ds_types, cdict, parent_ids=[ob_structure_id, ob_job_id])
+#---------------------------------------------------------------------------------------------
