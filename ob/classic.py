@@ -7,7 +7,6 @@ def classic_structure(pr, structure, structure_name, is_init_struct: bool, init_
     hdf = FileHDFio(structure_path + structure_name + '.h5')
     structure.to_hdf(hdf)
 
-    # Cannot guarantee this will be before manipulations hence skipping get_unit_cell_parameters
     from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
     if is_init_struct:
         init_structure = structure
@@ -54,7 +53,6 @@ def classic_murn(murn_job, export_env_file):
     from ob.concept_dict import process_murnaghan_job, process_lammps_job
     child_jobs_cdict = []
     for jobs in murn_job.iter_jobs():
-        # from pyiron_base.storage.hdfio import FileHDFio
         if export_env_file:
             import platform
             if "Windows" in platform.system():
@@ -72,22 +70,10 @@ def classic_murn(murn_job, export_env_file):
 
 def classic_murn_equil_structure(murn_job, is_init_struct: bool=True, init_structure=None):
 
-    # from pyiron_base.storage.hdfio import FileHDFio
-    # from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
-
     if is_init_struct:
         init_structure = murn_job.structure
     equil_structure = murn_job.get_structure()
     structure_name = murn_job.name + '_equilibrium_structure'
-    # structure_path = murn_job.project.name + '/'
-    # hdf_equil = FileHDFio(structure_path + structure_name + '.h5')
-    # equil_structure.to_hdf(hdf_equil)
-
-    # Must be conventional unit cell or primitive cell
-    # Provide the structure before repetition or any other manipulations
-    # structure_parameters = get_unit_cell_parameters(equil_structure)
-    
-    # struct_cdict = process_structure_crystal(murn_job.project, equil_structure, structure_name, structure_path, structure_parameters)
     struct_cdict = classic_structure(murn_job.project, equil_structure, structure_name, is_init_struct, init_structure)
 
     return struct_cdict

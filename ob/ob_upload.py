@@ -82,21 +82,11 @@ def openbis_upload_validated(o, space, project, collection, object_name,
     ob_coll = o.get_collection(f'/{space}/{project}/{collection}')
     found_objects_ids = [obj.identifier for obj in ob_coll.get_objects() if obj.p['$name'] == object_name]
 
-    # objects = ob_coll.get_objects(type = object_type)
-    # exists = False
-    # for object_ in objects:
-    #     if object_.p.get('$name') == object_name:
-    #         exists = True
-    #         found_object = object_
-
-    # if exists:
     if found_objects_ids:
         print("===================\n")
         print(f"Object with name {object_name} already exists! Found object(s) in: {found_objects_ids}\n")
         print("===================\n")
-        # print("Found job properties:\n")
-        # from IPython.display import display
-        # display(found_object.p)
+
         return found_objects_ids   
             # TODO: should return a single id to match 'else' return format, however, multiple objects of the same name possible
     
@@ -113,19 +103,15 @@ def openbis_upload_validated(o, space, project, collection, object_name,
         import importlib
         for ds in ds_types:
             if ds == 'job_h5':
-                # from ob.ob_cfg_bam import dataset_job_h5 as dataset_info
                 dataset_info = importlib.import_module(o.mapping).dataset_job_h5
                 file_path = cdict['path'] + '.h5'
             elif ds == 'structure_h5':
-                # from ob.ob_cfg_bam import dataset_atom_struct_h5 as dataset_info
                 dataset_info = importlib.import_module(o.mapping).dataset_atom_struct_h5
                 file_path = cdict['path'] + cdict['structure_name'] + '.h5'
             elif ds == 'env_yml':
-                # from ob.ob_cfg_bam import dataset_env_yml as dataset_info
                 dataset_info = importlib.import_module(o.mapping).dataset_env_yml
                 file_path = cdict['path'] + '_environment.yml'
             elif ds == 'cdict_json':
-                # from ob.ob_cfg_bam import dataset_cdict_jsonld as dataset_info
                 dataset_info = importlib.import_module(o.mapping).dataset_cdict_jsonld
                 if 'structure_name' in cdict.keys():
                     file_path = cdict['path'] + cdict['structure_name'] + '_concept_dict.json'
@@ -135,7 +121,6 @@ def openbis_upload_validated(o, space, project, collection, object_name,
                 raise ValueError(f'Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json.')
 
             ds_type, ds_props = dataset_info(cdict)
-            # upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
             try:
                 upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
             except ValueError as e:
@@ -148,17 +133,12 @@ def openbis_upload_validated(o, space, project, collection, object_name,
         if parent_ids:
             link_parents(o, object_, parent_ids)
 
-        # if show_object:
-        #     from IPython.display import display
-        #     display(object_.p)
-        
-        # return object_
         return object_.identifier # or object_.permId
     
 def link_parents(o, ob_object, parent_ids):
-    if type(ob_object) == str:
+    if isinstance(ob_object, str):
         ob_object = o.get_object(ob_object)
-    if type(parent_ids) != list: # if string not list
+    if not isinstance(parent_ids, list):      # if string not list
         parent_ids = [parent_ids]
     for p in parent_ids:
         try:
@@ -168,9 +148,9 @@ def link_parents(o, ob_object, parent_ids):
     ob_object.save()
 
 def link_children(o, ob_object, children_ids):
-    if type(ob_object) == str:
+    if isinstance(ob_object, str):
         ob_object = o.get_object(ob_object)
-    if type(children_ids) != list: # if string not list
+    if not isinstance(children_ids, list):    # if string not list
         children_ids = [children_ids]
     for ch in children_ids:
         try:
@@ -180,7 +160,6 @@ def link_children(o, ob_object, children_ids):
     ob_object.save()
 
 def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
-    # try:
     ds_hdf = o.new_dataset(
         type       = ds_type,
         # collection = collection,
@@ -192,7 +171,6 @@ def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
     ds_hdf.save()
     # except ValueError: # TODO handling of other errors? or none
     #     print(f'Environment file not found in {file_path} and not uploaded.')
-    # return ds_hdf
 
 def validate_ob_destination(o, space, project, collection):
     issues = []
