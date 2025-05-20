@@ -123,7 +123,7 @@ def openbis_upload_validated(o, space, project, collection, object_name,
             ds_type, ds_props = dataset_info(cdict)
             try:
                 upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
-            except ValueError as e:
+            except (ValueError, FileNotFoundError) as e: # pybis: ValueError; OpenbisAixTended - shutil: FileNotFoundError
                 if ds == 'env_yml':
                     import warnings
                     warnings.warn('The environment file was not uploaded.')
