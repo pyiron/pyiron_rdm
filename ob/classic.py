@@ -54,13 +54,8 @@ def classic_murn(murn_job, export_env_file):
     child_jobs_cdict = []
     for jobs in murn_job.iter_jobs():
         if export_env_file:
-            import platform
-            if "Windows" in platform.system():
-                import shutil
-                shutil.copy(murn_job.path + '_environment.yml', jobs.path + '_environment.yml')
-            else:
-                import os
-                os.system('cp ' + murn_job.path + '_environment.yml ' + jobs.path + '_environment.yml')
+            import shutil
+            shutil.copy(murn_job.path + '_environment.yml', jobs.path + '_environment.yml')
         child_cdict = process_lammps_job(jobs)
         child_jobs_cdict.append(child_cdict)
 
