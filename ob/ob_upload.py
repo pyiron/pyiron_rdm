@@ -206,8 +206,8 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict):
             if parent:
                 ob_parents.append(parent)
             else:
-                issues.append(f'Parent object not found: No objects of the type {t} and property {w} / code {c} in inventory.')
+                issues.append(f'Parent object not found: No objects of the type {t} and property {w} / code "{c}" in inventory.')
         else:
-            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, code = {c}, attribute match: {w}')
+            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, code = "{c}", attribute match: {w}')
 
     return issues, ob_parents

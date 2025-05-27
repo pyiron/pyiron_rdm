@@ -23,11 +23,12 @@ def pseudopot_par(cdict):     # TODO: complete
     return
 
 def sw_par(cdict): 
+    import re
     t = 'SOFTWARE'
-    c = cdict['software']
-    for ch in [' ', '-', '_', '.']:
-        c = c.replace(ch, '')
-    return t, c
+    c = re.sub(r'[\s\-_.]', '', cdict['software']) # remove special characters
+    c_match = re.match(r'([A-Za-z]*\d+)', c) # remove letters after last digit
+    clean_c_match = c_match.group(1) if c_match else c
+    return t, clean_c_match
 
 # object types _______________________________________________
 

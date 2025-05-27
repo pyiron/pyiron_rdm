@@ -45,7 +45,7 @@ def process_structure_crystal(pr, structure, structure_name, structure_path, str
     identify_structure_parameters(structure_parameters, sample_dict)
     get_simulation_cell(structure, sample_dict)
     add_structure_software(pr, structure_name, sample_dict)
-    get_structure_folder(structure_path, sample_dict)
+    sample_dict['path'] = structure_path
     json_file_name = structure_path + structure_name +'_concept_dict.json'
     with open(json_file_name, 'w') as f:
         json.dump(sample_dict, f, indent=2)
@@ -910,17 +910,6 @@ def add_structure_software(pr, structure_name, sample_dict):
         }
     )
     sample_dict["job_details"] = pyiron_job_details
-
-def get_structure_folder(structure_path, sample_dict):
-    import subprocess
-    import platform
-    if "Windows" in platform.system():
-        s_clean = os.getcwd().replace('\\', '/')
-    else:
-        output = subprocess.check_output(['pwd'])
-        s = str((output.decode('utf-8')))
-        s_clean = s.replace("\n", "")
-    sample_dict['path'] = s_clean + '/' + structure_path
 
 def add_vasp_contexts(method_dict):
     # TODO: check, expand on
