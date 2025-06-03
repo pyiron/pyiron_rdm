@@ -129,7 +129,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
     cdicts_to_validate.append(struct_dict)
 
     job_type = job.to_dict()['TYPE']
-    
+    proceed = True    
     if 'lammps' in job_type:
         job_cdict = classic_lammps(job, export_env_file=export_env_file)
         cdicts_to_validate.append(job_cdict)
@@ -149,6 +149,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
             cdicts_to_validate.append(job_cdict)
         else:
             print('Upload cancelled.')
+            proceed = False
 
     datamodel = get_datamodel(o)
     if datamodel == 'sfb1394':
@@ -167,6 +168,8 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
 
     from ob.ob_upload import openbis_validate
     validated_to_upload = openbis_validate(o, space, project, collection, cdicts_to_validate)
+    if not proceed:
+       raise ValueError('You asked to abort the upload.')
 #---------------------------------------------------------------------------------------------
 
 #--------------------------------------UPLOAD-------------------------------------------------
