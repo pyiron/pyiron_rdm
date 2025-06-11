@@ -173,20 +173,29 @@ def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
     #     print(f'Environment file not found in {file_path} and not uploaded.')
 
 def validate_ob_destination(o, space, project, collection):
-    issues = []
     try:
         o.get_space(space)
     except ValueError as e:
-        issues.append(str(e))
+        return [str(e) + ' Project and collection will not be checked until space created/found.']
     try:
         o.get_project(f'/{space}/{project}')
     except ValueError as e:
-        issues.append(str(e))
+        create_project = input(f"Project with the code {project} was not found in space {space}. Type 'yes' to create it.")
+        if create_project.lower() in ['yes', 'y']:
+            new_project = o.new_project(space=space, code=project)
+            new_project.save()
+        else:
+            return([str(e) + ' and you chose not to create it. Collection will not be checked until project created/found.'])
     try:
         o.get_collection(f'/{space}/{project}/{collection}')
     except ValueError as e:
-        issues.append(str(e))
-    return issues
+        create_coll = input(f"Collection with the code {collection} was not found in project {space}/{project}. Type 'yes' to create it.")
+        if create_coll.lower() in ['yes', 'y']:
+            new_coll = o.new_collection(project=f'/{space}/{project}', code=collection, type='DEFAULT_EXPERIMENT')
+            new_coll.save()
+        else:
+            return [str(e) + ' and you chose not to create it.']
+    return []
 
 def validate_inventory_parents(o, inv_parents, cdict, props_dict):
     import importlib
@@ -206,8 +215,8 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict):
             if parent:
                 ob_parents.append(parent)
             else:
-                issues.append(f'Parent object not found: No objects of the type {t} and property {w} / code {c} in inventory.')
+                issues.append(f'Parent object not found: No objects of the type {t} and property {w} / code "{c}" in inventory.')
         else:
-            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, code = {c}, attribute match: {w}')
+            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, code = "{c}", attribute match: {w}')
 
     return issues, ob_parents

@@ -31,6 +31,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                     '<strong>Scroll down below other properties to view conceptual dictionary with ontological ids of selected properties and values.</strong></span>' + \
                     '<br>The conceptual dictionary is in JSON-LD format. Learn more about it <a href="https://www.w3.org/ns/json-ld/">here</a></p>'
             }
+    description = props['description_multiline']
     
     if 'workflow_manager' in cdict.keys():
         props['workflow_manager'] = cdict['workflow_manager']
@@ -109,6 +110,43 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props |=  {'atomistic_calc_type': 'atom_calc_struc_opt',
                     'atom_ionic_min_algo': min_algo, 
                     'description_multiline': description}
+            if 'target_pressure' in cdict.keys() and cdict['target_pressure'] is not None:
+                props['atom_targ_press_in_gpa'] = cdict['target_pressure']
+        if 'molecular_dynamics' in concept_dict.keys():
+            if 'http://purls.helmholtz-metadaten.de/asmo/MicrocanonicalEnsemble' in cdict['ensemble']:
+                description = f'{cdict["job_type"]} simulation using pyiron for microcanonical ensemble.' + props['description_multiline']
+                props['atom_md_ensemble'] = 'TD_ENSEMBLE_NVE'
+            elif 'http://purls.helmholtz-metadaten.de/asmo/CanonicalEnsemble' in cdict['ensemble']:
+                description = f'{cdict["job_type"]} simulation using pyiron for canonical ensemble.' + props['description_multiline']
+                props['atom_md_ensemble'] = 'TD_ENSEMBLE_ATOM_ENS_NVT'
+            elif 'http://purls.helmholtz-metadaten.de/asmo/IsothermalIsobaricEnsemble' in cdict['ensemble']:
+                description = f'{cdict["job_type"]} simulation using pyiron for isothermal-isobaric ensemble.' + props['description_multiline'] # TODO double check correctness
+                props['atom_md_ensemble'] = 'TD_ENSEMBLE_NPT'
+            props |= {'atomistic_calc_type': 'Atom_calc_md',
+                    'description_multiline': description}
+            
+            if 'timestep' in cdict.keys():
+                props['atom_md_time_stp_in_ps'] = cdict['timestep']
+            if 'simulation_time' in cdict.keys():
+                props['atom_sim_time_ps_in_ps'] = cdict['simulation_time']
+            if 'average_total_energy' in cdict.keys():
+                props['atom_avg_tot_eng_in_ev'] = cdict['average_total_energy']
+            if 'average_potential_energy' in cdict.keys():
+                props['atom_avg_pot_eng_in_ev'] = cdict['average_potential_energy']
+            if 'average_temperature' in cdict.keys():
+                props['atom_md_avg_temp_in_k'] = cdict['average_temperature']
+            if 'average_pressure' in cdict.keys():
+                props['atom_avg_press_in_gpa'] = cdict['average_pressure']
+            if 'average_total_volume' in cdict.keys():
+                props['atom_avg_vol_in_a3'] = cdict['average_total_volume']
+            if 'initial_temperature' in cdict.keys():
+                props['atom_md_init_temp_in_k'] = cdict['initial_temperature']
+            if 'target_temperature' in cdict.keys():
+                props['atom_md_targ_temp_in_k'] = cdict['target_temperature']
+            if 'initial_pressure' in cdict.keys():
+                props['atom_md_init_press_in_gpa'] = cdict['initial_pressure']
+            if 'target_pressure' in cdict.keys():
+                props['atom_targ_press_in_gpa'] = cdict['target_pressure']
             
         if 'job_type' in cdict.keys() and 'Murn' in cdict['job_type']: 
             props['description_multiline'] = 'Murnaghan job for structural optimization.' + props['description_multiline']

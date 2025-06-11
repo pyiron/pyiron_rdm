@@ -1,6 +1,6 @@
 def classic_structure(pr, structure, structure_name, is_init_struct: bool, init_structure=None):
     # TODO rename is_init_struct and init_structure to better reflect that it needs to not be manipulated (e.g. repeated)
-    structure_path = pr.name + '/'
+    structure_path = pr.path
     # structure_name = structure_name_prefix + '_input_structure'
     
     from pyiron_base.storage.hdfio import FileHDFio
@@ -144,7 +144,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
     else:
         print(f'The {job_type} job type is not implemented for OpenBIS upload yet.')
         proceed = input("Type 'yes' to proceed with an upload to general pyiron job type.")
-        if proceed.lower() == 'yes':
+        if proceed.lower() == 'yes' or proceed.lower() == 'y':
             job_cdict = classic_general_job(job, export_env_file=export_env_file)
             cdicts_to_validate.append(job_cdict)
         else:
