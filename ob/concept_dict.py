@@ -16,6 +16,7 @@ import ast
 import json
 from typing import Optional
 import warnings
+from ase import units
 
 def process_general_job(job):
     method_dict = {}
@@ -523,6 +524,11 @@ def add_simulation_software(job, method_dict):
             "label": job.to_dict()['executable']['name'].upper() + ' ' + job.to_dict()['executable']['version'],
         }
         method_dict["software"] = [software]
+    except TypeError: # if version None - will throw an error when uploading but we have some info
+        software = {
+            "label": job.to_dict()['executable']['name'].upper(),
+        }
+        method_dict["software"] = [software]
     except KeyError:
         pass
 
@@ -965,14 +971,14 @@ def identify_vasp_method(job, method_dict):
     method_dict['dft']['inputs'] = []
 
     encut_dict = {}
-    encut_dict['value'] = mdict.get('ENCUT', 'Default') # TODO: try to read OUTCAR if default
+    encut_dict['value'] = mdict.get('ENCUT', None) # TODO: try to read OUTCAR if default (None now)
     encut_dict['label'] = 'energy_cutoff'
     encut_dict['unit'] = 'EV'
     method_dict['dft']['inputs'].append(encut_dict)
 
     indf = job.input.to_dict()['kpoints/data_dict']
     params = indf['Parameter']
-    vals = indf['Value']   
+    vals = indf['Value']
 
     kpoint_type = vals[2]
     kpoint_grid = vals[3]
@@ -998,7 +1004,7 @@ def identify_vasp_method(job, method_dict):
         method_dict['dft']['inputs'].append(inp_magmom_dict)
 
     elec_min_algo_dict = {}
-    elec_min_algo_dict['value'] = mdict['ALGO'] # TODO: this should match controlled vocab, no?
+    elec_min_algo_dict['value'] = mdict['ALGO']
     elec_min_algo_dict['label'] = 'electronic_minimization_algorithm'
     method_dict['dft']['inputs'].append(elec_min_algo_dict)
 
@@ -1009,7 +1015,7 @@ def identify_vasp_method(job, method_dict):
     method_dict['dft']['inputs'].append(ediff_dict)
 
     dof = []
-    if not int(mdict.get('NSW', '0')): # not a static calculation
+    if int(mdict.get('NSW', '0')): # not a static calculation
         if mdict.get('ISIF') in ['0', '1', '2', '3', '4', '8']:
             dof.append('http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation')
         if mdict.get('ISIF') in ['3', '4', '5', '6']:
@@ -1077,8 +1083,6 @@ def identify_vasp_method(job, method_dict):
     method_dict['xc_functional'] = xc
 
 def extract_vasp_calculated_quantities(job, method_dict):
-    # mostly copy-pasted from pyiron_concept_dictionary // lammps
-    # TODO how many decimals? lammps does 4, not 5
     """
     Extracts calculated quantities from a job.
 
@@ -1093,21 +1097,68 @@ def extract_vasp_calculated_quantities(job, method_dict):
         A list of dictionaries, each containing the label, value, unit, and associate_to_sample of a calculated quantity.
 
     """
+
+    indf = job.input.incar.to_dict()
+    params = indf['data_dict']['Parameter']
+    vals = indf['data_dict']['Value']
+    mdict = {str(p).replace(' ', ''): str(v).replace(' ', '') for p, v in zip(params, vals)}
+
     outputs = []
     outputs.append(
         {
-            "label": "average_total_energy",
-            "value": np.round(job.output.energy_tot[-1], decimals=5),
+            "label": "final_total_energy",
+            "value": np.round(job.output.energy_tot[-1], decimals=4),
             "unit": "EV",
         }
     )
     outputs.append(
         {
+            "label": "final_potential_energy",
+            "value": np.round(job.output.energy_pot[-1], decimals=4),
+            "unit": "EV",
+        }
+    )
+    outputs.append(
+        {
+            "label": "final_maximum_force",
+            "value": np.round(job.output.force_max[-1], decimals=16),
+            "unit": "EV-PER-ANGSTROM",
+        }
+    )
+    outputs.append(
+        {
             "label": "final_total_volume",
-            "value": np.round(job.output.volume[-1], decimals=5),
+            "value": np.round(job.output.volume[-1], decimals=4),
             "unit": "ANGSTROM3",
         }
     )
+    if job.input.incar['ISPIN'] == 2:
+        outputs.append(
+        {
+            "label": "final_total_magnetic_moment",
+            "value": np.round(job['output']['generic']['dft']['magnetization'][-1][-1], decimals=4),
+            "unit": "BOHR-MAGNETON",
+        }
+    )
+    if 'NSW' in mdict.keys() and mdict['NSW'] != '0':
+        outputs.append(
+            {
+                "label": "number_ionic_steps",
+                "value": len(job.output.steps)-1,
+            }
+        )
+        try:
+            fpress = 1/3*(job.output.pressures[-1][0]+job.output.pressures[-1][1]+job.output.pressures[-1][2])
+        except IndexError: # sometimes the avg is already calculated an a single value stored
+            fpress = job.output.pressures[-1]
+        outputs.append(
+            {
+                "label": "final_pressure",
+                "value": np.round(fpress/units.GPa, decimals=4), # is in eV/A3, need GPa
+                "unit": "GigaPA",
+            }
+        )
+    method_dict['outputs'] = outputs
 
 def export_env(path):
     """Exports to path+_environment.yml"""

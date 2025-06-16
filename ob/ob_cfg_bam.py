@@ -85,7 +85,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props['periodic_boundary_z'] = cdict['periodicity_in_z']
         if 'dof' in cdict.keys():
             props |=  {'atom_cell_vol_relax': True if 'http://purls.helmholtz-metadaten.de/asmo/CellVolumeRelaxation' in cdict['dof'] else False,
-                    'atom_cell_shp_relax': True if 'CellShapeRelaxation' in cdict['dof'] else False,
+                    'atom_cell_shp_relax': True if 'http://purls.helmholtz-metadaten.de/asmo/CellShapeRelaxation' in cdict['dof'] else False,
                     'atom_pos_relax': True if 'http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation' in cdict['dof'] else False
                     }
         if 'final_total_energy' in cdict.keys():
@@ -176,8 +176,75 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             elif cdict['equation_of_state_fit'] == 'http://purls.helmholtz-metadaten.de/asmo/PolynomialFit':
                 props['murn_eqn_of_state'] = 'EOS_POLYNOMIAL'
                 props['murn_fit_eqn_order'] = cdict['fit_order']  # TODO test this
-            else: 
-                raise ValueError('Unknown equation of state')  # TODO is this necessary?
+            else:
+                import warnings
+                warnings.warn('Unknown equation of state')
+        
+        if cdict.get('energy_cutoff'):
+            props['atom_e_cutoff_in_ev'] = cdict['energy_cutoff']
+        if 'xc_functional' in cdict.keys():
+            if cdict['xc_functional'] == 'LDA':
+                props['atom_xc_functional'] = 'XC_FUNC_LDA'
+            elif cdict['xc_functional'] in ('PBE', 'GGA'):
+                props['atom_xc_functional'] = 'XC_FUNC_PBE'
+            else:
+                import warnings
+                warnings.warn(f"XC functional '{props['atom_xc_functional']}' is not yet mapped.")
+
+        if 'spin_polarization' in cdict.keys():
+            props['atom_spin_polarized'] = cdict['spin_polarization']
+        if 'electronic_smearing' in cdict.keys():
+            elsmear_map = {
+                'Methfessel-Paxton': 'ELEC_SMEAR_MP',
+                'Gaussian': 'ELEC_SMEAR_GAUSS',
+                'Fermi': 'ELEC_SMEAR_FERMI',
+                'Tetrahedron': 'ELEC_SMEAR_TET',
+                'Tetrahedron_Bloechl': 'ELEC_SMEAR_TET_BL'
+            }
+            elsmear_val = elsmear_map.get(cdict.get('electronic_smearing'))
+            if elsmear_val:
+                props |= {'electronic_smearing': elsmear_val}
+        if 'electronic_energy_tolerance' in cdict.keys():
+            props['atom_el_e_tol_in_ev'] = cdict['electronic_energy_tolerance']
+        if 'smearing_parameter_sigma' in cdict.keys():
+            props['atom_sigma_in_ev'] = cdict['smearing_parameter_sigma']
+        if 'final_pressure' in cdict.keys():
+                props['atom_fin_press_in_gpa'] = cdict['final_pressure']
+        if 'final_total_magnetic_moment' in cdict.keys():
+                props['atom_fin_totmgmo_in_mub'] = str(cdict['final_total_magnetic_moment'])
+        if 'dft' in concept_dict.keys():
+            if len(cdict['dof']) == 0:
+                pass
+            else:
+                description = f'{cdict["job_type"]} simulation using pyiron for energy minimization/structural optimization.' + props['description'] # TODO double check correctness
+                min_algo = None
+                if cdict['ionic_minimization_algorithm'] == 'rmm-diis':
+                    min_algo = 'MIN_ALGO_RMM_DIIS'
+                elif cdict['ionic_minimization_algorithm'] == 'cg':
+                    min_algo = 'MIN_ALGO_CG'
+                elif cdict['ionic_minimization_algorithm'] == 'damped_md':
+                    min_algo = 'MIN_ALGO_DAMPED_MD'
+                if min_algo:
+                    props |=  {'atomistic_calc_type': 'atom_calc_struc_opt',
+                        'atom_ionic_min_algo': min_algo, 
+                        'description': description}
+            if cdict.get('electronic_minimization_algorithm', '').lower() in ['normal', 'fast', 'veryfast']:
+                elec_min_algo = 'MIN_ALGO_RMM_DIIS'
+                props |=  {'atom_elec_min_algo': elec_min_algo}
+            else:
+                import warnings  
+                warnings.warn(f"Electronic minimization algorithm for ALGO='{cdict.get('electronic_minimization_algorithm')}' not yet mapped.")
+
+        if 'kpoint_Monkhorst_Pack' in cdict.keys():
+            kpoint_algo = 'KPOINTS_MP'
+            kpts_x = int(cdict['kpoint_Monkhorst_Pack'].split()[0])
+            kpts_y = int(cdict['kpoint_Monkhorst_Pack'].split()[1])
+            kpts_z = int(cdict['kpoint_Monkhorst_Pack'].split()[2])
+            props |=  {'atom_kpoint_type': kpoint_algo,
+            'atomistic_n_kpt_x': kpts_x,
+            'atomistic_n_kpt_y': kpts_y,
+            'atomistic_n_kpt_z': kpts_z}
+
     
     else:
         print("Neither structure_name nor job_name in the object conceptual dictionary. \
