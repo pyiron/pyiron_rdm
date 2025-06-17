@@ -54,7 +54,8 @@ def lammps_job_ot():
 def vasp_job_ot():
     object_type = 'PYIRON_JOB_VASP'
     datasets = ['job_h5', 'env_yml', 'cdict_json']
-    parents = ['pseudopotential', 'software', 'workstation']
+    # parents = ['pseudopotential', 'software', 'workstation']
+    parents = ['software', 'workstation']
     return object_type, datasets, parents
     
 def murn_job_ot():
