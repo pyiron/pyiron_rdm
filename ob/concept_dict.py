@@ -1017,7 +1017,7 @@ def identify_vasp_method(job, method_dict):
 
     dof = []
     if int(mdict.get('NSW', '0')): # not a static calculation
-        if mdict.get('ISIF') in ['0', '1', '2', '3', '4', '8']:
+        if mdict.get('ISIF', '0') in ['0', '1', '2', '3', '4', '8']:
             dof.append('http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation')
         if mdict.get('ISIF') in ['3', '4', '5', '6']:
             dof.append('http://purls.helmholtz-metadaten.de/asmo/CellShapeRelaxation')
