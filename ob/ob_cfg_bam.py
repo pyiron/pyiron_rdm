@@ -301,7 +301,7 @@ def dataset_job_h5(cdict):
     # TODO error handling if not job
     ds_props = {
         '$name': cdict['job_name'] + '.h5',
-        'production_date': datetime.strptime(cdict['job_stoptime'], "%Y-%m-%d %H:%M:%S").date().strftime("%Y-%m-%d"),
+        'production_date': datetime.strptime(cdict['job_starttime'], "%Y-%m-%d %H:%M:%S").date().strftime("%Y-%m-%d"),
         'file_format': 'HDF5'
     }
     ds_type = 'PYIRON_JOB'

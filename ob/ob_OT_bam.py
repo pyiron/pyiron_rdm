@@ -17,9 +17,12 @@ def pseudopot_par(cdict):     # TODO: complete
     return
 
 def sw_par(cdict):
+    import re
     t = 'SOFTWARE_CODE'
     c = cdict['software'].replace(' ', '_')
-    return t, c
+    c_match = re.match(r'^(.*\d)(?=[^\d]*[a-zA-Z])', c) # match up to and incl. first set of numbers
+    clean_c_match = c_match.group(1) if c_match else c
+    return t, clean_c_match
 
 def localws_par(cdict):
     t = 'INSTRUMENT.LOCAL_WORKSTATION'

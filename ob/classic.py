@@ -42,6 +42,17 @@ def classic_lammps(lammps_job, export_env_file):
     lammps_cdict = process_lammps_job(lammps_job)
     return lammps_cdict
 
+def classic_vasp(vasp_job, export_env_file):
+    '''export_env_file: Bool'''
+    from ob.concept_dict import process_vasp_job
+
+    if export_env_file:
+        from ob.concept_dict import export_env
+        export_env(vasp_job.path)
+
+    vasp_cdict = process_vasp_job(vasp_job)
+    return vasp_cdict
+
 def classic_murn(murn_job, export_env_file):
     # TODO this assumes only lammps child jobs - generalise!
     '''export_env_file: Bool'''
@@ -132,6 +143,10 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
     proceed = True    
     if 'lammps' in job_type:
         job_cdict = classic_lammps(job, export_env_file=export_env_file)
+        cdicts_to_validate.append(job_cdict)
+
+    elif 'vasp' in job_type:
+        job_cdict = classic_vasp(job, export_env_file=export_env_file)
         cdicts_to_validate.append(job_cdict)
 
     elif 'murn' in job_type:
