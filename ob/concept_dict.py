@@ -528,6 +528,7 @@ def add_simulation_software(job, method_dict):
         software = {
             "label": job.to_dict()['executable']['name'].upper(),
         }
+        # software['label'] += ' 5.4.4' #TODO remove !!!! workaround only!!!!
         method_dict["software"] = [software]
     except KeyError:
         pass
@@ -971,7 +972,7 @@ def identify_vasp_method(job, method_dict):
     method_dict['dft']['inputs'] = []
 
     encut_dict = {}
-    encut_dict['value'] = mdict.get('ENCUT', None) # TODO: try to read OUTCAR if default (None now)
+    encut_dict['value'] = float(mdict.get('ENCUT', 0)) # TODO: try to read OUTCAR if default (None now)
     encut_dict['label'] = 'energy_cutoff'
     encut_dict['unit'] = 'EV'
     method_dict['dft']['inputs'].append(encut_dict)
@@ -1009,7 +1010,7 @@ def identify_vasp_method(job, method_dict):
     method_dict['dft']['inputs'].append(elec_min_algo_dict)
 
     ediff_dict = {}
-    ediff_dict['value'] = mdict.get('EDIFF', 1e-4)
+    ediff_dict['value'] = float(mdict.get('EDIFF', 1e-4))
     ediff_dict['label'] = 'electronic_energy_tolerance'
     ediff_dict['unit'] = 'EV'
     method_dict['dft']['inputs'].append(ediff_dict)
