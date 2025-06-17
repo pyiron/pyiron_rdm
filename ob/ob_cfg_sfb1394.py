@@ -209,7 +209,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         if 'final_total_magnetic_moment' in cdict.keys():
                 props['atom_fin_totmgmo_in_mub'] = str(cdict['final_total_magnetic_moment'])
         if 'dft' in concept_dict.keys():
-            if 'dof' in concept_dict.keys():
+            if 'dof' in cdict.keys():
                 description = f'{cdict["job_type"]} simulation using pyiron for energy minimization/structural optimization.' + props['description_multiline'] # TODO double check correctness
                 min_algo = None
                 if cdict['ionic_minimization_algorithm'] == 'rmm-diis':
