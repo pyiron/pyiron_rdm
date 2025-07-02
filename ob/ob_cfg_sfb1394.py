@@ -182,7 +182,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             if cdict['xc_functional'] == 'LDA':
                 props['atom_xc_functional'] = 'XC_FUNC_LDA'
             elif cdict['xc_functional'] in ('PBE', 'GGA'):
-                props['atom_xc_functional'] = 'XC_FUNC_PBE'
+                props['atom_xc_functional'] = 'XC_FUNC_GGA'
             else:
                 import warnings
                 warnings.warn(f"XC functional '{props['atom_xc_functional']}' is not yet mapped.")
@@ -278,6 +278,8 @@ def map_struct_to_ob(props, cdict, concept_dict):
         props['sim_cell_vectors'] = cdict['simulation_cell_vectors']
     if 'space_group_number' in cdict.keys():
         props['space_group'] = cdict['space_group_number']
+    if 'defects' in cdict.keys():
+        props['defects'] = ', '.join(cdict['defects']).title()
 
 def dataset_job_h5(cdict, name_suffix='_0'):
     from datetime import datetime

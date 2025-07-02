@@ -30,7 +30,7 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
     return o
 
 def openbis_validate(o, space, project, collection, 
-                     concept_dicts: dict|list):
+                     concept_dicts: dict|list, options: dict):
     if isinstance(concept_dicts, dict):
         concept_dicts = [concept_dicts]
     all_issues = []
@@ -44,7 +44,7 @@ def openbis_validate(o, space, project, collection,
         object_type, ds_types, inv_parents = ob_ot()
         map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
         props_dict = map_cdict_to_ob(o, cdict, concept_dict)
-        inv_issues, ob_parents = validate_inventory_parents(o, inv_parents, cdict, props_dict)
+        inv_issues, ob_parents = validate_inventory_parents(o, inv_parents, cdict, props_dict, options)
         issues += inv_issues
         object_name = concept_dict['job_details'][0]['value']
 
@@ -197,26 +197,39 @@ def validate_ob_destination(o, space, project, collection):
             return [str(e) + ' and you chose not to create it.']
     return []
 
-def validate_inventory_parents(o, inv_parents, cdict, props_dict):
+def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
     import importlib
     issues = []
     ob_parents = []
     get_inv_parent = importlib.import_module(o.ot).get_inv_parent
     for inv_parent in inv_parents:
-        t, w, a, c = get_inv_parent(inv_parent, cdict, props_dict)
-        if c or w:
+        t, p, w, a, c = get_inv_parent(inv_parent, cdict, props_dict, options)
+        if p: # multiple parents allowed when more permIds provided
+            parents = o.get_objects(
+                type = t,
+                permId = p,
+            )
+    
+            if parents:
+                ob_parents += parents
+            else:
+                issues.append(f'Parent object not found: No objects of the type {t} and permId "{p}" in inventory.')
+        elif c or w: # single parent allowed otherwise; taking the first
             parent = o.get_objects(
                 type = t,
+                permId = p,
                 code = c,
                 where = w,
                 attrs = a
             )[0]
-    
             if parent:
                 ob_parents.append(parent)
             else:
                 issues.append(f'Parent object not found: No objects of the type {t} and property {w} / code "{c}" in inventory.')
+        elif t == 'PSEUDOPOTENTIAL': # don't fail when pseudopotential missing
+            import warnings
+            warnings.warn('Pseudopotential permId was not given. Please link job to appropriate pseudopotential on openBIS.')
         else:
-            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, code = "{c}", attribute match: {w}')
+            issues.append(f'Parent object not found: Not enough information to search. Known information: type = {t}, permId = "{p}", code = "{c}", attribute match: {w}')
 
     return issues, ob_parents
