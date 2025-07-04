@@ -280,6 +280,8 @@ def map_struct_to_ob(props, cdict, concept_dict):
         props['space_group'] = cdict['space_group_number']
     if 'defects' in cdict.keys():
         props['defects'] = ', '.join(cdict['defects']).title()
+    if 'comments' in cdict.keys():
+        props['notes'] = cdict['comments']
 
 def dataset_job_h5(cdict, name_suffix='_0'):
     from datetime import datetime

@@ -105,7 +105,7 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
 
 # upload options ______________________________________________
 
-allowed_keys = {'materials', 'defects', 'pseudopotentials'}
+allowed_keys = {'materials', 'defects', 'pseudopotentials', 'comments'}
 allowed_defects = {'vacancy', 'antisite', 'substitutional', 'interstitial',
                    'perfect dislocation', 'partial dislocation', 'superdislocation', 
                    'stacking fault', 'grain boundary', 'surface', 'phase boundary'}
