@@ -167,7 +167,7 @@ def is_within_tolerance(reference, candidate, tol):
             return False
     return True
 
-def crystalline_mat_suggester_2(o, structure, tol=0.02, **kwargs):
+def crystalline_mat_suggester(o, structure, tol=0.02, **kwargs):
     # tolerance is a decimal number
     chem_system = '-'.join(list(structure.get_species_symbols()))
     space_group = 'SPACE_GROUP_' + str(structure.get_symmetry().spacegroup['Number'])
