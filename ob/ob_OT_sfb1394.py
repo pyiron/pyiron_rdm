@@ -170,7 +170,7 @@ def is_within_tolerance(reference, candidate, tol):
 def crystalline_mat_suggester(o, structure, tol=0.02, **kwargs):
     # tolerance is a decimal number
     chem_system = '-'.join(list(structure.get_species_symbols()))
-    space_group = 'SPACE_GROUP_' + str(structure.get_symmetry().spacegroup['Number'])
+    # space_group = 'SPACE_GROUP_' + str(structure.get_symmetry().spacegroup['Number'])
     
     # atomic composition of structure
     species_dict = dict(structure.get_number_species_atoms())
@@ -181,10 +181,11 @@ def crystalline_mat_suggester(o, structure, tol=0.02, **kwargs):
         type='CRYSTALLINE_MATERIAL',
         where={
             'CHEMICAL_SYSTEM': chem_system,
-            'SPACE_GROUP_SHORT': space_group,
+            # 'SPACE_GROUP_SHORT': space_group,
             **kwargs
         },
-        props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 'SPACE_GROUP_SHORT']
+        # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 'SPACE_GROUP_SHORT']
+        props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM']
     )
     
     # candidates filtered by atomic composition
