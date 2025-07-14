@@ -62,6 +62,10 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props['sim_coretime_in_hours'] = cdict['sim_coretime_hours']
         if 'number_cores' in cdict.keys():
             props['ncores'] = cdict['number_cores']
+        if 'queue' in cdict.keys():
+            props['hpc_job_queue'] = cdict['queue']
+        if 'queue id' in cdict.keys():
+            props['hpc_job_id'] = cdict['queue id']
 
         # scientific
         if 'maximum_iterations' in cdict.keys():

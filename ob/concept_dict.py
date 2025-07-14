@@ -506,18 +506,34 @@ def add_simulation_software(job, method_dict):
         )
     except TypeError: # if job.database_entry.totalcputime = None - TODO better error handling
         pass
+
+    server = job.to_dict()['server']
     pyiron_job_details.append(
         {
             "label": "number_cores",
-            "value": job.to_dict()['server']['cores'],
+            "value": server['cores'],
         }
     )
     pyiron_job_details.append(
         {
             "label": "host",
-            "value": job.to_dict()['server']['host'],
+            "value": server['host'],
         }
     )
+    if server['queue']: # TODO: testif we could skip conditionals and not get 'None' on openBIS
+        pyiron_job_details.append(
+            {
+                "label": "queue",
+                "value": server['queue']
+            }
+        )
+    if server['qid']:
+        pyiron_job_details.append(
+            {
+                "label": "queue id",
+                "value": server['qid']
+            }
+        )
  
     try:
         software = {
