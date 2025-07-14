@@ -531,7 +531,7 @@ def add_simulation_software(job, method_dict):
         pyiron_job_details.append(
             {
                 "label": "queue id",
-                "value": server['qid']
+                "value": str(server['qid'])
             }
         )
  
