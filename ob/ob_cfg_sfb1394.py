@@ -181,8 +181,8 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         if 'xc_functional' in cdict.keys():
             if cdict['xc_functional'] == 'LDA':
                 props['atom_xc_functional'] = 'XC_FUNC_LDA'
-            elif cdict['xc_functional'] in ('PBE', 'GGA'):
-                props['atom_xc_functional'] = 'XC_FUNC_GGA'
+            elif cdict['xc_functional'] in ('PBE', 'GGA'): # TODO: this needs attention and better resolving
+                props['atom_xc_functional'] = 'XC_FUNC_PBE'
             else:
                 import warnings
                 warnings.warn(f"XC functional '{props['atom_xc_functional']}' is not yet mapped.")
