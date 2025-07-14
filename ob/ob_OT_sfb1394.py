@@ -4,6 +4,8 @@ def material_par(props_dict, options):
     if options.get('materials'):
         t = 'CRYSTALLINE_MATERIAL'
         p = options['materials']
+        w = {}
+        a = []
     else:
         mat_dict_pct_str = species_by_num_to_pct(props_dict)
         t = 'MATERIAL'
