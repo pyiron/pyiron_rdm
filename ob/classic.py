@@ -63,15 +63,18 @@ def classic_murn(murn_job, export_env_file):
 
     if export_env_file:
         from ob.concept_dict import export_env
+        import shutil
         export_env(murn_job.path)
 
-    from ob.concept_dict import process_murnaghan_job, process_lammps_job
+    from ob.concept_dict import process_murnaghan_job, process_lammps_job, process_vasp_job
     child_jobs_cdict = []
-    for jobs in murn_job.iter_jobs():
+    for job in murn_job.iter_jobs():
         if export_env_file:
-            import shutil
-            shutil.copy(murn_job.path + '_environment.yml', jobs.path + '_environment.yml')
-        child_cdict = process_lammps_job(jobs)
+            shutil.copy(murn_job.path + '_environment.yml', job.path + '_environment.yml')
+        if 'lammps' in job.to_dict()['TYPE']: # if it's not possible to have multiple types, do this only once
+            child_cdict = process_lammps_job(job)
+        else: # vasp
+            child_cdict = process_vasp_job(job)
         child_jobs_cdict.append(child_cdict)
 
     job_cdict = process_murnaghan_job(murn_job)
