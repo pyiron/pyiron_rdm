@@ -110,7 +110,7 @@ def validate_upload_options(options, allowed_keys, allowed_defects=None):
         if not isinstance(defects, list) or not all(isinstance(d, str) for d in defects):
             raise TypeError('options["defects"] must be a list of strings.')
         if allowed_defects:
-            invalid_defects = set([d.lower() for d in defects]) - allowed_defects
+            invalid_defects = set([d.lower().replace('_', ' ') for d in defects]) - allowed_defects
             if invalid_defects:
                 raise ValueError(
                     f'Invalid defect(s) in "options[\'defects\']": {sorted(invalid_defects)}. \

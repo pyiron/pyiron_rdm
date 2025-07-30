@@ -139,10 +139,8 @@ def pseudopotential_suggester(o, structure, **kwargs):
                   where = {**defaults, **kwargs,
                           'CHEM_SPECIES_ADDRESSED': chem_sp
                           },
-                  props = ['$name', 'PSEUDOPOT_VERSION', 'PSEUDOPOT_FUNC',
-                           'CHEM_SPECIES_ADDRESSED', 
-                           'PSEUDOPOT_TYPE', 'SOFTWARE_COMPATIBILITY'
-                          ]
+                  props = ['$name', 'PSEUDOPOT_VERSION', 
+                           'CHEM_SPECIES_ADDRESSED'] + list(defaults.keys())
         ).df)
     if suggestions:
         suggestions = pd.concat(suggestions, ignore_index=True)
