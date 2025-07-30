@@ -65,6 +65,10 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props['sim_coretime_in_hours'] = cdict['sim_coretime_hours']
         if 'number_cores' in cdict.keys():
             props['ncores'] = cdict['number_cores']
+        if 'queue' in cdict.keys():
+            props['hpc_job_queue'] = cdict['queue']
+        if 'queue id' in cdict.keys():
+            props['hpc_job_id'] = cdict['queue id']
 
         # scientific
         if 'maximum_iterations' in cdict.keys():
@@ -150,7 +154,6 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 props['atom_md_init_press_in_gpa'] = cdict['initial_pressure']
             if 'target_pressure' in cdict.keys():
                 props['atom_targ_press_in_gpa'] = cdict['target_pressure']
-
             
         if 'job_type' in cdict.keys() and 'Murn' in cdict['job_type']: # TODO general way to do this? Put together 
             props['description'] = 'Murnaghan job for structural optimization.' + props['description']
@@ -185,8 +188,8 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         if 'xc_functional' in cdict.keys():
             if cdict['xc_functional'] == 'LDA':
                 props['atom_xc_functional'] = 'XC_FUNC_LDA'
-            elif cdict['xc_functional'] in ('PBE', 'GGA'):
-                props['atom_xc_functional'] = 'XC_FUNC_GGA'
+            elif cdict['xc_functional'] in ('PBE', 'GGA'): # TODO: this needs attention and better resolving
+                props['atom_xc_functional'] = 'XC_FUNC_PBE'
             else:
                 import warnings
                 warnings.warn(f"XC functional '{props['atom_xc_functional']}' is not yet mapped.")
@@ -292,6 +295,8 @@ def map_struct_to_ob(props, cdict, concept_dict):
     if 'bravais_lattice' in cdict.keys():
         bvl_map = get_bravais_lattice_mapping(cdict['bravais_lattice'])
         props['bravais_lattice'] = bvl_map
+    if 'comments' in cdict.keys():
+        props['notes'] = cdict['comments']
 
 def dataset_job_h5(cdict):
     from datetime import datetime
