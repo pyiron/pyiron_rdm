@@ -17,11 +17,7 @@ def classic_structure(pr, structure, structure_name, options, is_init_struct: bo
             struct_params = {}
     else:
         struct_params = {}
-    struct_cdict = process_structure_crystal(pr, structure, structure_name, structure_path, struct_params)
-    if options.get('defects'):
-        struct_cdict['defects'] = options['defects']
-    if options.get('comments'):
-        struct_cdict['comments'] = options['comments']
+    struct_cdict = process_structure_crystal(pr, structure, structure_name, structure_path, struct_params, options)
 
     return struct_cdict
 

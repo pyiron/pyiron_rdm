@@ -40,7 +40,7 @@ def process_lammps_job(job):
         json.dump(method_dict, f, indent=2)
     return method_dict
 
-def process_structure_crystal(pr, structure, structure_name, structure_path, structure_parameters: dict = None):
+def process_structure_crystal(pr, structure, structure_name, structure_path, structure_parameters: dict = None, options = None):
     sample_dict = {}
     add_structure_contexts(sample_dict)
     get_chemical_species(structure, sample_dict)
@@ -48,6 +48,10 @@ def process_structure_crystal(pr, structure, structure_name, structure_path, str
     get_simulation_cell(structure, sample_dict)
     add_structure_software(pr, structure_name, sample_dict)
     sample_dict['path'] = structure_path
+    if options.get('defects'):
+        sample_dict['defects'] = options['defects']
+    if options.get('comments'):
+        sample_dict['comments'] = options['comments']
     json_file_name = structure_path + structure_name +'_concept_dict.json'
     with open(json_file_name, 'w') as f:
         json.dump(sample_dict, f, indent=2)
