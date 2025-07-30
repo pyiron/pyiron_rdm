@@ -49,11 +49,10 @@ def software_par(cdict):
 # object types _______________________________________________
 
 
-def struct_ot():  # TODO update material
+def struct_ot():
     object_type = "SAMPLE"
     datasets = ["structure_h5", "cdict_json"]
     parents = ["material"]
-    # parents = []
     return object_type, datasets, parents
 
 
@@ -166,7 +165,7 @@ def pseudopotential_suggester(o, structure, **kwargs):
     defaults = {
         "PSEUDOPOT_TYPE": "PSEUDOPOT_PAW",
         "PSEUDOPOT_FUNC": "PSEUDOPOT_GGA",
-        "SOFTWARE_COMPATIBILITY": "VASP",
+        "SOFTWARE_COMPATIBILITY": "VASP"
     }
     suggestions = []
     for chem_sp in chem_species:

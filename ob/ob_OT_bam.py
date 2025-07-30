@@ -124,3 +124,47 @@ def species_by_num_to_pct(props):
     species_by_num = eval(props["chem_species_by_n_atoms"])
     species_by_pct = {at: np.round(species_by_num[at]*100/props["n_atoms_total"], 2) for at in species_by_num.keys()}
     return str(species_by_pct)
+
+def pseudopotential_suggester(o, structure, **kwargs):
+    """
+    defaults:
+        'PSEUDOPOT_TYPE': 'PSEUDOPOT_PAW'
+        'PSEUDOPOT_FUNC': 'PSEUDOPOT_GGA'
+        'SW_COMPATIBILITY': 'VASP'
+    """
+    import pandas as pd
+
+    chem_species = list(structure.get_species_symbols())
+    defaults = {
+        "PSEUDOPOT_TYPE": "PSEUDOPOT_PAW",
+        "PSEUDOPOT_FUNC": "PSEUDOPOT_GGA",
+        "SW_COMPATIBILITY": "VASP"
+    }
+    suggestions = []
+    for chem_sp in chem_species:
+        suggestions.append(o.get_objects(type = 'PSEUDOPOTENTIAL',
+                  where = {**defaults, **kwargs,
+                          'CHEM_SPECIES_ADDRESSED': chem_sp
+                          },
+                  props = ['$name', 'VERSION', 
+                           'CHEM_SPECIES_ADDRESSED'] + list(defaults.keys())
+        ).df)
+    if suggestions:
+        suggestions = pd.concat(suggestions, ignore_index=True)
+
+        # Add and then drop temporary datetime column for sorting
+        suggestions['_PSEUDO_DATE'] = pd.to_datetime(suggestions['VERSION'], format='%d%b%Y', errors='coerce')
+        suggestions = suggestions.sort_values(by='_PSEUDO_DATE', ascending=False).drop(columns=['_PSEUDO_DATE'])
+        return suggestions
+    return
+
+# this is the exact same as SFB !
+def slow_pseudopotential_suggester(
+    o, job
+):  # could also take job['POTCAR'] instead? In case already loaded somewhere?
+    potcar = job["POTCAR"]
+    paw_lines = [
+        line.strip().replace(" ", "_").upper() for line in potcar if "PAW" in line
+    ]
+    return o.get_objects(type="PSEUDOPOTENTIAL", code=paw_lines)
+
