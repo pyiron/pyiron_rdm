@@ -165,17 +165,18 @@ def pseudopotential_suggester(o, structure, **kwargs):
     defaults = {
         "PSEUDOPOT_TYPE": "PSEUDOPOT_PAW",
         "PSEUDOPOT_FUNC": "PSEUDOPOT_GGA",
-        "SOFTWARE_COMPATIBILITY": "VASP"
+        "SOFTWARE_COMPATIBILITY": "VASP",
     }
     suggestions = []
     for chem_sp in chem_species:
-        suggestions.append(o.get_objects(type = 'PSEUDOPOTENTIAL',
-                  where = {**defaults, **kwargs,
-                          'CHEM_SPECIES_ADDRESSED': chem_sp
-                          },
-                  props = ['$name', 'PSEUDOPOT_VERSION',
-                           'CHEM_SPECIES_ADDRESSED'] + list(defaults.keys())
-        ).df)
+        suggestions.append(
+            o.get_objects(
+                type="PSEUDOPOTENTIAL",
+                where={**defaults, **kwargs, "CHEM_SPECIES_ADDRESSED": chem_sp},
+                props=["$name", "PSEUDOPOT_VERSION", "CHEM_SPECIES_ADDRESSED"]
+                + list(defaults.keys()),
+            ).df
+        )
     if suggestions:
         suggestions = pd.concat(suggestions, ignore_index=True)
 
@@ -203,7 +204,7 @@ def slow_pseudopotential_suggester(
 def get_atomic_percent_dict(species_dict: dict):
     total_atoms = sum(species_dict.values())
     atomic_pct_dict = {
-        k: species_dict[k] / total_atoms * 100 for k in sorted(species_dict.items())
+        k: species_dict[k] / total_atoms * 100 for k in sorted(species_dict.keys())
     }
     return atomic_pct_dict
 
@@ -216,6 +217,18 @@ def is_within_tolerance(reference: dict, candidate: dict, tol: float):
     return True
 
 
+def get_subsystems(chemsys: str) -> list:
+    import itertools
+
+    elements = chemsys.split("-")
+    elements.sort()
+    all_combinations = []
+    for r in range(1, 1 + len(elements)):
+        combinations = itertools.combinations(elements, r)
+        all_combinations.extend(combinations)
+    return ["-".join(combination) for combination in all_combinations]
+
+
 def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
     # tolerance is a decimal number
     chem_system = "-".join(sorted(structure.get_species_symbols()))
@@ -226,16 +239,26 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
     atomic_pct_dict = get_atomic_percent_dict(species_dict)
 
     # matching candidates from openBIS
-    candidates = o.get_objects(
-        type="CRYSTALLINE_MATERIAL",
-        where={
-            "CHEMICAL_SYSTEM": chem_system,
-            # 'SPACE_GROUP_SHORT': space_group,
-            **kwargs,
-        },
-        # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 'SPACE_GROUP_SHORT']
-        props=list(kwargs.keys()) + ["CHEMICAL_SYSTEM"],
+    candidates = []
+    for chemical_system in get_subsystems(chem_system):
+        candidates += o.get_objects(
+            type="CRYSTALLINE_MATERIAL",
+            where={
+                "CHEMICAL_SYSTEM": chemical_system,
+                # 'SPACE_GROUP_SHORT': space_group,
+            },
+            props=list(kwargs.keys()) + ["CHEMICAL_SYSTEM"],
+            # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 'SPACE_GROUP_SHORT']
+        )
+
+    # define properties to display
+    props = (
+        o.get_object_type("CRYSTALLINE_MATERIAL")
+        .get_property_assignments()
+        .df.code.to_list()
     )
+    props.remove("COMMENTS")
+    props.remove("STRUCTURE_ANIMATION")
 
     # candidates filtered by atomic composition
     filtered = []
@@ -248,4 +271,5 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
         candidate_atomic_pct = literal_eval(atomic_pct)
         if is_within_tolerance(atomic_pct_dict, candidate_atomic_pct, tol):
             filtered.append(candidate.permId)
-    return o.get_objects(permId=filtered, props="*")
+
+    return o.get_objects(permId=filtered, props=props)
