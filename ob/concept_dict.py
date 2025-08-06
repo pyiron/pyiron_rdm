@@ -15,6 +15,8 @@ import numpy as np
 import ast
 import json
 from typing import Optional
+import warnings
+from ase import units
 
 def process_general_job(job):
     method_dict = {}
@@ -38,7 +40,7 @@ def process_lammps_job(job):
         json.dump(method_dict, f, indent=2)
     return method_dict
 
-def process_structure_crystal(pr, structure, structure_name, structure_path, structure_parameters: dict = None):
+def process_structure_crystal(pr, structure, structure_name, structure_path, structure_parameters: dict = None, options = None):
     sample_dict = {}
     add_structure_contexts(sample_dict)
     get_chemical_species(structure, sample_dict)
@@ -46,6 +48,10 @@ def process_structure_crystal(pr, structure, structure_name, structure_path, str
     get_simulation_cell(structure, sample_dict)
     add_structure_software(pr, structure_name, sample_dict)
     sample_dict['path'] = structure_path
+    if options.get('defects'):
+        sample_dict['defects'] = options['defects']
+    if options.get('comments'):
+        sample_dict['comments'] = options['comments']
     json_file_name = structure_path + structure_name +'_concept_dict.json'
     with open(json_file_name, 'w') as f:
         json.dump(sample_dict, f, indent=2)
@@ -486,35 +492,63 @@ def add_simulation_software(job, method_dict):
             "value": str(job.database_entry.timestart.strftime("%Y-%m-%d %H:%M:%S")),
         }
     )
-    pyiron_job_details.append(
-        {
-            "label": "job_stoptime",
-            "value": str(job.database_entry.timestop.strftime("%Y-%m-%d %H:%M:%S")),
-        }
-    )
-    pyiron_job_details.append(
-        {
-            "label": "sim_coretime_hours",
-            "value": np.round(job.database_entry.totalcputime/3600, 6),
-        }
-    )
+    try:
+        pyiron_job_details.append(
+            {
+                "label": "job_stoptime",
+                "value": str(job.database_entry.timestop.strftime("%Y-%m-%d %H:%M:%S")),
+            }
+        )
+    except AttributeError: # if job.database_entry.timestop = None - TODO better error handling
+        pass
+    try:
+        pyiron_job_details.append(
+            {
+                "label": "sim_coretime_hours",
+                "value": np.round(job.database_entry.totalcputime/3600, 6),
+            }
+        )
+    except TypeError: # if job.database_entry.totalcputime = None - TODO better error handling
+        pass
+
+    server = job.to_dict()['server']
     pyiron_job_details.append(
         {
             "label": "number_cores",
-            "value": job.to_dict()['server']['cores'],
+            "value": server['cores'],
         }
     )
     pyiron_job_details.append(
         {
             "label": "host",
-            "value": job.to_dict()['server']['host'],
+            "value": server['host'],
         }
     )
+    if server['queue']: # TODO: testif we could skip conditionals and not get 'None' on openBIS
+        pyiron_job_details.append(
+            {
+                "label": "queue",
+                "value": server['queue']
+            }
+        )
+    if server['qid']:
+        pyiron_job_details.append(
+            {
+                "label": "queue id",
+                "value": str(server['qid'])
+            }
+        )
  
     try:
         software = {
             "label": job.to_dict()['executable']['name'].upper() + ' ' + job.to_dict()['executable']['version'],
         }
+        method_dict["software"] = [software]
+    except TypeError: # if version None - will throw an error when uploading but we have some info
+        software = {
+            "label": job.to_dict()['executable']['name'].upper(),
+        }
+        # software['label'] += ' 5.4.4' #TODO remove !!!! workaround only!!!!
         method_dict["software"] = [software]
     except KeyError:
         pass
@@ -926,61 +960,46 @@ def add_vasp_contexts(method_dict):
     #method_dict['@context']['software'] = '"@id": "https://www.vasp.at/","label": "VASP"'
     method_dict['@context']['dft'] = "http://purls.helmholtz-metadaten.de/asmo/DensityFunctionalTheory"
     method_dict['@context']['xc_functional'] = 'https://w3id.org/mdo/calculation/hasXCFunctional'
+    method_dict['@context']['VASP'] = 'https://purls.helmholtz-metadaten.de/msekg/E425582'
+    method_dict['@context']['job_details'] = 'http://id-from-pmdco-pending'
+    method_dict['@context']['periodic_boundary_condition'] = 'http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition'
+    method_dict['@context']['k_point_mesh'] = 'http://purls.helmholtz-metadaten.de/asmo/KPointMesh'
+    method_dict['@context']['k_point_generation'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['electronic_smearing'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['smearing_parameter_sigma'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['electronic_minimization_algorithm'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['ionic_minimization_algorithm'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['spin_polarization'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['input_magnetic_moments'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['electronic_energy_tolerance'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['ionic_energy_tolerance'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['force_tolerance'] = 'http://purls.helmholtz-metadaten.de/asmo/InputParameter'
+    method_dict['@context']['final_total_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalEnergy'
+    method_dict['@context']['final_potential_energy'] = 'http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy'
+    method_dict['@context']['final_total_volume'] = 'http://purls.helmholtz-metadaten.de/asmo/Volume'
+    method_dict['@context']['final_maximum_force'] = 'http://purls.helmholtz-metadaten.de/asmo/Force'
+    method_dict['@context']['final_total_magnetic_moment'] = 'http://purls.helmholtz-metadaten.de/asmo/TotalMagneticMoment'
+    method_dict['@context']['number_ionic_steps'] = 'http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps'
 
 def identify_vasp_method(job, method_dict):
     # copy-pasted from pyiron-conceptual-dictionary
     indf = job.input.incar.to_dict()
     params = indf['data_dict']['Parameter']
     vals = indf['data_dict']['Value']
-    mlist = []
-    for p,v in zip(params, vals):
-        mlist.append(p + '=' + v)
-    mstring = ';'.join(mlist)
-    raw = mstring.split(';')
-    mdict = {}
-    for r in raw:
-        rsplit = r.split('=')
-        if len(rsplit) == 2:
-            mdict[rsplit[0].replace(' ','')] = rsplit[1].replace(' ','')
-    dof = []
-    if 'ISIF' in mdict.keys():
-        if mdict['ISIF'] in ['0', '1', '2']:
-            dof.append('AtomicPositionRelaxation')
-        elif mdict['ISIF'] == '3':
-            dof.append('AtomicPositionRelaxation')
-            dof.append('CellShapeRelaxation')
-            dof.append('CellVolumeRelaxation')
-        elif mdict['ISIF'] == '4':
-            dof.append('AtomicPositionRelaxation')
-            dof.append('CellShapeRelaxation')
-        elif mdict['ISIF'] == '5':
-            dof.append('CellShapeRelaxation')
-        elif mdict['ISIF'] == '6':
-            dof.append('CellShapeRelaxation')
-            dof.append('CellVolumeRelaxation')
-        elif mdict['ISIF'] == '7':
-            dof.append('CellVolumeRelaxation')
-        elif mdict['ISIF'] == '8':
-            dof.append('AtomicPositionRelaxation')
-            dof.append('CellVolumeRelaxation')
-    if 'NSW' in mdict.keys():
-        if mdict['NSW'] == '0':
-            dof = []
+    mdict = {str(p).replace(' ', ''): str(v).replace(' ', '') for p, v in zip(params, vals)}
 
     method_dict['dft'] = {}
-    method_dict['dof'] = dof
-
     method_dict['dft']['inputs'] = []
 
     encut_dict = {}
-    encut_dict['value'] = mdict['ENCUT']
+    encut_dict['value'] = float(mdict.get('ENCUT', 0)) # TODO: try to read OUTCAR if default (None now)
     encut_dict['label'] = 'energy_cutoff'
     encut_dict['unit'] = 'EV'
     method_dict['dft']['inputs'].append(encut_dict)
 
     indf = job.input.to_dict()['kpoints/data_dict']
     params = indf['Parameter']
-    vals = indf['Value']   
+    vals = indf['Value']
 
     kpoint_type = vals[2]
     kpoint_grid = vals[3]
@@ -990,13 +1009,101 @@ def identify_vasp_method(job, method_dict):
     kpoint_dict['value'] = kpoint_grid
     method_dict['dft']['inputs'].append(kpoint_dict)
 
+    spin_dict = {}
+    spin_dict['value'] = (mdict.get('ISPIN') == '2')
+    spin_dict['label'] = 'spin_polarization'
+    method_dict['dft']['inputs'].append(spin_dict)
+
+    if 'MAGMOM' in mdict.keys():
+        mg_val = mdict['MAGMOM'].split(' ')
+        cleaned_mg_val = [x for x in mg_val if x]
+        cleaned_mg_val = [float(i) for i in cleaned_mg_val]
+        inp_magmom_dict = {}
+        inp_magmom_dict['value'] = str(np.array(cleaned_mg_val, dtype='float32'))
+        inp_magmom_dict['label'] = 'input_magnetic_moments'
+        inp_magmom_dict['unit'] = 'BOHR-MAGNETON'
+        method_dict['dft']['inputs'].append(inp_magmom_dict)
+
+    elec_min_algo_dict = {}
+    elec_min_algo_dict['value'] = mdict['ALGO']
+    elec_min_algo_dict['label'] = 'electronic_minimization_algorithm'
+    method_dict['dft']['inputs'].append(elec_min_algo_dict)
+
+    ediff_dict = {}
+    ediff_dict['value'] = float(mdict.get('EDIFF', 1e-4))
+    ediff_dict['label'] = 'electronic_energy_tolerance'
+    ediff_dict['unit'] = 'EV'
+    method_dict['dft']['inputs'].append(ediff_dict)
+
+    dof = []
+    if int(mdict.get('NSW', '0')): # not a static calculation
+        if mdict.get('ISIF', '0') in ['0', '1', '2', '3', '4', '8']:
+            dof.append('http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation')
+        if mdict.get('ISIF') in ['3', '4', '5', '6']:
+            dof.append('http://purls.helmholtz-metadaten.de/asmo/CellShapeRelaxation')
+        if mdict.get('ISIF') in ['3', '6', '7', '8']:
+            dof.append('http://purls.helmholtz-metadaten.de/asmo/CellVolumeRelaxation')
+
+        ion_min_algo_dict = {'label': 'ionic_minimization_algorithm'}
+        ibrion_algo_map = {
+            '1': 'rmm-diis', 
+            '2': 'cg', 
+            '3': 'damped_md'
+        }
+        ionic_min_algo_val = ibrion_algo_map.get(mdict.get('IBRION'))
+        if ionic_min_algo_val:
+            ion_min_algo_dict = {'label': 'ionic_minimization_algorithm',
+                                 'value': ionic_min_algo_val}
+            method_dict['dft']['inputs'].append(ion_min_algo_dict)
+        else:
+            warnings.warn(f"Ionic minimization algorithm for IBRION='{mdict.get('IBRION')}' is not yet supported.")
+
+        ediffg_val = float(mdict.get('EDIFFG', ediff_dict['value']*10))
+        if ediffg_val < 0:
+            ediffg_dict = {'value': abs(ediffg_val),
+                           'label': 'force_tolerance',
+                           'unit': 'EV-PER-ANGSTROM'}
+        else:
+            ediffg_dict = {'value': ediffg_val,
+                           'label': 'ionic_energy_tolerance',
+                           'unit': 'EV'}
+        method_dict['dft']['inputs'].append(ediffg_dict)
+    method_dict['dof'] = dof
+
+    smearing_dict = {'label': 'electronic_smearing'}
+    ismear_map = {
+        '0': 'Gaussian',
+        '-1': 'Fermi',
+        '-4': 'Tetrahedron',
+        '-5': 'Tetrahedron_Bloechl'
+    }
+    smearing_val = mdict.get('ISMEAR', '1')
+    if int(smearing_val) > 0:
+        smearing_dict['value'] = 'Methfessel-Paxton'
+        method_dict['dft']['inputs'].append(smearing_dict)
+    elif ismear_map.get(smearing_val):
+        smearing_dict['value'] = ismear_map.get(smearing_val)
+        method_dict['dft']['inputs'].append(smearing_dict)
+    else:
+        warnings.warn(f"Smearing algorithm for ISMEAR='{mdict.get('ISMEAR')}' is not yet supported.")
+
+    sigma_dict = {}
+    if not mdict.get('SIGMA'):
+        if smearing_val in ['0', '1']:
+            sigma_dict['value'] = 0.2
+        else:
+            sigma_dict['value'] = 0.0
+    else:
+        sigma_dict['value'] = float(mdict['SIGMA'])
+    sigma_dict['label'] = 'smearing_parameter_sigma'
+    sigma_dict['unit'] = 'EV'
+    method_dict['dft']['inputs'].append(sigma_dict)
+
     indf = job.input.to_dict()['potcar/data_dict']
     xc = indf['Value'][0]
     method_dict['xc_functional'] = xc
 
 def extract_vasp_calculated_quantities(job, method_dict):
-    # mostly copy-pasted from pyiron_concept_dictionary // lammps
-    # TODO how many decimals? lammps does 4, not 5
     """
     Extracts calculated quantities from a job.
 
@@ -1011,21 +1118,68 @@ def extract_vasp_calculated_quantities(job, method_dict):
         A list of dictionaries, each containing the label, value, unit, and associate_to_sample of a calculated quantity.
 
     """
+
+    indf = job.input.incar.to_dict()
+    params = indf['data_dict']['Parameter']
+    vals = indf['data_dict']['Value']
+    mdict = {str(p).replace(' ', ''): str(v).replace(' ', '') for p, v in zip(params, vals)}
+
     outputs = []
     outputs.append(
         {
-            "label": "average_total_energy",
-            "value": np.round(job.output.energy_tot[-1], decimals=5),
+            "label": "final_total_energy",
+            "value": np.round(job.output.energy_tot[-1], decimals=4),
             "unit": "EV",
         }
     )
     outputs.append(
         {
+            "label": "final_potential_energy",
+            "value": np.round(job.output.energy_pot[-1], decimals=4),
+            "unit": "EV",
+        }
+    )
+    outputs.append(
+        {
+            "label": "final_maximum_force",
+            "value": np.round(job.output.force_max[-1], decimals=16),
+            "unit": "EV-PER-ANGSTROM",
+        }
+    )
+    outputs.append(
+        {
             "label": "final_total_volume",
-            "value": np.round(job.output.volume[-1], decimals=5),
+            "value": np.round(job.output.volume[-1], decimals=4),
             "unit": "ANGSTROM3",
         }
     )
+    if job.input.incar['ISPIN'] == 2:
+        outputs.append(
+        {
+            "label": "final_total_magnetic_moment",
+            "value": np.round(job['output']['generic']['dft']['magnetization'][-1][-1], decimals=4),
+            "unit": "BOHR-MAGNETON",
+        }
+    )
+    if 'NSW' in mdict.keys() and mdict['NSW'] != '0':
+        outputs.append(
+            {
+                "label": "number_ionic_steps",
+                "value": len(job.output.steps)-1,
+            }
+        )
+        try:
+            fpress = 1/3*(job.output.pressures[-1][0]+job.output.pressures[-1][1]+job.output.pressures[-1][2])
+        except IndexError: # sometimes the avg is already calculated an a single value stored
+            fpress = job.output.pressures[-1]
+        outputs.append(
+            {
+                "label": "final_pressure",
+                "value": np.round(fpress/units.GPa, decimals=4), # is in eV/A3, need GPa
+                "unit": "GigaPA",
+            }
+        )
+    method_dict['outputs'] = outputs
 
 def export_env(path):
     """Exports to path+_environment.yml"""
