@@ -294,6 +294,8 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
         ob_type, parents, where, attrs, code = get_inv_parent(
             inv_parent, cdict, props_dict, options
         )
+        if parents is not None:
+            parents = [o.get_object(p).permId for p in parents]
         if parents:  # multiple parents allowed when more permIds provided
             parents = o.get_objects(
                 type=ob_type,
