@@ -114,7 +114,7 @@ def validate_upload_options(options, allowed_keys, allowed_defects=None):
     materials = options.get('materials')
     if materials:
         if not isinstance(materials, list):
-            options['pseudopotentials'] = [options['pseudopotentials']]
+            options['materials'] = [options['materials']]
     pseudopots = options.get('pseudopotentials')
     if pseudopots:
         if not isinstance(pseudopots, list):
