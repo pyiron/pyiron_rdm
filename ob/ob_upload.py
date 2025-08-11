@@ -310,7 +310,7 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
                 )
         elif code or where:  # single parent allowed otherwise; taking the first
             parent = o.get_objects(
-                type=ob_type, permId=parents, code=code, where=where, attrs=attrs
+                type=ob_type, permId=permids, code=code, where=where, attrs=attrs
             )[0]
             if parent:
                 ob_parents.append(parent)
