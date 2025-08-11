@@ -326,7 +326,7 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             )
         else:
             issues_str = "Parent object not found: Not enough information to search. Known information: "
-            issues_str += f'type = {ob_type}, permId = "{parents}", code = "{code}", attribute match: {where}'
+            issues_str += f'type = {ob_type}, permId = "{permids}", code = "{code}", attribute match: {where}'
             issues.append(issues_str)
 
     return issues, ob_parents
