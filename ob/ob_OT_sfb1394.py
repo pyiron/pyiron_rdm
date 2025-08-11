@@ -4,17 +4,17 @@
 def material_par(props_dict: dict, options: dict):
     if options.get("materials"):
         object_type = "CRYSTALLINE_MATERIAL"
-        parent_materials = options["materials"]
+        permid_materials = options["materials"]
         where_clause = {}
         requested_attrs = []
     else:
         mat_dict_pct_str = species_by_num_to_pct(props_dict)
         object_type = "MATERIAL"
-        parent_materials = ""
+        permid_materials = ""
         where_clause = {"compo_atomic_percent": mat_dict_pct_str}
         requested_attrs = ["compo_atomic_percent"]
         # could output a warning here to provide a crystalline_material permId
-    return object_type, parent_materials, where_clause, requested_attrs
+    return object_type, permid_materials, where_clause, requested_attrs
 
 
 def interatomicpot_par(cdict):
@@ -32,8 +32,8 @@ def workstation_par(cdict):
 
 def pseudopot_par(options):
     object_type = "PSEUDOPOTENTIAL"
-    parent_pseudopots = options.get("pseudopotentials", "")
-    return object_type, parent_pseudopots
+    permid_pseudopots = options.get("pseudopotentials", "")
+    return object_type, permid_pseudopots
 
 
 def software_par(cdict):
@@ -106,9 +106,9 @@ def get_ot_info(cdict):
 
 
 def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
-    ob_type, parents, where_clause, requested_attrs, ob_code = "", "", {}, [], ""
+    ob_type, permids, where_clause, requested_attrs, ob_code = "", "", {}, [], ""
     if parent_name == "material":
-        ob_type, parents, where_clause, requested_attrs = material_par(
+        ob_type, permids, where_clause, requested_attrs = material_par(
             props_dict, options
         )
     elif parent_name == "workstation":
@@ -118,9 +118,9 @@ def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
     elif parent_name == "interatomic_potential":
         ob_type, where_clause, requested_attrs = interatomicpot_par(cdict)
     elif parent_name == "pseudopotential":
-        ob_type, parents = pseudopot_par(options)
+        ob_type, permids = pseudopot_par(options)
 
-    return ob_type, parents, where_clause, requested_attrs, ob_code
+    return ob_type, permids, where_clause, requested_attrs, ob_code
 
 
 # upload options ______________________________________________
