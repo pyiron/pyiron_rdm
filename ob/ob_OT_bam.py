@@ -3,15 +3,15 @@
 def material_par(props_dict, options):
     object_type = "MATERIAL_V1"
     if options.get("materials"):
-        parent_materials = options["materials"]
+        permid_materials = options["materials"]
         where_clause = {}
         requested_attrs = []
     else:
         mat_dict_pct_str = species_by_num_to_pct(props_dict)
         where_clause = {"chem_species_by_comp_in_pct": mat_dict_pct_str}
         requested_attrs = ["chem_species_by_comp_in_pct"]
-        parent_materials = ""
-    return object_type, parent_materials, where_clause, requested_attrs
+        permid_materials = ""
+    return object_type, permid_materials, where_clause, requested_attrs
 
 def intpot_par(cdict):
     object_type = "INTERATOMIC_POTENTIAL"
@@ -21,8 +21,8 @@ def intpot_par(cdict):
 
 def pseudopot_par(options):
     object_type = "PSEUDOPOTENTIAL"
-    parent_pseudopots = options.get("pseudopotentials", "")
-    return object_type, parent_pseudopots
+    permid_pseudopots = options.get("pseudopotentials", "")
+    return object_type, permid_pseudopots
 
 def sw_par(cdict):
     import re
@@ -97,9 +97,9 @@ def get_ot_info(cdict):
         )
     
 def get_inv_parent(parent_name, cdict, props_dict, options):
-    ob_type, parents, where_clause, requested_attrs, ob_code = "", "", {}, [], ""
+    ob_type, permids, where_clause, requested_attrs, ob_code = "", "", {}, [], ""
     if parent_name == "material":
-        ob_type, parents, where_clause, requested_attrs = material_par(props_dict, options)
+        ob_type, permids, where_clause, requested_attrs = material_par(props_dict, options)
     elif parent_name == "compute_resource":
         ob_type, ob_code = compresource_par(cdict)
     elif parent_name == "software":
@@ -111,7 +111,7 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
     elif parent_name == "wf_reference":
         ob_type, ob_code = wfref_par(cdict)
 
-    return ob_type, parents, where_clause, requested_attrs, ob_code
+    return ob_type, permids, where_clause, requested_attrs, ob_code
     
 # upload options ______________________________________________
 
