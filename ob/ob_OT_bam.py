@@ -21,8 +21,8 @@ def intpot_par(cdict):
 
 def pseudopot_par(options):
     object_type = "PSEUDOPOTENTIAL"
-    parent_materials = options.get("pseudopotentials", "")
-    return object_type, parent_materials
+    parent_pseudopots = options.get("pseudopotentials", "")
+    return object_type, parent_pseudopots
 
 def sw_par(cdict):
     import re

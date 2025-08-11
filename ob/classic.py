@@ -111,6 +111,14 @@ def validate_upload_options(options, allowed_keys, allowed_defects=None):
                 raise ValueError(
                     f'Invalid defect(s) in "options[\'defects\']": {sorted(invalid_defects)}. \
                     Allowed defects are: {sorted(allowed_defects)}')
+    materials = options.get('materials')
+    if materials:
+        if not isinstance(materials, list):
+            options['pseudopotentials'] = [options['pseudopotentials']]
+    pseudopots = options.get('materials')
+    if pseudopots:
+        if not isinstance(pseudopots, list):
+            options['pseudopotentials'] = [options['pseudopotentials']]
 
 def openbis_login(url, username, instance='bam', s3_config_path = None):
     #instance = get_datamodel(o)
