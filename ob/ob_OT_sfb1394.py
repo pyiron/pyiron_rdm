@@ -269,7 +269,10 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
         from ast import literal_eval
 
         candidate_atomic_pct = literal_eval(atomic_pct)
-        if is_within_tolerance(atomic_pct_dict, candidate_atomic_pct, tol):
+        if len(candidate_atomic_pct) == 1:
             filtered.append(candidate.permId)
+        elif len(candidate_atomic_pct) > 1:
+            if is_within_tolerance(atomic_pct_dict, candidate_atomic_pct, tol):
+                filtered.append(candidate.permId)            
 
     return o.get_objects(permId=filtered, props=props)
