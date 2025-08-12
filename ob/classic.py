@@ -169,6 +169,9 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
 
     if not collection:
         collection = pr.name
+    space = space.upper()
+    project = project.upper()
+    collection = collection.upper()
 
 # ------------------------------------VALIDATION----------------------------------------------
     cdicts_to_validate = []
