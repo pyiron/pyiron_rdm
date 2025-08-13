@@ -229,7 +229,19 @@ def get_subsystems(chemsys: str) -> list:
     return ["-".join(combination) for combination in all_combinations]
 
 
-def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
+def crystalline_material_suggester(o, structure, tol: float = 0.02, obenbis_kwargs):
+    """ Suggest a list of crystalline materials for the structure of interest
+
+        Args: 
+           o: openbis session object to query.
+           structure (Atoms, str): The structure to find materials in the openBIS instance for.
+           tol (float): Tolerance for the matching of the chemical composition, ramp it up to find more materials.
+           openbis_kwargs (dict): expert feature, a dictionary of openBIS instance specific CODES and their values to filter further.
+        Returns:
+           ob_objects: openbis query result, you may use ob_objects.df to get a pandas dataframe of the data.
+    
+    """
+
     # tolerance is a decimal number
     chem_system = "-".join(sorted(structure.get_species_symbols()))
     # space_group = 'SPACE_GROUP_' + str(structure.get_symmetry().spacegroup['Number'])
@@ -275,4 +287,5 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
             if is_within_tolerance(atomic_pct_dict, candidate_atomic_pct, tol):
                 filtered.append(candidate.permId)            
 
-    return o.get_objects(permId=filtered, props=props)
+    ob_objects= o.get_objects(permId=filtered, props=props)
+    return ob_objects
