@@ -191,7 +191,7 @@ def pseudopotential_suggester(o, structure, **kwargs):
     return
 
 
-def slow_pseudopotential_suggester(
+def slow_pseudopotential_matcher(
     o, job
 ):  # could also take job['POTCAR'] instead? In case already loaded somewhere?
     potcar = job["POTCAR"]
