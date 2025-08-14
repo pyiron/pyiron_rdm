@@ -229,38 +229,42 @@ def get_subsystems(chemsys: str) -> list:
     return ["-".join(combination) for combination in all_combinations]
 
 
-def crystalline_material_suggester(o, structure, tol: float = 0.02, obenbis_kwargs):
+def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group: int|None =None, list_pure_subsystems: bool =False, openbis_kwargs: dict|None = None):
     """ Suggest a list of crystalline materials for the structure of interest
 
         Args: 
-           o: openbis session object to query.
-           structure (Atoms, str): The structure to find materials in the openBIS instance for.
-           tol (float): Tolerance for the matching of the chemical composition, ramp it up to find more materials.
+           o: openbis session object to query the material from.
+           structure (Atoms, str): The structure for which to find materials in the openBIS instance for.
+           tol (float): Tolerance as decimal number < 1 for the matching of the chemical composition; ramp it up to find more materials.
+           space_group (int): Only display materials with this space group number
+           list_pure_subsystems (bool): wheter to search materials for each subsystem with their composition and tolerance.
            openbis_kwargs (dict): expert feature, a dictionary of openBIS instance specific CODES and their values to filter further.
         Returns:
            ob_objects: openbis query result, you may use ob_objects.df to get a pandas dataframe of the data.
     
     """
+    openbis_kwargs = openbis_kwargs if openbis_kwargs is not None else {}
 
-    # tolerance is a decimal number
     chem_system = "-".join(sorted(structure.get_species_symbols()))
-    # space_group = 'SPACE_GROUP_' + str(structure.get_symmetry().spacegroup['Number'])
 
     # atomic composition of structure
     species_dict = dict(structure.get_number_species_atoms())
     atomic_pct_dict = get_atomic_percent_dict(species_dict)
 
+
     # matching candidates from openBIS
     candidates = []
     for chemical_system in get_subsystems(chem_system):
+        where_dict = {"CHEMICAL_SYSTEM": chemical_system,}
+        prop_list = list(openbis_kwargs.keys()) + ["CHEMICAL_SYSTEM"]
+        if space_group is not None:
+            where_dict['SPACE_GROUP_SHORT'] =  'SPACE_GROUP_' + str(space_group)
+            prop_list += ['SPACE_GROUP_SHORT']
         candidates += o.get_objects(
             type="CRYSTALLINE_MATERIAL",
-            where={
-                "CHEMICAL_SYSTEM": chemical_system,
-                # 'SPACE_GROUP_SHORT': space_group,
-            },
-            props=list(kwargs.keys()) + ["CHEMICAL_SYSTEM"],
-            # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 'SPACE_GROUP_SHORT']
+            where=where_dict,
+            props=prop_list
+            # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 
         )
 
     # define properties to display
@@ -281,11 +285,12 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, obenbis_kwar
         from ast import literal_eval
 
         candidate_atomic_pct = literal_eval(atomic_pct)
-        if len(candidate_atomic_pct) == 1:
-            filtered.append(candidate.permId)
-        elif len(candidate_atomic_pct) > 1:
-            if is_within_tolerance(atomic_pct_dict, candidate_atomic_pct, tol):
-                filtered.append(candidate.permId)            
+        subsystem_pct_dict = atomic_pct_dict.copy()
+
+        if list_pure_subsystems:
+            subsystem_pct_dict = {k: atomic_pct_dict[k] for k in candidate_atomic_pct}
+        if is_within_tolerance(subsystem_pct_dict, candidate_atomic_pct, tol):
+            filtered.append(candidate.permId)            
 
     ob_objects= o.get_objects(permId=filtered, props=props)
     return ob_objects
