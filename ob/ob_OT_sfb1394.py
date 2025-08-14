@@ -245,6 +245,14 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group:
     """
     openbis_kwargs = openbis_kwargs if openbis_kwargs is not None else {}
 
+    if isinstance(structure, str):
+        try:
+            from ase import Atoms
+            from pyiron_atomistics import ase_to_pyiron
+            structure = ase_to_pyiron(Atoms(structure))
+        except ImportError:
+            raise ImportError('For the parsing of structure like strings, pyiron_atomistics needs to be installed.')
+
     chem_system = "-".join(sorted(structure.get_species_symbols()))
 
     # atomic composition of structure
