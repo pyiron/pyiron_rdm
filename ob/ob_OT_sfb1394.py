@@ -296,7 +296,7 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group:
         subsystem_pct_dict = atomic_pct_dict.copy()
 
         if list_pure_subsystems:
-            subsystem_pct_dict = {k: atomic_pct_dict[k] for k in candidate_atomic_pct}
+            subsystem_pct_dict = get_atomic_percent_dict({k: atomic_pct_dict[k] for k in candidate_atomic_pct})
         if is_within_tolerance(subsystem_pct_dict, candidate_atomic_pct, tol):
             filtered.append(candidate.permId)            
 
