@@ -229,7 +229,7 @@ def get_subsystems(chemsys: str) -> list:
     return ["-".join(combination) for combination in all_combinations]
 
 
-def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group: int|None =None, list_pure_subsystems: bool =False, openbis_kwargs: dict|None = None):
+def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_number: int|None =None, match_subcomposition: bool =False, openbis_kwargs: dict|None = None):
     """ Suggest a list of crystalline materials for the structure of interest
 
         Args: 
@@ -266,8 +266,8 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group:
     for chemical_system in get_subsystems(chem_system):
         where_dict = {"CHEMICAL_SYSTEM": chemical_system,}
         prop_list = list(openbis_kwargs.keys()) + ["CHEMICAL_SYSTEM"]
-        if space_group is not None:
-            where_dict['SPACE_GROUP_SHORT'] =  'SPACE_GROUP_' + str(space_group)
+        if space_group_number is not None:
+            where_dict['SPACE_GROUP_SHORT'] =  'SPACE_GROUP_' + str(space_group_number)
             prop_list += ['SPACE_GROUP_SHORT']
         candidates += o.get_objects(
             type="CRYSTALLINE_MATERIAL",
@@ -296,7 +296,7 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group:
         candidate_atomic_pct = literal_eval(atomic_pct)
         subsystem_pct_dict = atomic_pct_dict.copy()
 
-        if list_pure_subsystems:
+        if match_subcomposition:
             subsystem_pct_dict = get_atomic_percent_dict({k: atomic_pct_dict[k] for k in candidate_atomic_pct})
         if is_within_tolerance(subsystem_pct_dict, candidate_atomic_pct, tol):
             filtered.append(candidate.permId)            
