@@ -272,7 +272,6 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group:
             type="CRYSTALLINE_MATERIAL",
             where=where_dict,
             props=prop_list
-            # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 
         )
 
     # define properties to display
