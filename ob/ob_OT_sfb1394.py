@@ -248,15 +248,16 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group:
     if isinstance(structure, str):
         try:
             from ase import Atoms
-            from pyiron_atomistics import ase_to_pyiron
-            structure = ase_to_pyiron(Atoms(structure))
+            structure = Atoms(structure)
         except ImportError:
-            raise ImportError('For the parsing of structure like strings, pyiron_atomistics needs to be installed.')
+            raise ImportError('For the parsing of structure like strings, ase needs to be installed.')
 
-    chem_system = "-".join(sorted(structure.get_species_symbols()))
+    chem_system = "-".join(sorted(set(structure.get_chemical_symbols())))
 
     # atomic composition of structure
-    species_dict = dict(structure.get_number_species_atoms())
+    species_dict = dict()
+    for i in structure.get_chemical_symbols():
+         species_dict[i] = species_dict.get(i, 0) + 1
     atomic_pct_dict = get_atomic_percent_dict(species_dict)
 
 
