@@ -230,19 +230,23 @@ def get_subsystems(chemsys: str) -> list:
 
 
 def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_number: int|None =None, match_subcomposition: bool =False, openbis_kwargs: dict|None = None):
-    """ Suggest a list of crystalline materials for the structure of interest
+    """Suggests a list of crystalline materials from the openBIS inventory for a structure of interest.
 
         Args: 
-           o: openbis session object to query the material from.
-           structure (Atoms, str): The structure for which to find materials in the openBIS instance for.
-           tol (float): Tolerance as decimal number < 1 for the matching of the chemical composition; ramp it up to find more materials.
-           space_group (int): Only display materials with this space group number
-           list_pure_subsystems (bool): wheter to search materials for each subsystem with their composition and tolerance.
-           openbis_kwargs (dict): expert feature, a dictionary of openBIS instance specific CODES and their values to filter further.
+            o (pybis.Openbis): The openBIS session object used to query crystalline materials.
+            structure (Atoms | str): The structure for which to find materials in the openBIS instance.
+            tol (float): Tolerance factor for matching chemical composition. Finds all materials whose composition
+                differs by at most `tol` times the composition of the provided structure.
+            space_group (int, optional): The space group number to filter materials by. Defaults to None.
+            match_subcomposition (bool, optional): Whether to search for materials for each subsystem based on their
+                composition and tolerance. Defaults to False.
+            openbis_kwargs (dict, optional): Expert feature. A dictionary of openBIS-specific codes and their values
+                to apply additional filtering. Defaults to None.
         Returns:
-           ob_objects: openbis query result, you may use ob_objects.df to get a pandas dataframe of the data.
+            pybis.things.Things: An openBIS query result object. The data can be accessed as a pandas DataFrame via
+                `.df` attribute.
+        """
     
-    """
     openbis_kwargs = openbis_kwargs if openbis_kwargs is not None else {}
 
     if isinstance(structure, str):
