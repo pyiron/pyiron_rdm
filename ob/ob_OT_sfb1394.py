@@ -235,8 +235,10 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_
         Args: 
             o (pybis.Openbis): The openBIS session object used to query crystalline materials.
             structure (Atoms | str): The structure for which to find materials in the openBIS instance.
-            tol (float): Tolerance factor for matching chemical composition. Finds all materials whose composition
-                differs by at most `tol` times the composition of the provided structure.
+            tol (float): Tolerance factor for matching chemical composition.
+                Materials are accepted if the absolute difference in atomic percentage for each element between 
+                the candidate and reference structure is less than `100 * tol`. For example, a `tol` of 0.01 (or 1%) 
+                means atomic percentages must be within +/- 1% of the reference.
             space_group (int, optional): The space group number to filter materials by. Defaults to None.
             match_subcomposition (bool, optional): Whether to search for materials for each subsystem based on their
                 composition and tolerance. Defaults to False.
