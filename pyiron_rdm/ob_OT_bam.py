@@ -107,7 +107,7 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
     elif parent_name == "interatomic_potential":
         ob_type, where_clause, requested_attrs = intpot_par(cdict)
     elif parent_name == "pseudopotential":
-        ob_type, parents = pseudopot_par(options)
+        ob_type, permids = pseudopot_par(options)
     elif parent_name == "wf_reference":
         ob_type, ob_code = wfref_par(cdict)
 
