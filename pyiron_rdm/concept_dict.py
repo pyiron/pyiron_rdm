@@ -21,8 +21,20 @@ from ase import units
 def process_general_job(job):
     method_dict = {}
     add_simulation_software(job, method_dict)
+    add_general_contexts(method_dict)
     get_simulation_folder(job, method_dict)
     file_name = job.path + '_concept_dict.json'
+    with open(file_name, 'w') as f:
+        json.dump(method_dict, f, indent=2)
+    return method_dict
+
+def process_table_job(table_job):
+    method_dict = {}
+    add_simulation_software(table_job, method_dict)
+    add_general_contexts(method_dict)
+    extract_table_info(table_job, method_dict)
+    get_simulation_folder(table_job, method_dict)
+    file_name = table_job.path + '_concept_dict.json'
     with open(file_name, 'w') as f:
         json.dump(method_dict, f, indent=2)
     return method_dict
@@ -80,6 +92,15 @@ def process_vasp_job(job):
     with open(file_name, 'w') as f:
         json.dump(method_dict, f, indent=2)
     return method_dict
+
+def add_general_contexts(method_dict):
+    method_dict['@context'] = {}
+    method_dict['@context']['path'] = 'http://purls.helmholtz-metadaten.de/cmso/hasPath'
+    method_dict['@context']['inputs'] = 'http://purls.helmholtz-metadaten.de/asmo/hasInputParameter'
+    method_dict['@context']['label'] = 'http://www.w3.org/2000/01/rdf-schema#label'
+    method_dict['@context']['value'] = 'http://purls.helmholtz-metadaten.de/asmo/hasValue'
+    method_dict['@context']['outputs'] = 'http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty'
+    method_dict['@context']['workflow_manager'] = 'http://demo.fiz-karlsruhe.de/matwerk/E457491'
 
 def add_lammps_contexts(method_dict):
     method_dict['@context'] = {}
@@ -1180,6 +1201,47 @@ def extract_vasp_calculated_quantities(job, method_dict):
             }
         )
     method_dict['outputs'] = outputs
+
+def extract_table_info(table_job, method_dict):
+    import base64
+    import json
+
+    table_df = table_job.get_dataframe()
+    inputs = []
+    inputs.append(
+        {
+            "label": "columns",
+            "value": ", ".join(table_df.columns)
+        }
+    )
+    inputs.append(
+        {
+            "label": "number_of_jobs",
+            "value": len(table_df)
+        }
+    )
+
+    table_df_cl = table_df.head(100).astype(str).replace("nan", "NaN")
+    spreadsheet = {
+        "headers": table_df_cl.columns.to_list(),
+        "data": table_df_cl.to_numpy().tolist(),
+        "width": [150] * (len(table_df_cl.columns)),
+    }
+    preview = (
+        "<DATA>"
+        + str(
+            base64.b64encode(bytes(json.dumps(spreadsheet), encoding="utf-8")),
+            encoding="utf-8",
+        )
+        + "</DATA>"
+)
+    inputs.append(
+        {
+            "label": "table_preview",
+            "value": preview
+        }
+    )
+    method_dict['inputs'] = inputs
 
 def export_env(path):
     """Exports to path+_environment.yml"""
