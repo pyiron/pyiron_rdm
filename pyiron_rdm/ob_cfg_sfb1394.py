@@ -49,6 +49,18 @@ def map_cdict_to_ob(o, cdict, concept_dict):
     # job, project, server
     elif "job_name" in cdict.keys():
         props["$name"] = cdict["job_name"]
+        if "job_type" in cdict.keys():
+            jobtype_map = {
+                "Calphy": "CALPHY",
+                "ElasticMatrixJob": "ELASTICMATRIXJOB",
+                "PacemakerJob": "PACEMAKERJOB",
+                "PhonopyJob": "PHONOPYJOB",
+                "Sphinx": "SPHINX",
+                "TableJob": "TABLEJOB"
+            }
+            jobtype_val = jobtype_map.get(cdict.get("job_type"))
+            if jobtype_val:
+                props |= {"pyiron_job_type": jobtype_val}
         if "job_status" in cdict.keys():
             if (
                 cdict["job_status"] == "finished"
@@ -333,6 +345,17 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 "atomistic_n_kpt_y": kpts_y,
                 "atomistic_n_kpt_z": kpts_z,
             }
+
+        if "job_type" in cdict.keys() and "TableJob" in cdict["job_type"]:
+            try:
+                num_jobs = cdict["number_of_jobs"]
+                cols = cdict["columns"]
+                props["description_multiline"] = f"Pyiron table job from {num_jobs} jobs \
+                    with the following columns: {cols}." + props["description_multiline"]
+            except KeyError:
+                pass
+            if "table_preview" in cdict.keys():
+                props["pyiron_table_preview"] = cdict["table_preview"]
 
     else:
         print(

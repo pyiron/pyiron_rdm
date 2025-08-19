@@ -291,26 +291,26 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
     ob_parents = []
     get_inv_parent = importlib.import_module(o.ot).get_inv_parent
     for inv_parent in inv_parents:
-        ob_type, permids, where, attrs, code = get_inv_parent(
+        ob_type, parents, where, attrs, code = get_inv_parent(
             inv_parent, cdict, props_dict, options
         )
-        if permids is not None:
-            permids = [o.get_object(p).permId for p in permids]
-        if permids:  # multiple parents allowed when more permIds provided
+        if parents is not None:
+            parents = [o.get_object(p).permId for p in parents]
+        if parents:  # multiple parents allowed when more permIds provided
             parents = o.get_objects(
                 type=ob_type,
-                permId=permids,
+                permId=parents,
             )
 
             if parents:
                 ob_parents += parents
             else:
                 issues.append(
-                    f'Parent object not found: No objects of the type {ob_type} and permId "{permids}" in inventory.'
+                    f'Parent object not found: No objects of the type {ob_type} and permId "{parents}" in inventory.'
                 )
         elif code or where:  # single parent allowed otherwise; taking the first
             parent = o.get_objects(
-                type=ob_type, permId=permids, code=code, where=where, attrs=attrs
+                type=ob_type, permId=parents, code=code, where=where, attrs=attrs
             )[0]
             if parent:
                 ob_parents.append(parent)
@@ -326,7 +326,7 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             )
         else:
             issues_str = "Parent object not found: Not enough information to search. Known information: "
-            issues_str += f'type = {ob_type}, permId = "{permids}", code = "{code}", attribute match: {where}'
+            issues_str += f'type = {ob_type}, permId = "{parents}", code = "{code}", attribute match: {where}'
             issues.append(issues_str)
 
     return issues, ob_parents

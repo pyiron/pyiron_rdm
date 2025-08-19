@@ -4,17 +4,17 @@
 def material_par(props_dict: dict, options: dict):
     if options.get("materials"):
         object_type = "CRYSTALLINE_MATERIAL"
-        permid_materials = options["materials"]
+        parent_materials = options["materials"]
         where_clause = {}
         requested_attrs = []
     else:
         mat_dict_pct_str = species_by_num_to_pct(props_dict)
         object_type = "MATERIAL"
-        permid_materials = ""
+        parent_materials = ""
         where_clause = {"compo_atomic_percent": mat_dict_pct_str}
         requested_attrs = ["compo_atomic_percent"]
         # could output a warning here to provide a crystalline_material permId
-    return object_type, permid_materials, where_clause, requested_attrs
+    return object_type, parent_materials, where_clause, requested_attrs
 
 
 def interatomicpot_par(cdict):
@@ -32,8 +32,8 @@ def workstation_par(cdict):
 
 def pseudopot_par(options):
     object_type = "PSEUDOPOTENTIAL"
-    permid_pseudopots = options.get("pseudopotentials", "")
-    return object_type, permid_pseudopots
+    parent_pseudopots = options.get("pseudopotentials", "")
+    return object_type, parent_pseudopots
 
 
 def software_par(cdict):
@@ -106,9 +106,9 @@ def get_ot_info(cdict):
 
 
 def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
-    ob_type, permids, where_clause, requested_attrs, ob_code = "", "", {}, [], ""
+    ob_type, parents, where_clause, requested_attrs, ob_code = "", "", {}, [], ""
     if parent_name == "material":
-        ob_type, permids, where_clause, requested_attrs = material_par(
+        ob_type, parents, where_clause, requested_attrs = material_par(
             props_dict, options
         )
     elif parent_name == "workstation":
@@ -118,9 +118,9 @@ def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
     elif parent_name == "interatomic_potential":
         ob_type, where_clause, requested_attrs = interatomicpot_par(cdict)
     elif parent_name == "pseudopotential":
-        ob_type, permids = pseudopot_par(options)
+        ob_type, parents = pseudopot_par(options)
 
-    return ob_type, permids, where_clause, requested_attrs, ob_code
+    return ob_type, parents, where_clause, requested_attrs, ob_code
 
 
 # upload options ______________________________________________
@@ -191,7 +191,7 @@ def pseudopotential_suggester(o, structure, **kwargs):
     return
 
 
-def slow_pseudopotential_matcher(
+def slow_pseudopotential_suggester(
     o, job
 ):  # could also take job['POTCAR'] instead? In case already loaded somewhere?
     potcar = job["POTCAR"]
@@ -229,56 +229,26 @@ def get_subsystems(chemsys: str) -> list:
     return ["-".join(combination) for combination in all_combinations]
 
 
-def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_number: int|None =None, match_subcomposition: bool =False, openbis_kwargs: dict|None = None):
-    """Suggests a list of crystalline materials from the openBIS inventory for a structure of interest.
-
-        Args: 
-            o (pybis.Openbis): The openBIS session object used to query crystalline materials.
-            structure (Atoms | str): The structure for which to find materials in the openBIS instance.
-            tol (float): Tolerance factor for matching chemical composition.
-                Materials are accepted if the absolute difference in atomic percentage for each element between 
-                the candidate and reference structure is less than `100 * tol`. For example, a `tol` of 0.01 (or 1%) 
-                means atomic percentages must be within +/- 1% of the reference.
-            space_group (int, optional): The space group number to filter materials by. Defaults to None.
-            match_subcomposition (bool, optional): Whether to search for materials for each subsystem based on their
-                composition and tolerance. Defaults to False.
-            openbis_kwargs (dict, optional): Expert feature. A dictionary of openBIS-specific codes and their values
-                to apply additional filtering. Defaults to None.
-        Returns:
-            pybis.things.Things: An openBIS query result object. The data can be accessed as a pandas DataFrame via
-                `.df` attribute.
-        """
-    
-    openbis_kwargs = openbis_kwargs if openbis_kwargs is not None else {}
-
-    if isinstance(structure, str):
-        try:
-            from ase import Atoms
-            structure = Atoms(structure)
-        except ImportError:
-            raise ImportError('For the parsing of structure like strings, ase needs to be installed.')
-
-    chem_system = "-".join(sorted(set(structure.get_chemical_symbols())))
+def crystalline_material_suggester(o, structure, tol: float = 0.02, **kwargs):
+    # tolerance is a decimal number
+    chem_system = "-".join(sorted(structure.get_species_symbols()))
+    # space_group = 'SPACE_GROUP_' + str(structure.get_symmetry().spacegroup['Number'])
 
     # atomic composition of structure
-    species_dict = dict()
-    for i in structure.get_chemical_symbols():
-         species_dict[i] = species_dict.get(i, 0) + 1
+    species_dict = dict(structure.get_number_species_atoms())
     atomic_pct_dict = get_atomic_percent_dict(species_dict)
-
 
     # matching candidates from openBIS
     candidates = []
     for chemical_system in get_subsystems(chem_system):
-        where_dict = {"CHEMICAL_SYSTEM": chemical_system,}
-        prop_list = list(openbis_kwargs.keys()) + ["CHEMICAL_SYSTEM"]
-        if space_group_number is not None:
-            where_dict['SPACE_GROUP_SHORT'] =  'SPACE_GROUP_' + str(space_group_number)
-            prop_list += ['SPACE_GROUP_SHORT']
         candidates += o.get_objects(
             type="CRYSTALLINE_MATERIAL",
-            where=where_dict,
-            props=prop_list
+            where={
+                "CHEMICAL_SYSTEM": chemical_system,
+                # 'SPACE_GROUP_SHORT': space_group,
+            },
+            props=list(kwargs.keys()) + ["CHEMICAL_SYSTEM"],
+            # props=list(kwargs.keys()) + ['CHEMICAL_SYSTEM', 'SPACE_GROUP_SHORT']
         )
 
     # define properties to display
@@ -299,12 +269,7 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_
         from ast import literal_eval
 
         candidate_atomic_pct = literal_eval(atomic_pct)
-        subsystem_pct_dict = atomic_pct_dict.copy()
+        if is_within_tolerance(atomic_pct_dict, candidate_atomic_pct, tol):
+            filtered.append(candidate.permId)
 
-        if match_subcomposition:
-            subsystem_pct_dict = get_atomic_percent_dict({k: atomic_pct_dict[k] for k in candidate_atomic_pct})
-        if is_within_tolerance(subsystem_pct_dict, candidate_atomic_pct, tol):
-            filtered.append(candidate.permId)            
-
-    ob_objects= o.get_objects(permId=filtered, props=props)
-    return ob_objects
+    return o.get_objects(permId=filtered, props=props)
