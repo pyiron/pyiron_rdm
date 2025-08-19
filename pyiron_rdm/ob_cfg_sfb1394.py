@@ -1,4 +1,7 @@
-def format_json_string(json_string):
+def format_json_string(cdict_json):
+    import json
+
+    json_string = json.dumps(cdict_json, indent=2)
     json_string = json_string.replace("\n", "<br>")
     result = []
     for index, char in enumerate(json_string):
@@ -16,15 +19,11 @@ def map_cdict_to_ob(o, cdict, concept_dict):
     # cdict = flat concept_dict
 
     if "structure_name" in cdict.keys():
-        json_file = cdict["path"] + cdict["structure_name"] + "_concept_dict.json"
         props = {}
     else:
-        json_file = cdict["path"] + "_concept_dict.json"
         props = {"user_name": o.get_session_info().userName}
 
-    with open(json_file, "r") as file:
-        json_string = file.read()
-    json_string = format_json_string(json_string)
+    json_string = format_json_string(concept_dict)
 
     props |= {
         "pyiron_conceptual_dictionary": json_string,
