@@ -127,12 +127,12 @@ def openbis_login(url, username, instance='bam', s3_config_path = None):
                          {instance} not supported.")
     
     if instance == 'bam':
-        mapping_path = 'ob.ob_cfg_bam'
-        OT_path = 'ob.ob_OT_bam'
+        mapping_path = 'pyiron_rdm.ob_cfg_bam'
+        OT_path = 'pyiron_rdm.ob_OT_bam'
         s3_config_path = None
     elif instance == 'sfb1394':
-        mapping_path = 'ob.ob_cfg_sfb1394'
-        OT_path = 'ob.ob_OT_sfb1394'
+        mapping_path = 'pyiron_rdm.ob_cfg_sfb1394'
+        OT_path = 'pyiron_rdm.ob_OT_sfb1394'
         if not s3_config_path:
             s3_config_path = "test_sfb.cfg"
 
