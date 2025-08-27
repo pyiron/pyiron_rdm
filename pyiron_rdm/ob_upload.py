@@ -5,7 +5,7 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
     from getpass import getpass
 
     if s3_config_path:
-        from ob.OpenbisAixTended import OpenbisWithS3
+        from pyiron_rdm.OpenbisAixTended import OpenbisWithS3
 
         o = OpenbisWithS3(
             url=url,
@@ -53,7 +53,7 @@ def openbis_validate(
     outputs = []
     for concept_dict in concept_dicts:
         issues = validate_ob_destination(o, space, project, collection)
-        from ob.concept_dict import flatten_cdict
+        from pyiron_rdm.concept_dict import flatten_cdict
 
         cdict = flatten_cdict(concept_dict)
         import importlib
