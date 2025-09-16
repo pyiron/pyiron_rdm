@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - pyiron
+  - pyiron_atomistics=0.7.18
+  - lammps
+  - nglview
+  - pyiron-data >=0.0.30
+  - iprpy-data
