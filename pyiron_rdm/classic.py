@@ -7,7 +7,7 @@ def classic_structure(pr, structure, structure_name, options, is_init_struct: bo
     hdf = FileHDFio(structure_path + structure_name + '.h5')
     structure.to_hdf(hdf)
 
-    from ob.concept_dict import process_structure_crystal, get_unit_cell_parameters
+    from pyiron_rdm.concept_dict import process_structure_crystal, get_unit_cell_parameters
     if is_init_struct:
         init_structure = structure
     if init_structure:
@@ -22,10 +22,10 @@ def classic_structure(pr, structure, structure_name, options, is_init_struct: bo
     return struct_cdict
 
 def classic_general_job(job, export_env_file: bool):
-    from ob.concept_dict import process_general_job
+    from pyiron_rdm.concept_dict import process_general_job
 
     if export_env_file:
-        from ob.concept_dict import export_env
+        from pyiron_rdm.concept_dict import export_env
         export_env(job.path)
 
     job_cdict = process_general_job(job)
@@ -33,10 +33,10 @@ def classic_general_job(job, export_env_file: bool):
 
 def classic_lammps(lammps_job, export_env_file):
     '''export_env_file: Bool'''
-    from ob.concept_dict import process_lammps_job
+    from pyiron_rdm.concept_dict import process_lammps_job
 
     if export_env_file:
-        from ob.concept_dict import export_env
+        from pyiron_rdm.concept_dict import export_env
         export_env(lammps_job.path)
 
     lammps_cdict = process_lammps_job(lammps_job)
@@ -44,10 +44,10 @@ def classic_lammps(lammps_job, export_env_file):
 
 def classic_vasp(vasp_job, export_env_file):
     '''export_env_file: Bool'''
-    from ob.concept_dict import process_vasp_job
+    from pyiron_rdm.concept_dict import process_vasp_job
 
     if export_env_file:
-        from ob.concept_dict import export_env
+        from pyiron_rdm.concept_dict import export_env
         export_env(vasp_job.path)
 
     vasp_cdict = process_vasp_job(vasp_job)
@@ -58,11 +58,11 @@ def classic_murn(murn_job, export_env_file):
     '''export_env_file: Bool'''
 
     if export_env_file:
-        from ob.concept_dict import export_env
+        from pyiron_rdm.concept_dict import export_env
         import shutil
         export_env(murn_job.path)
 
-    from ob.concept_dict import process_murnaghan_job, process_lammps_job, process_vasp_job
+    from pyiron_rdm.concept_dict import process_murnaghan_job, process_lammps_job, process_vasp_job
     child_jobs_cdict = []
     for job in murn_job.iter_jobs():
         if export_env_file:
@@ -127,16 +127,16 @@ def openbis_login(url, username, instance='bam', s3_config_path = None):
                          {instance} not supported.")
     
     if instance == 'bam':
-        mapping_path = 'ob.ob_cfg_bam'
-        OT_path = 'ob.ob_OT_bam'
+        mapping_path = 'pyiron_rdm.ob_cfg_bam'
+        OT_path = 'pyiron_rdm.ob_OT_bam'
         s3_config_path = None
     elif instance == 'sfb1394':
-        mapping_path = 'ob.ob_cfg_sfb1394'
-        OT_path = 'ob.ob_OT_sfb1394'
+        mapping_path = 'pyiron_rdm.ob_cfg_sfb1394'
+        OT_path = 'pyiron_rdm.ob_OT_sfb1394'
         if not s3_config_path:
             s3_config_path = "test_sfb.cfg"
 
-    from ob.ob_upload import openbis_login as ob_login
+    from pyiron_rdm.ob_upload import openbis_login as ob_login
 
     o = ob_login(url, username, s3_config_path, mapping_path, OT_path)
     return o
@@ -164,7 +164,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
     # Project env file - TODO what is this for??
     pr = job.project
     if export_env_file:
-        from ob.concept_dict import export_env
+        from pyiron_rdm.concept_dict import export_env
         export_env(pr.path + pr.name)
 
     if not collection:
@@ -222,14 +222,14 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
                                                 is_init_struct=False, init_structure=init_structure)
         cdicts_to_validate.append(final_struct_dict)
 
-    from ob.ob_upload import openbis_validate
+    from pyiron_rdm.ob_upload import openbis_validate
     validated_to_upload = openbis_validate(o, space, project, collection, cdicts_to_validate, options)
     if not proceed:
        raise ValueError('You asked to abort the upload.')
 #---------------------------------------------------------------------------------------------
 
 #--------------------------------------UPLOAD-------------------------------------------------
-    from ob.ob_upload import openbis_upload_validated
+    from pyiron_rdm.ob_upload import openbis_upload_validated
 
     # Structure
     cdict, props_dict, object_type, ds_types, ob_parents, object_name = validated_to_upload[0]
@@ -261,7 +261,7 @@ def upload_classic_pyiron(job, o, space, project, collection=None, export_env_fi
             ob_child_id = openbis_upload_validated(o, space, project, collection, object_name, 
                                 object_type, ob_parents, props_dict, ds_types, cdict, parent_ids=str_parent)
             ob_children_ids.append(ob_child_id)
-        from ob.ob_upload import link_children
+        from pyiron_rdm.ob_upload import link_children
         link_children(o, ob_job_id, ob_children_ids)
     
     # Final structure upload (already included as equilibrium for murn)
