@@ -53,7 +53,7 @@ parentdir_prefix = "pyiron_rdm"
 tag_prefix = "pyiron_rdm-"
 
 [tool.setuptools.packages.find]
-include = [ "pyiron_rdm*",]
+include = [ "pyiron_rdm*","pybis-aixtended*"]
 
 [tool.setuptools.dynamic.version]
 attr = "pyiron_rdm.__version__"
