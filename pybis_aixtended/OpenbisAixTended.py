@@ -1,8 +1,10 @@
 """
 Author: Khalil Rejiba, Ulrich Kerzel
-Date: 2024-12-20
-Description: Extension of pybis client to allow LinkedData stored in S3 
+
+Date: 2025-09-17
+Description: Extension of pybis client to allow LinkedData stored in S3
 """
+
 from pybis import Openbis
 from pybis.dataset import DataSet
 
@@ -67,8 +69,8 @@ def get_bucket_from_client(s3_client: boto3.client):
             raise RuntimeError("No bucket associated with s3 client.")
 
     except botocore.exceptions.ClientError as e:
-        logging.critical("User does not have access to buckets.")
 
+        logging.critical("Client does not have access to buckets.")
     return bucket
 
 
@@ -82,7 +84,8 @@ def crc32(fileName: str):
     return "%x" % (prev & 0xFFFFFFFF)
 
 
-def compute_xxhash64(path: str, block_size: int = 2 ** 32) -> str:
+
+def compute_xxhash64(path: str, block_size: int = 2**32) -> str:
     """
     Computes the xxHash (64-bit) digest for a given file.
 
@@ -584,9 +587,9 @@ class ExtendedDataSet(
 
         if getattr(self, "openbis_client") is None:
             self.a.__dict__["openbis_client"] = [openbis_client]
-        
+
         if data is None:
-            filename = files[0] # FIXME deal with multiple files
+            filename = files[0]  # FIXME deal with multiple files
 
             time_stamp = datetime.now(timezone.utc)
             time_stamp = time_stamp.strftime("%Y-%m-%dT%H-%M-%S.%f")
@@ -595,7 +598,7 @@ class ExtendedDataSet(
             prefix = time_stamp + "_" + dataset_type + "_" + username + "_"
 
             if openbis_client.standardize_filenames:
-                
+
                 destination = os.path.join(
                     openbis_client.temp_dir, prefix + os.path.basename(filename)
                 )
@@ -608,19 +611,27 @@ class ExtendedDataSet(
             if kind == "LINK":
                 # upload_target=="s3" is a better choice if you have GitDataSet in addition to S3
                 s3_client = openbis_client._s3_client
+                bucket = openbis_client._bucket
 
-                # We need to uplaod the file to create the URL
-                self._upload_file_to_s3(filename, s3_client)
+                # We need to upload the file to create the URL
+                self._upload_file_to_s3(
+                    filename=filename, s3_client=s3_client, bucket=bucket
+                )
 
                 # Fill s3_download_link in self.props
                 self._create_download_link(
-                    filename=filename, s3_client=s3_client, validity=s3_link_validity
+                    filename=filename,
+                    s3_client=s3_client,
+                    bucket=bucket,
+                    validity=s3_link_validity,
                 )
 
                 props = self.props.all()
 
                 dms_path, dms_id = get_dms_info(
-                    oBis=openbis_client, filename=os.path.basename(filename), dms_code=openbis_client.dms_code
+                    oBis=openbis_client,
+                    filename=os.path.basename(filename),
+                    dms_code=openbis_client.dms_code,
                 )
 
                 file_metadata = get_file_metadata(
@@ -651,7 +662,7 @@ class ExtendedDataSet(
                 )
                 # Dataset is only registered in openBIS when ds.save() is called.
 
-    def _upload_file_to_s3(self, filename, s3_client):
+    def _upload_file_to_s3(self, filename, s3_client, bucket):
         """
         Uploads a file to an S3 bucket.
 
@@ -662,7 +673,7 @@ class ExtendedDataSet(
             s3_client (boto3.client): The S3 client to use for uploading the file.
 
         """
-        bucket = get_bucket_from_client(s3_client)
+        bucket = get_bucket_from_client(s3_client) or bucket
 
         try:
             s3_client.upload_file(
@@ -673,7 +684,7 @@ class ExtendedDataSet(
         except Exception as e:
             logging.error("Error when uploading to S3:", e)
 
-    def _create_download_link(self, filename, s3_client, validity):
+    def _create_download_link(self, filename, s3_client, bucket, validity):
         """
         Creates a presigned URL for downloading a file from an S3 bucket.
 
@@ -687,7 +698,7 @@ class ExtendedDataSet(
             validity (int): The validity period of the presigned URL in seconds.
         """
 
-        bucket = get_bucket_from_client(s3_client)
+        bucket = get_bucket_from_client(s3_client) or bucket
 
         try:
             s3_client.head_object(
@@ -701,6 +712,7 @@ class ExtendedDataSet(
             "get_object",
             Params={"Bucket": bucket, "Key": os.path.basename(filename)},
             ExpiresIn=validity,
+            HttpMethod="GET",
         )
 
         self.props["s3_download_link"] = url
@@ -738,8 +750,8 @@ class ExtendedDataSet(
         linked_dataset_fileservice_url=None,
         content_copy_index=0,
     ):
-        
-        if self.kind == "PHYSICAL"and len(self.file_list) > 1:
+
+        if self.kind == "PHYSICAL" and len(self.file_list) > 1:
             # FIXME Not tested
             super(ExtendedDataSet, self).download(
                 files,
@@ -754,15 +766,15 @@ class ExtendedDataSet(
 
         if self.kind == "LINK":
             file_url = self.props["s3_download_link"]
-            source = 'S3'
+            source = "S3"
         if self.kind == "PHYSICAL":
             openbis_client = self.openbis_client[0]
             base_url = "/".join(openbis_client.url.split("/")[:3])
             token = openbis_client.token
             openbis_filename = self.file_list[0]
             dataset_permid = self.permId
-            file_url = f'{base_url}/datastore_server/{dataset_permid}/{openbis_filename}?sessionID={token}'
-            source = 'openBIS'
+            file_url = f"{base_url}/datastore_server/{dataset_permid}/{openbis_filename}?sessionID={token}"
+            source = "openBIS"
 
         filename = self.file_list[0].split("/")[-1]
         if destination is None:
@@ -771,9 +783,7 @@ class ExtendedDataSet(
             os.mkdir(destination)
 
         if create_default_folders:
-            filename_dest = os.path.join(
-                destination, self.permId, "original", filename
-            )
+            filename_dest = os.path.join(destination, self.permId, "original", filename)
         else:
             filename_dest = os.path.join(destination, filename)
         try:
@@ -782,7 +792,7 @@ class ExtendedDataSet(
             while retries < max_retries:
                 with requests.get(file_url, stream=True) as response:
                     response.raise_for_status()
-                    expected_size = int(response.headers.get('Content-Length', 0))
+                    expected_size = int(response.headers.get("Content-Length", 0))
                     with open(filename_dest, "wb") as file:
                         downloaded_size = 0
                         for chunk in response.iter_content(chunk_size=8192):
@@ -793,7 +803,9 @@ class ExtendedDataSet(
                             retries += 1
                         else:
                             break
-            logging.info(f"Attempted downloading {filename} from {source} {retries} times")
+            logging.info(
+                f"Attempted downloading {filename} from {source} {retries} times"
+            )
         except requests.exceptions.RequestException as e:
             logging.error(f"Error downloading {filename} from {source}:", e)
 
@@ -829,7 +841,6 @@ class OpenbisWithS3(Openbis):
         if s3_config_path is not None:
             self._configure_s3_client(s3_config_path)
         self.standardize_filenames = standardize_filenames
-
 
     def _configure_s3_client(self, config_path):
         """
@@ -958,17 +969,27 @@ class OpenbisWithS3(Openbis):
         else:
             s3_url = None
 
+        if s3_endpoint_url and "datastorage.nrw" in s3_endpoint_url.lower():
+            config = boto3.session.Config(
+                signature_version="s3v4",
+                connect_timeout=5,
+                read_timeout=10,
+                s3={"addressing_style": "virtual"},
+            )
+        else:
+            config = boto3.session.Config(
+                signature_version="s3v4",
+                connect_timeout=5,
+                read_timeout=10,
+            )
+
         s3_client = boto3.client(
             service_name="s3",
             endpoint_url=s3_url,
             region_name=s3_region,
             aws_access_key_id=s3_key,
             aws_secret_access_key=s3_secret,
-            config=boto3.session.Config(
-                signature_version="s3v4",
-                connect_timeout=5,
-                read_timeout=10,
-            ),
+            config=config,
         )
         try:
             # Test s3:GetObject
@@ -977,7 +998,7 @@ class OpenbisWithS3(Openbis):
             # Create dummy file
             dummy_file = "dummy_file.txt"
             content = "OpenBISAixTended"
-            n = 1024 ** 2 // len(content)
+            n = 1024**2 // len(content)
             with open(dummy_file, "w") as f:
                 f.write(content * n)
 
@@ -1075,7 +1096,7 @@ class OpenbisWithS3(Openbis):
                 raise ValueError(
                     f"Sample / Object {sample} does NOT exist for user: {self._get_username()}"
                 )
-    
+
         if not os.path.exists(self.temp_dir):
             os.mkdir(self.temp_dir)
 
@@ -1089,7 +1110,6 @@ class OpenbisWithS3(Openbis):
             s3_client=self._s3_client,
             **kwargs,
         )
-    
 
     def get_dataset(self, permIds, only_data=False, props=None, **kvals):
         """fetch a dataset and some metadata attached to it:
