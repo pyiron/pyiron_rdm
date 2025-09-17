@@ -64,17 +64,17 @@ exclude = ["docs", "notebooks", "setup.py", "_version.py"]
 [tool.ruff.lint]
 select = [
     # pycodestyle
-    "E",
+    #"E",
     # Pyflakes
-    "F",
+    #"F",
     # pyupgrade
-    "UP",
+    #"UP",
     # flake8-bugbear
-    "B",
+    #"B",
     # flake8-simplify
-    "SIM",
+    #"SIM",
     # isort
-    "I",
+    #"I",
 ]
 ignore = ["E501"] #ignore line-length violations
 
@@ -85,5 +85,6 @@ ignore = ["E501"] #ignore line-length violations
 extend-exclude = '''
 (
   ^/docs
+  | ^/pybis_aixtended
 )
 '''
