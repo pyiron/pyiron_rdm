@@ -1,5 +1,6 @@
 """
 Author: Khalil Rejiba, Ulrich Kerzel
+
 Date: 2025-09-17
 Description: Extension of pybis client to allow LinkedData stored in S3
 """
@@ -68,6 +69,7 @@ def get_bucket_from_client(s3_client: boto3.client):
             raise RuntimeError("No bucket associated with s3 client.")
 
     except botocore.exceptions.ClientError as e:
+
         logging.critical("Client does not have access to buckets.")
     return bucket
 
@@ -80,6 +82,7 @@ def crc32(fileName: str):
     # return as hex
 
     return "%x" % (prev & 0xFFFFFFFF)
+
 
 
 def compute_xxhash64(path: str, block_size: int = 2**32) -> str:

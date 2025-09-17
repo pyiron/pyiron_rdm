@@ -5,7 +5,7 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
     from getpass import getpass
 
     if s3_config_path:
-        from pybis-aixtended.OpenbisAixTended import OpenbisWithS3
+        from pybis_aixtended.OpenbisAixTended import OpenbisWithS3
 
         o = OpenbisWithS3(
             url=url,
