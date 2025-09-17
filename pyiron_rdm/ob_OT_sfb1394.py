@@ -229,56 +229,65 @@ def get_subsystems(chemsys: str) -> list:
     return ["-".join(combination) for combination in all_combinations]
 
 
-def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_number: int|None =None, match_subcomposition: bool =False, openbis_kwargs: dict|None = None):
+def crystalline_material_suggester(
+    o,
+    structure,
+    tol: float = 0.02,
+    space_group_number: int | None = None,
+    match_subcomposition: bool = False,
+    openbis_kwargs: dict | None = None,
+):
     """Suggests a list of crystalline materials from the openBIS inventory for a structure of interest.
 
-        Args: 
-            o (pybis.Openbis): The openBIS session object used to query crystalline materials.
-            structure (Atoms | str): The structure for which to find materials in the openBIS instance.
-            tol (float): Tolerance factor for matching chemical composition.
-                Materials are accepted if the absolute difference in atomic percentage for each element between 
-                the candidate and reference structure is less than `100 * tol`. For example, a `tol` of 0.01 (or 1%) 
-                means atomic percentages must be within +/- 1% of the reference.
-            space_group (int, optional): The space group number to filter materials by. Defaults to None.
-            match_subcomposition (bool, optional): Whether to search for materials for each subsystem based on their
-                composition and tolerance. Defaults to False.
-            openbis_kwargs (dict, optional): Expert feature. A dictionary of openBIS-specific codes and their values
-                to apply additional filtering. Defaults to None.
-        Returns:
-            pybis.things.Things: An openBIS query result object. The data can be accessed as a pandas DataFrame via
-                `.df` attribute.
-        """
-    
+    Args:
+        o (pybis.Openbis): The openBIS session object used to query crystalline materials.
+        structure (Atoms | str): The structure for which to find materials in the openBIS instance.
+        tol (float): Tolerance factor for matching chemical composition.
+            Materials are accepted if the absolute difference in atomic percentage for each element between
+            the candidate and reference structure is less than `100 * tol`. For example, a `tol` of 0.01 (or 1%)
+            means atomic percentages must be within +/- 1% of the reference.
+        space_group (int, optional): The space group number to filter materials by. Defaults to None.
+        match_subcomposition (bool, optional): Whether to search for materials for each subsystem based on their
+            composition and tolerance. Defaults to False.
+        openbis_kwargs (dict, optional): Expert feature. A dictionary of openBIS-specific codes and their values
+            to apply additional filtering. Defaults to None.
+    Returns:
+        pybis.things.Things: An openBIS query result object. The data can be accessed as a pandas DataFrame via
+            `.df` attribute.
+    """
+
     openbis_kwargs = openbis_kwargs if openbis_kwargs is not None else {}
 
     if isinstance(structure, str):
         try:
             from ase import Atoms
+
             structure = Atoms(structure)
         except ImportError:
-            raise ImportError('For the parsing of structure like strings, ase needs to be installed.')
+            raise ImportError(
+                "For the parsing of structure like strings, ase needs to be installed."
+            )
 
     chem_system = "-".join(sorted(set(structure.get_chemical_symbols())))
 
     # atomic composition of structure
     species_dict = dict()
     for i in structure.get_chemical_symbols():
-         species_dict[i] = species_dict.get(i, 0) + 1
+        species_dict[i] = species_dict.get(i, 0) + 1
     atomic_pct_dict = get_atomic_percent_dict(species_dict)
-
 
     # matching candidates from openBIS
     candidates = []
     for chemical_system in get_subsystems(chem_system):
-        where_dict = {"CHEMICAL_SYSTEM": chemical_system,}
+        where_dict = {
+            "CHEMICAL_SYSTEM": chemical_system,
+        }
         prop_list = list(openbis_kwargs.keys()) + ["CHEMICAL_SYSTEM"]
         if space_group_number is not None:
-            where_dict['SPACE_GROUP_SHORT'] =  'SPACE_GROUP_' + str(space_group_number)
-            prop_list += ['SPACE_GROUP_SHORT']
+            where_dict["SPACE_GROUP_SHORT"] = "SPACE_GROUP_" + str(space_group_number)
+            prop_list += ["SPACE_GROUP_SHORT"]
         candidates += o.get_objects(
-            type="CRYSTALLINE_MATERIAL",
-            where=where_dict,
-            props=prop_list
+            type="CRYSTALLINE_MATERIAL", where=where_dict, props=prop_list
         )
 
     # define properties to display
@@ -302,9 +311,11 @@ def crystalline_material_suggester(o, structure, tol: float = 0.02, space_group_
         subsystem_pct_dict = atomic_pct_dict.copy()
 
         if match_subcomposition:
-            subsystem_pct_dict = get_atomic_percent_dict({k: atomic_pct_dict[k] for k in candidate_atomic_pct})
+            subsystem_pct_dict = get_atomic_percent_dict(
+                {k: atomic_pct_dict[k] for k in candidate_atomic_pct}
+            )
         if is_within_tolerance(subsystem_pct_dict, candidate_atomic_pct, tol):
-            filtered.append(candidate.permId)            
+            filtered.append(candidate.permId)
 
-    ob_objects= o.get_objects(permId=filtered, props=props)
+    ob_objects = o.get_objects(permId=filtered, props=props)
     return ob_objects
