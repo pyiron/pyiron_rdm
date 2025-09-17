@@ -2,6 +2,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
+  - numpy==1.26.4
   - pyiron
   - pyiron_atomistics=0.7.18
   - lammps
