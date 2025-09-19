@@ -200,7 +200,14 @@ def openbis_login(url, username, instance="bam", s3_config_path=None):
 
 
 def get_cdicts_to_validate(
-    o, pr, structure, job, options, export_env_file, is_init_struct, init_structure
+    pr,
+    structure,
+    job,
+    options,
+    export_env_file,
+    is_init_struct,
+    init_structure,
+    upload_final_struct
 ):
     cdicts_to_validate = []
 
@@ -245,9 +252,6 @@ def get_cdicts_to_validate(
             print("Upload cancelled.")
             proceed = False
 
-    datamodel = get_datamodel(o)
-    upload_final_struct = datamodel == "sfb1394"
-
     if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
         if is_init_struct:
             init_structure = structure
@@ -261,7 +265,7 @@ def get_cdicts_to_validate(
             init_structure=init_structure,
         )
         cdicts_to_validate.append(final_struct_dict)
-    return cdicts_to_validate, proceed, upload_final_struct, datamodel
+    return cdicts_to_validate, proceed
 
 
 def upload_classic_pyiron(
@@ -305,8 +309,10 @@ def upload_classic_pyiron(
     collection = collection.upper()
 
     # ------------------------------------VALIDATION----------------------------------------------
-    cdicts_to_validate, proceed, upload_final_struct, datamodel = get_cdicts_to_validate(
-        o,
+    datamodel = get_datamodel(o)
+    upload_final_struct = datamodel == "sfb1394"
+
+    cdicts_to_validate, proceed = get_cdicts_to_validate(
         pr,
         structure,
         job,
@@ -314,12 +320,13 @@ def upload_classic_pyiron(
         export_env_file,
         is_init_struct,
         init_structure,
+        upload_final_struct,
     )
 
     from pyiron_rdm.ob_upload import openbis_validate
 
     validated_to_upload = openbis_validate(
-        o, space, project, collection, cdicts_to_validate, options
+        o space, project, collection, cdicts_to_validate, options
     )
     if not proceed:
         raise ValueError("You asked to abort the upload.")
