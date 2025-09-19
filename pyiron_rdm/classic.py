@@ -215,7 +215,7 @@ def get_cdicts_to_validate(
     export_env_file,
     is_init_struct,
     init_structure,
-    upload_final_struct
+    upload_final_struct,
 ):
     cdicts_to_validate = []
 
@@ -334,7 +334,7 @@ def upload_classic_pyiron(
     from pyiron_rdm.ob_upload import openbis_validate
 
     validated_to_upload = openbis_validate(
-        o space, project, collection, cdicts_to_validate, options
+        o, space, project, collection, cdicts_to_validate, options
     )
     if not proceed:
         raise ValueError("You asked to abort the upload.")
