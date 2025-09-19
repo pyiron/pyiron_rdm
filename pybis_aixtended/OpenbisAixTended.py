@@ -5,23 +5,21 @@ Date: 2025-09-17
 Description: Extension of pybis client to allow LinkedData stored in S3
 """
 
-from pybis import Openbis
-from pybis.dataset import DataSet
-
+import logging
+import os
+import shutil
+import uuid
 import zlib
-import xxhash
+from configparser import ConfigParser
+from datetime import datetime, timezone
+from io import StringIO
 
 import boto3
 import botocore
-
-import logging
-from datetime import datetime, timezone
-from configparser import ConfigParser
-from io import StringIO
-import os
-import shutil
 import requests
-import uuid
+import xxhash
+from pybis import Openbis
+from pybis.dataset import DataSet
 
 
 def get_bucket_from_client(s3_client: boto3.client):
@@ -483,7 +481,7 @@ def _type_for_id(ident, entity):
 
 
 from pybis.definitions import get_fetchoption_for_entity
-from pybis.utils import parse_jackson, is_identifier
+from pybis.utils import is_identifier, parse_jackson
 
 
 class ExtendedDataSet(

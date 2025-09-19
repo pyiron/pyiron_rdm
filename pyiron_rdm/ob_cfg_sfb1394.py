@@ -60,6 +60,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props["start_date"] = cdict["job_starttime"]
         if "job_starttime" in cdict.keys() and "job_stoptime" in cdict.keys():
             from datetime import datetime
+
             import numpy as np
 
             delta = datetime.strptime(
@@ -412,6 +413,7 @@ def dataset_atom_struct_h5(
     # TODO error handling if not structure
     # !!! relies on concept_dict.py first adding chemical species info before anything else
     from datetime import date
+
     import numpy as np
 
     ds_props = {

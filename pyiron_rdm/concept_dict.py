@@ -11,12 +11,13 @@ TODO:
 
 """
 
-import os
-import numpy as np
 import ast
 import json
-from typing import Optional
+import os
 import warnings
+from typing import Optional
+
+import numpy as np
 from ase import units
 
 
@@ -515,8 +516,8 @@ def extract_lammps_calculated_quantities(job, method_dict):
 
 def add_simulation_software(job, method_dict):
     method_dict["workflow_manager"] = {}
-    import subprocess
     import platform
+    import subprocess
 
     try:
         if "Windows" in platform.system():
@@ -1124,8 +1125,8 @@ def get_simulation_cell(structure, sample_dict):
 
 def add_structure_software(pr, structure_name, sample_dict):
     sample_dict["workflow_manager"] = {}
-    import subprocess
     import platform
+    import subprocess
 
     try:
         if "Windows" in platform.system():
