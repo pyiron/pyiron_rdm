@@ -169,7 +169,7 @@ def validate_upload_options(options, allowed_keys, allowed_defects=None):
             options["pseudopotentials"] = [options["pseudopotentials"]]
 
 
-def openbis_login(url, username, instance="bam", s3_config_path=None):
+def openbis_login(url, username=None, token=None, instance="bam", s3_config_path=None):
     # instance = get_datamodel(o)
     if instance != "bam" and instance != "sfb1394":
         raise ValueError(
@@ -189,7 +189,14 @@ def openbis_login(url, username, instance="bam", s3_config_path=None):
 
     from pyiron_rdm.ob_upload import openbis_login as ob_login
 
-    o = ob_login(url, username, s3_config_path, mapping_path, OT_path)
+    o = ob_login(
+        url=url,
+        username=username,
+        token=token,
+        s3_config_path=s3_config_path,
+        mapping_path=mapping_path,
+        OT_path=OT_path,
+    )
     return o
 
 
