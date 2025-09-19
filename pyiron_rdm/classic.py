@@ -199,7 +199,9 @@ def openbis_login(url, username, instance="bam", s3_config_path=None):
     return o
 
 
-def get_cdicts_to_validate():
+def get_cdicts_to_validate(
+    o, pr, structure, job, options, export_env_file, is_init_struct, init_structure
+):
     cdicts_to_validate = []
 
     struct_dict = classic_structure(
@@ -259,7 +261,7 @@ def get_cdicts_to_validate():
             init_structure=init_structure,
         )
         cdicts_to_validate.append(final_struct_dict)
-    return cdicts_to_validate
+    return cdicts_to_validate, proceed, upload_final_struct, datamodel
 
 
 def upload_classic_pyiron(
@@ -303,64 +305,16 @@ def upload_classic_pyiron(
     collection = collection.upper()
 
     # ------------------------------------VALIDATION----------------------------------------------
-
-    struct_dict = classic_structure(
+    cdicts_to_validate, proceed, upload_final_struct, datamodel = get_cdicts_to_validate(
+        o,
         pr,
         structure,
-        structure_name=job.name + "_structure",
-        options=options,
-        is_init_struct=is_init_struct,
-        init_structure=init_structure,
+        job,
+        options,
+        export_env_file,
+        is_init_struct,
+        init_structure,
     )
-    cdicts_to_validate.append(struct_dict)
-
-    job_type = job.to_dict()["TYPE"]
-    proceed = True
-    if "lammps" in job_type:
-        job_cdict = classic_lammps(job, export_env_file=export_env_file)
-        cdicts_to_validate.append(job_cdict)
-
-    elif "vasp" in job_type:
-        job_cdict = classic_vasp(job, export_env_file=export_env_file)
-        cdicts_to_validate.append(job_cdict)
-
-    elif "murn" in job_type:
-        job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
-        equil_struct_dict = classic_murn_equil_structure(
-            job, options, is_init_struct, init_structure
-        )
-        cdicts_to_validate.append(job_cdict)
-        cdicts_to_validate.append(equil_struct_dict)
-        cdicts_to_validate += [child_cdict for child_cdict in child_jobs_cdict]
-
-    else:
-        print(f"The {job_type} job type is not implemented for OpenBIS upload yet.")
-        proceed = input(
-            "Type 'yes' to proceed with an upload to general pyiron job type."
-        )
-        if proceed.lower() == "yes" or proceed.lower() == "y":
-            job_cdict = classic_general_job(job, export_env_file=export_env_file)
-            cdicts_to_validate.append(job_cdict)
-        else:
-            print("Upload cancelled.")
-            proceed = False
-
-    datamodel = get_datamodel(o)
-    upload_final_struct = datamodel == "sfb1394"
-
-    if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
-        if is_init_struct:
-            init_structure = structure
-        final_structure = job.get_structure()
-        final_struct_dict = classic_structure(
-            pr,
-            final_structure,
-            structure_name=job.name + "_final_structure",
-            options=options,
-            is_init_struct=False,
-            init_structure=init_structure,
-        )
-        cdicts_to_validate.append(final_struct_dict)
 
     from pyiron_rdm.ob_upload import openbis_validate
 
