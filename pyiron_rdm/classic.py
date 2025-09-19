@@ -208,20 +208,20 @@ def openbis_login(url, username=None, token=None, instance="bam", s3_config_path
 
 
 def get_cdicts_to_validate(
-    pr,
-    structure,
     job,
-    options,
+    options: dict | None = None,
     export_env_file: bool = True,
     is_init_struct: bool = True,
     init_structure=None,
     upload_final_struct: bool = True,
 ):
+    if options is None:
+        options = {}
     cdicts_to_validate = []
 
     struct_dict = classic_structure(
-        pr,
-        structure,
+        job.project,
+        job.structure,
         structure_name=job.name + "_structure",
         options=options,
         is_init_struct=is_init_struct,
@@ -262,10 +262,10 @@ def get_cdicts_to_validate(
 
     if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
         if is_init_struct:
-            init_structure = structure
+            init_structure = job.structure
         final_structure = job.get_structure()
         final_struct_dict = classic_structure(
-            pr,
+            job.project,
             final_structure,
             structure_name=job.name + "_final_structure",
             options=options,
@@ -321,8 +321,6 @@ def upload_classic_pyiron(
     upload_final_struct = datamodel == "sfb1394"
 
     cdicts_to_validate, proceed = get_cdicts_to_validate(
-        pr,
-        structure,
         job,
         options,
         export_env_file,
