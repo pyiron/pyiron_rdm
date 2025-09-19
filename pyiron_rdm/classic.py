@@ -303,7 +303,6 @@ def upload_classic_pyiron(
     collection = collection.upper()
 
     # ------------------------------------VALIDATION----------------------------------------------
-    cdicts_to_validate = []
 
     struct_dict = classic_structure(
         pr,
