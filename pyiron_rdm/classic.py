@@ -11,8 +11,8 @@ def classic_structure(
     structure.to_hdf(hdf)
 
     from pyiron_rdm.concept_dict import (
-        process_structure_crystal,
         get_unit_cell_parameters,
+        process_structure_crystal,
     )
 
     if is_init_struct:
@@ -74,14 +74,15 @@ def classic_murn(murn_job, export_env_file):
     """export_env_file: Bool"""
 
     if export_env_file:
-        from pyiron_rdm.concept_dict import export_env
         import shutil
+
+        from pyiron_rdm.concept_dict import export_env
 
         export_env(murn_job.path)
 
     from pyiron_rdm.concept_dict import (
-        process_murnaghan_job,
         process_lammps_job,
+        process_murnaghan_job,
         process_vasp_job,
     )
 

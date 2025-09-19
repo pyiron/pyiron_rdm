@@ -1,4 +1,4 @@
-# pyiron_module_template
+# pyiron_rdm
 
 ## Overview
 
@@ -8,7 +8,7 @@ pyiron framework, e.g.
 [pyiron_ontology](https://github.com/pyiron/pyiron_ontology),
 etc.
 
-Within this repository, the new module is called `pyiron_module_template` which should be renamed to `pyiron_IntendedModuleName`. 
+Within this repository, the new module is called `pyiron_rdm` which should be renamed to `pyiron_IntendedModuleName`. 
 This can be easily achieved by modifying and running `bash ./update_module_name.sh` script.
 
 The licence is free to choose, but as a default the BSD3 licence packed here.
@@ -109,7 +109,7 @@ To read `5` instead, those tests should fail.
 
 ## Publishing your package
 
-If you are inside the pyiron organization or have your own `PYPI_PASSWORD` secret configured, your package will be published on PyPI automatically when you make a new "release" on GitHub -- *as long as* that tag matches the pattern specified in `setup.cfg`; by default any tag that `pyiron_module_template-`, where `pyiron_module_template` is replaced with the name of your module. We recommend using semantic versioning so that your first release looks like `pyiron_module_template-0.0.1`.
+If you are inside the pyiron organization or have your own `PYPI_PASSWORD` secret configured, your package will be published on PyPI automatically when you make a new "release" on GitHub -- *as long as* that tag matches the pattern specified in `setup.cfg`; by default any tag that `pyiron_rdm-`, where `pyiron_rdm` is replaced with the name of your module. We recommend using semantic versioning so that your first release looks like `pyiron_rdm-0.0.1`.
 
 Releasing your package on Conda-Forge is slightly more involved, but not too hard (at least for pure python packages).
 See [conda-forge/staged-recipes](https://github.com/conda-forge/staged-recipes) for how to publish it there.

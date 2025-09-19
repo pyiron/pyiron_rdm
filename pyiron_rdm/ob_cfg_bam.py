@@ -65,6 +65,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             props["start_date"] = cdict["job_starttime"]
         if "job_starttime" in cdict.keys() and "job_stoptime" in cdict.keys():
             from datetime import datetime
+
             import numpy as np
 
             delta = datetime.strptime(
