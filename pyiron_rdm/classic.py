@@ -136,7 +136,13 @@ def get_datamodel(o):
     )
 
 
-def validate_upload_options(options, allowed_keys, allowed_defects=None):
+def validate_upload_options(o, options):
+    import importlib
+
+    options_cfg = importlib.import_module(o.ot)
+    allowed_keys = options_cfg.allowed_keys
+    allowed_defects = getattr(options_cfg, "allowed_defects", None)
+
     # currently not validating that materials/pseudopot is a string/list of strings
     invalid_keys = set(options) - allowed_keys
     if invalid_keys:
@@ -167,10 +173,10 @@ def validate_upload_options(options, allowed_keys, allowed_defects=None):
     if pseudopots:
         if not isinstance(pseudopots, list):
             options["pseudopotentials"] = [options["pseudopotentials"]]
+    return options
 
 
 def openbis_login(url, username, instance="bam", s3_config_path=None):
-    # instance = get_datamodel(o)
     if instance != "bam" and instance != "sfb1394":
         raise ValueError(
             f"This script only supports upload to 'bam' and 'sfb1394' instances,\
@@ -207,13 +213,8 @@ def upload_classic_pyiron(
     # TODO should this return anything?
 
     # check options keys
-    if options:
-        import importlib
-
-        options_cfg = importlib.import_module(o.ot)
-        allowed_keys = options_cfg.allowed_keys
-        allowed_defects = getattr(options_cfg, "allowed_defects", None)
-        validate_upload_options(options, allowed_keys, allowed_defects)
+    if options is not None:
+        options = validate_upload_options(o, options)
     else:
         options = {}
 
@@ -283,10 +284,7 @@ def upload_classic_pyiron(
             proceed = False
 
     datamodel = get_datamodel(o)
-    if datamodel == "sfb1394":
-        upload_final_struct = True
-    elif datamodel == "bam":
-        upload_final_struct = False
+    upload_final_struct = datamodel == "sfb1394"
 
     if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
         if is_init_struct:
