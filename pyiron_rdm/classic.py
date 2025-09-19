@@ -212,10 +212,10 @@ def get_cdicts_to_validate(
     structure,
     job,
     options,
-    export_env_file,
-    is_init_struct,
-    init_structure,
-    upload_final_struct,
+    export_env_file: bool = True,
+    is_init_struct: bool = True,
+    init_structure=None,
+    upload_final_struct: bool = True,
 ):
     cdicts_to_validate = []
 
@@ -281,8 +281,8 @@ def upload_classic_pyiron(
     o,
     space,
     project,
-    collection=None,
-    export_env_file=True,
+    collection: str | None = None,
+    export_env_file: bool = True,
     is_init_struct: bool = True,
     init_structure=None,
     options=None,
@@ -310,7 +310,7 @@ def upload_classic_pyiron(
 
         export_env(pr.path + pr.name)
 
-    if not collection:
+    if collection is None:
         collection = pr.name
     space = space.upper()
     project = project.upper()
