@@ -1,7 +1,9 @@
 # TODO better imports for multiple openbis instances
 
 
-def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path=None):
+def openbis_login(
+    url, username=None, token=None, s3_config_path=None, mapping_path=None, OT_path=None
+):
     from getpass import getpass
 
     if s3_config_path:
@@ -19,9 +21,12 @@ def openbis_login(url, username, s3_config_path=None, mapping_path=None, OT_path
         o = Openbis(url)
 
     if not o.is_session_active():
-        o.login(
-            username, getpass("Enter openBIS password: "), save_token=True
-        )  # save the session token in ~/.pybis/example.com.token
+        if token is None:
+            o.login(
+                username, getpass("Enter openBIS password: "), save_token=True
+            )  # save the session token in ~/.pybis/example.com.token
+        else:
+            o.set_token(token)
 
     o.mapping = mapping_path
     o.ot = OT_path
