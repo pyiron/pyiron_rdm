@@ -26,7 +26,7 @@ def openbis_login(
                 username, getpass("Enter openBIS password: "), save_token=True
             )  # save the session token in ~/.pybis/example.com.token
         else:
-            o.token = token
+            o.set_token(token)
 
     o.mapping = mapping_path
     o.ot = OT_path
