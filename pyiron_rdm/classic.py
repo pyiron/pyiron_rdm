@@ -136,7 +136,13 @@ def get_datamodel(o):
     )
 
 
-def validate_upload_options(options, allowed_keys, allowed_defects=None):
+def validate_upload_options(o, options):
+    import importlib
+
+    options_cfg = importlib.import_module(o.ot)
+    allowed_keys = options_cfg.allowed_keys
+    allowed_defects = getattr(options_cfg, "allowed_defects", None)
+
     # currently not validating that materials/pseudopot is a string/list of strings
     invalid_keys = set(options) - allowed_keys
     if invalid_keys:
@@ -167,6 +173,7 @@ def validate_upload_options(options, allowed_keys, allowed_defects=None):
     if pseudopots:
         if not isinstance(pseudopots, list):
             options["pseudopotentials"] = [options["pseudopotentials"]]
+    return options
 
 
 def openbis_login(url, username=None, token=None, instance="bam", s3_config_path=None):
@@ -200,57 +207,21 @@ def openbis_login(url, username=None, token=None, instance="bam", s3_config_path
     return o
 
 
-def upload_classic_pyiron(
+def get_cdicts_to_validate(
     job,
-    o,
-    space,
-    project,
-    collection=None,
-    export_env_file=True,
+    options: dict | None = None,
+    export_env_file: bool = True,
     is_init_struct: bool = True,
     init_structure=None,
-    options=None,
+    upload_final_struct: bool = True,
 ):
-    # TODO should this return anything?
-
-    # check options keys
-    if options:
-        import importlib
-
-        options_cfg = importlib.import_module(o.ot)
-        allowed_keys = options_cfg.allowed_keys
-        allowed_defects = getattr(options_cfg, "allowed_defects", None)
-        validate_upload_options(options, allowed_keys, allowed_defects)
-    else:
+    if options is None:
         options = {}
-
-    structure = job.structure
-    if not structure:
-        print(
-            "This job does not contain a structure and will not be uploaded. \
-                Please add structure before trying to upload."
-        )
-        return
-
-    # Project env file - TODO what is this for??
-    pr = job.project
-    if export_env_file:
-        from pyiron_rdm.concept_dict import export_env
-
-        export_env(pr.path + pr.name)
-
-    if not collection:
-        collection = pr.name
-    space = space.upper()
-    project = project.upper()
-    collection = collection.upper()
-
-    # ------------------------------------VALIDATION----------------------------------------------
     cdicts_to_validate = []
 
     struct_dict = classic_structure(
-        pr,
-        structure,
+        job.project,
+        job.structure,
         structure_name=job.name + "_structure",
         options=options,
         is_init_struct=is_init_struct,
@@ -289,18 +260,12 @@ def upload_classic_pyiron(
             print("Upload cancelled.")
             proceed = False
 
-    datamodel = get_datamodel(o)
-    if datamodel == "sfb1394":
-        upload_final_struct = True
-    elif datamodel == "bam":
-        upload_final_struct = False
-
     if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
         if is_init_struct:
-            init_structure = structure
+            init_structure = job.structure
         final_structure = job.get_structure()
         final_struct_dict = classic_structure(
-            pr,
+            job.project,
             final_structure,
             structure_name=job.name + "_final_structure",
             options=options,
@@ -308,6 +273,61 @@ def upload_classic_pyiron(
             init_structure=init_structure,
         )
         cdicts_to_validate.append(final_struct_dict)
+    return cdicts_to_validate, proceed
+
+
+def upload_classic_pyiron(
+    job,
+    o,
+    space,
+    project,
+    collection: str | None = None,
+    export_env_file: bool = True,
+    is_init_struct: bool = True,
+    init_structure=None,
+    options=None,
+):
+    # TODO should this return anything?
+
+    # check options keys
+    if options is not None:
+        options = validate_upload_options(o, options)
+    else:
+        options = {}
+
+    structure = job.structure
+    if not structure:
+        print(
+            "This job does not contain a structure and will not be uploaded. \
+                Please add structure before trying to upload."
+        )
+        return
+
+    # Project env file - TODO what is this for??
+    pr = job.project
+    if export_env_file:
+        from pyiron_rdm.concept_dict import export_env
+
+        export_env(pr.path + pr.name)
+
+    if collection is None:
+        collection = pr.name
+    space = space.upper()
+    project = project.upper()
+    collection = collection.upper()
+
+    # ------------------------------------VALIDATION----------------------------------------------
+    datamodel = get_datamodel(o)
+    upload_final_struct = datamodel == "sfb1394"
+
+    cdicts_to_validate, proceed = get_cdicts_to_validate(
+        job,
+        options,
+        export_env_file,
+        is_init_struct,
+        init_structure,
+        upload_final_struct,
+    )
 
     from pyiron_rdm.ob_upload import openbis_validate
 
