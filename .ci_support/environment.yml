@@ -6,9 +6,9 @@ dependencies:
   - setuptools >=68
   - pandas
   - python >=3.11,<3.14
-  - pyiron_atomistics
+  - pyiron_atomistics =0.7.18
   - pyiron_base
-  - pyiron_data
+  - pyiron-data >=0.0.30
   - pybis=1.37.0
   - python-xxhash=3.5.0
   - boto3=1.35
