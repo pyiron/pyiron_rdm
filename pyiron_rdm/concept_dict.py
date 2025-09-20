@@ -23,8 +23,8 @@ from ase import units
 
 def process_general_job(job):
     method_dict = {}
-    add_simulation_software(job, method_dict)
-    get_simulation_folder(job, method_dict)
+    _add_simulation_software(job, method_dict)
+    _get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
     with open(file_name, "w") as f:
         json.dump(method_dict, f, indent=2)
@@ -33,12 +33,12 @@ def process_general_job(job):
 
 def process_lammps_job(job):
     method_dict = {}
-    add_lammps_contexts(method_dict)
+    _add_lammps_contexts(method_dict)
     # get_structures(job, method_dict)
-    identify_lammps_method(job, method_dict)
-    extract_lammps_calculated_quantities(job, method_dict)
-    add_simulation_software(job, method_dict)
-    get_simulation_folder(job, method_dict)
+    _identify_lammps_method(job, method_dict)
+    _extract_lammps_calculated_quantities(job, method_dict)
+    _add_simulation_software(job, method_dict)
+    _get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
     with open(file_name, "w") as f:
         json.dump(method_dict, f, indent=2)
@@ -54,11 +54,11 @@ def process_structure_crystal(
     options=None,
 ):
     sample_dict = {}
-    add_structure_contexts(sample_dict)
-    get_chemical_species(structure, sample_dict)
-    identify_structure_parameters(structure_parameters, sample_dict)
-    get_simulation_cell(structure, sample_dict)
-    add_structure_software(pr, structure_name, sample_dict)
+    _add_structure_contexts(sample_dict)
+    _get_chemical_species(structure, sample_dict)
+    _identify_structure_parameters(structure_parameters, sample_dict)
+    _get_simulation_cell(structure, sample_dict)
+    _add_structure_software(pr, structure_name, sample_dict)
     sample_dict["path"] = structure_path
     if options.get("defects"):
         sample_dict["defects"] = options["defects"]
@@ -72,11 +72,11 @@ def process_structure_crystal(
 
 def process_murnaghan_job(job):
     method_dict = {}
-    add_murnaghan_contexts(method_dict)
-    identify_murnaghan_method(job, method_dict)
-    extract_murnaghan_calculated_quantities(job, method_dict)
-    add_simulation_software(job, method_dict)
-    get_simulation_folder(job, method_dict)
+    _add_murnaghan_contexts(method_dict)
+    _identify_murnaghan_method(job, method_dict)
+    _extract_murnaghan_calculated_quantities(job, method_dict)
+    _add_simulation_software(job, method_dict)
+    _get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
     with open(file_name, "w") as f:
         json.dump(method_dict, f, indent=2)
@@ -85,18 +85,18 @@ def process_murnaghan_job(job):
 
 def process_vasp_job(job):
     method_dict = {}
-    add_vasp_contexts(method_dict)
-    identify_vasp_method(job, method_dict)
-    extract_vasp_calculated_quantities(job, method_dict)
-    add_simulation_software(job, method_dict)
-    get_simulation_folder(job, method_dict)
+    _add_vasp_contexts(method_dict)
+    _identify_vasp_method(job, method_dict)
+    _extract_vasp_calculated_quantities(job, method_dict)
+    _add_simulation_software(job, method_dict)
+    _get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
     with open(file_name, "w") as f:
         json.dump(method_dict, f, indent=2)
     return method_dict
 
 
-def add_lammps_contexts(method_dict):
+def _add_lammps_contexts(method_dict):
     method_dict["@context"] = {}
     method_dict["@context"][
         "sample"
@@ -203,7 +203,7 @@ def get_structures(job, method_dict):
     }
 
 
-def identify_lammps_method(job, method_dict):
+def _identify_lammps_method(job, method_dict):
     job_dict = job.input.to_dict()
     input_dict = {
         job_dict["control_inp/data_dict"]["Parameter"][x]: job_dict[
@@ -407,7 +407,7 @@ def identify_lammps_method(job, method_dict):
         method_dict[md_method]["potential"]["url"] = url
 
 
-def extract_lammps_calculated_quantities(job, method_dict):
+def _extract_lammps_calculated_quantities(job, method_dict):
     """
     Extracts calculated quantities from a job.
 
@@ -514,7 +514,7 @@ def extract_lammps_calculated_quantities(job, method_dict):
     method_dict["outputs"] = outputs
 
 
-def add_simulation_software(job, method_dict):
+def _add_simulation_software(job, method_dict):
     method_dict["workflow_manager"] = {}
     import platform
     import subprocess
@@ -692,11 +692,11 @@ def add_simulation_software(job, method_dict):
     method_dict["job_details"] = pyiron_job_details
 
 
-def get_simulation_folder(job, method_dict):
+def _get_simulation_folder(job, method_dict):
     method_dict["path"] = job.path
 
 
-def add_murnaghan_contexts(method_dict):
+def _add_murnaghan_contexts(method_dict):
     method_dict["@context"] = {}
     method_dict["@context"][
         "sample"
@@ -741,7 +741,7 @@ def add_murnaghan_contexts(method_dict):
     ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
 
 
-def identify_murnaghan_method(job, method_dict):
+def _identify_murnaghan_method(job, method_dict):
 
     if job.input["fit_type"] == "birchmurnaghan":
         method_dict["equation_of_state_fit"] = (
@@ -794,7 +794,7 @@ def identify_murnaghan_method(job, method_dict):
     method_dict["inputs"] = inputs
 
 
-def extract_murnaghan_calculated_quantities(job, method_dict):
+def _extract_murnaghan_calculated_quantities(job, method_dict):
     outputs = []
     outputs.append(
         {
@@ -909,7 +909,7 @@ def get_unit_cell_parameters(structure):
     return structure_parameters
 
 
-def add_structure_contexts(sample_dict):
+def _add_structure_contexts(sample_dict):
     sample_dict["@context"] = {}
     sample_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
     sample_dict["@context"][
@@ -976,7 +976,7 @@ def add_structure_contexts(sample_dict):
     ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
 
 
-def identify_structure_parameters(structure_parameters, sample_dict):
+def _identify_structure_parameters(structure_parameters, sample_dict):
     if not structure_parameters:
         return
     else:
@@ -1052,7 +1052,7 @@ def identify_structure_parameters(structure_parameters, sample_dict):
         sample_dict["unit_cell"] = unit_cell_details
 
 
-def get_chemical_species(structure, sample_dict):
+def _get_chemical_species(structure, sample_dict):
     structure = structure
     natoms = structure.get_number_of_atoms()
     species_dict = dict(structure.get_number_species_atoms())
@@ -1068,7 +1068,7 @@ def get_chemical_species(structure, sample_dict):
     sample_dict["atoms"] = atoms_list
 
 
-def get_simulation_cell(structure, sample_dict):
+def _get_simulation_cell(structure, sample_dict):
     structure = structure
     cell_lengths = str(
         [
@@ -1123,7 +1123,7 @@ def get_simulation_cell(structure, sample_dict):
     sample_dict["simulation_cell"] = simulation_cell_details
 
 
-def add_structure_software(pr, structure_name, sample_dict):
+def _add_structure_software(pr, structure_name, sample_dict):
     sample_dict["workflow_manager"] = {}
     import platform
     import subprocess
@@ -1227,7 +1227,7 @@ def add_structure_software(pr, structure_name, sample_dict):
     sample_dict["job_details"] = pyiron_job_details
 
 
-def add_vasp_contexts(method_dict):
+def _add_vasp_contexts(method_dict):
     # TODO: check, expand on
     method_dict["@context"] = {}
     method_dict["@context"][
@@ -1318,7 +1318,7 @@ def add_vasp_contexts(method_dict):
     ] = "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps"
 
 
-def identify_vasp_method(job, method_dict):
+def _identify_vasp_method(job, method_dict):
     # copy-pasted from pyiron-conceptual-dictionary
     indf = job.input.incar.to_dict()
     params = indf["data_dict"]["Parameter"]
@@ -1453,7 +1453,7 @@ def identify_vasp_method(job, method_dict):
     method_dict["xc_functional"] = xc
 
 
-def extract_vasp_calculated_quantities(job, method_dict):
+def _extract_vasp_calculated_quantities(job, method_dict):
     """
     Extracts calculated quantities from a job.
 
