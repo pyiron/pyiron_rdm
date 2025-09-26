@@ -2,8 +2,17 @@
 
 
 def openbis_login(
-    url, username=None, token=None, s3_config_path=None, mapping_path=None, OT_path=None
+    url: str,
+    mapping_path: str,
+    OT_path: str,
+    username: str | None = None,
+    password: str | None = None,
+    token: str | None = None,
+    s3_config_path: str | None = None,
 ):
+    if username is None and token is None:
+        raise ValueError("Either username or token must be provided.")
+
     from getpass import getpass
 
     if s3_config_path:
@@ -22,8 +31,10 @@ def openbis_login(
 
     if not o.is_session_active():
         if token is None:
+            if password is None:
+                password = getpass("Enter openBIS password: ")
             o.login(
-                username, getpass("Enter openBIS password: "), save_token=True
+                username, password, save_token=True
             )  # save the session token in ~/.pybis/example.com.token
         else:
             o.set_token(token)
