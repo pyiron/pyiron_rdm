@@ -1,6 +1,7 @@
 import unittest
 
 from ase.build import bulk
+
 from pyiron_rdm.concept_dict import get_unit_cell_parameters
 
 
