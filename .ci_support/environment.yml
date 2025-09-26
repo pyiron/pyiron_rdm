@@ -10,4 +10,4 @@ dependencies:
   - python-xxhash =3.5.0
   - boto3 =1.35
   - structuretoolkit =0.0.34
-  
+  - spglib =2.6.0
