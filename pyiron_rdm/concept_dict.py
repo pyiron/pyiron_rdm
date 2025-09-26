@@ -18,7 +18,7 @@ import warnings
 from typing import Optional
 
 import numpy as np
-from ase import units, Atoms
+from ase import Atoms, units
 from structuretoolkit import get_symmetry
 
 
