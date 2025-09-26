@@ -18,7 +18,8 @@ import warnings
 from typing import Optional
 
 import numpy as np
-from ase import units
+from ase import Atoms, units
+from structuretoolkit import get_symmetry
 
 
 def process_general_job(job):
@@ -821,19 +822,18 @@ def extract_murnaghan_calculated_quantities(job, method_dict):
     method_dict["outputs"] = outputs
 
 
-def get_unit_cell_parameters(structure):
-    if structure.get_symmetry().spacegroup["InternationalTableSymbol"] == "Im-3m":
-        if structure.get_number_of_atoms() == 1:
+def get_unit_cell_parameters(structure: Atoms):
+    symmetry = get_symmetry(structure)
+    if symmetry.spacegroup["InternationalTableSymbol"] == "Im-3m":
+        if len(structure) == 1:
             structure_parameters = {
                 "a": np.round(structure.cell[1][0] * 2, 4),
                 "alpha": 90.0,
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "bcc",
             }
         else:
@@ -843,24 +843,20 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "bcc",
             }
-    elif structure.get_symmetry().spacegroup["InternationalTableSymbol"] == "Fm-3m":
-        if structure.get_number_of_atoms() == 1:
+    elif symmetry.spacegroup["InternationalTableSymbol"] == "Fm-3m":
+        if len(structure) == 1:
             structure_parameters = {
                 "a": np.round(structure.cell[1][0] * 2, 4),
                 "alpha": 90.0,
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "fcc",
             }
         else:
@@ -870,14 +866,12 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "fcc",
             }
-    elif structure.get_symmetry().spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
-        if structure.get_number_of_atoms() == 2:
+    elif symmetry.spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
+        if len(structure) == 2:
             structure_parameters = {
                 "a": np.round(structure.cell[0][0], 4),
                 "c": np.round(structure.cell[2][2], 4),
@@ -885,10 +879,8 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 120.0,
                 "volume": np.round(structure.get_volume() * 3, 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "hcp",
             }
         else:
@@ -899,10 +891,8 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 120.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "hcp",
             }
 
