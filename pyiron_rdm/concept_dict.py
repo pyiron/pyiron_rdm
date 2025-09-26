@@ -832,9 +832,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": symmetry.spacegroup[
-                    "InternationalTableSymbol"
-                ],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
                 "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "bcc",
             }
@@ -845,9 +843,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": symmetry.spacegroup[
-                    "InternationalTableSymbol"
-                ],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
                 "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "bcc",
             }
@@ -859,9 +855,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": symmetry.spacegroup[
-                    "InternationalTableSymbol"
-                ],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
                 "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "fcc",
             }
@@ -872,9 +866,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": symmetry.spacegroup[
-                    "InternationalTableSymbol"
-                ],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
                 "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "fcc",
             }
@@ -887,9 +879,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "beta": 90.0,
                 "gamma": 120.0,
                 "volume": np.round(structure.get_volume() * 3, 4),
-                "space_group": symmetry.spacegroup[
-                    "InternationalTableSymbol"
-                ],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
                 "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "hcp",
             }
@@ -901,9 +891,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "beta": 90.0,
                 "gamma": 120.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": symmetry.spacegroup[
-                    "InternationalTableSymbol"
-                ],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
                 "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "hcp",
             }
