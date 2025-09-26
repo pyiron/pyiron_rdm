@@ -825,7 +825,7 @@ def extract_murnaghan_calculated_quantities(job, method_dict):
 def get_unit_cell_parameters(structure: Atoms):
     symmetry = get_symmetry(structure)
     if symmetry.spacegroup["InternationalTableSymbol"] == "Im-3m":
-        if structure.get_number_of_atoms() == 1:
+        if len(structure) == 1:
             structure_parameters = {
                 "a": np.round(structure.cell[1][0] * 2, 4),
                 "alpha": 90.0,
@@ -848,7 +848,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "bravais_lattice": "bcc",
             }
     elif symmetry.spacegroup["InternationalTableSymbol"] == "Fm-3m":
-        if structure.get_number_of_atoms() == 1:
+        if len(structure) == 1:
             structure_parameters = {
                 "a": np.round(structure.cell[1][0] * 2, 4),
                 "alpha": 90.0,
@@ -871,7 +871,7 @@ def get_unit_cell_parameters(structure: Atoms):
                 "bravais_lattice": "fcc",
             }
     elif symmetry.spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
-        if structure.get_number_of_atoms() == 2:
+        if len(structure) == 2:
             structure_parameters = {
                 "a": np.round(structure.cell[0][0], 4),
                 "c": np.round(structure.cell[2][2], 4),
