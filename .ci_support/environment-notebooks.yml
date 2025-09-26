@@ -9,3 +9,4 @@ dependencies:
   - nglview
   - pyiron-data >=0.0.30
   - iprpy-data
+  - ase =3.25.0
