@@ -176,7 +176,9 @@ def validate_upload_options(o, options):
     return options
 
 
-def openbis_login(url, username=None, token=None, instance="bam", s3_config_path=None):
+def openbis_login(
+    url, username=None, password=None, token=None, instance="bam", s3_config_path=None
+):
     # instance = get_datamodel(o)
     if instance != "bam" and instance != "sfb1394":
         raise ValueError(
@@ -189,16 +191,19 @@ def openbis_login(url, username=None, token=None, instance="bam", s3_config_path
         OT_path = "pyiron_rdm.ob_OT_bam"
         s3_config_path = None
     elif instance == "sfb1394":
+        if not s3_config_path:
+            raise ValueError(
+                "s3_config_path must be provided when uploading to sfb1394 instance."
+            )
         mapping_path = "pyiron_rdm.ob_cfg_sfb1394"
         OT_path = "pyiron_rdm.ob_OT_sfb1394"
-        if not s3_config_path:
-            s3_config_path = "test_sfb.cfg"
 
     from pyiron_rdm.ob_upload import openbis_login as ob_login
 
     o = ob_login(
         url=url,
         username=username,
+        password=password,
         token=token,
         s3_config_path=s3_config_path,
         mapping_path=mapping_path,
