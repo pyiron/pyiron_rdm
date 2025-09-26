@@ -8,7 +8,7 @@ from pyiron_rdm.concept_dict import get_unit_cell_parameters
 class TestVersion(unittest.TestCase):
     def test_get_unit_cell_parameters(self):
         Al = bulk("Al", cubic=True)
-        self.assertEqual(
+        self.assertDictEqual(
             get_unit_cell_parameters(Al),
             {
                 "a": 4.05,
@@ -22,7 +22,7 @@ class TestVersion(unittest.TestCase):
             },
         )
         Fe = bulk("Fe")
-        self.assertEqual(
+        self.assertDictEqual(
             get_unit_cell_parameters(Fe),
             {
                 "a": 2.87,
