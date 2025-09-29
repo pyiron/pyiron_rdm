@@ -25,7 +25,13 @@ def classic_structure(
     else:
         struct_params = {}
     struct_cdict = process_structure_crystal(
-        pr, structure, structure_name, structure_path, struct_params, options
+        pr.path,
+        pr.name,
+        structure,
+        structure_name,
+        structure_path,
+        struct_params,
+        options,
     )
 
     return struct_cdict
