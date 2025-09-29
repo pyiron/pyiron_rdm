@@ -928,7 +928,7 @@ def get_simulation_cell(structure, sample_dict):
     return [
         {
             "value": str(
-                [np.round(structure.cell.cellpar()[ii], 4) for ii in range(3)]
+                [float(np.round(structure.cell.cellpar()[ii], 4)) for ii in range(3)]
             ),
             "unit": "ANGSTROM",
             "label": "simulation_cell_lengths",
@@ -940,7 +940,7 @@ def get_simulation_cell(structure, sample_dict):
         },
         {
             "value": str(
-                [np.round(structure.cell.cellpar()[ii], 4) for ii in [3, 4, 5]]
+                [float(np.round(structure.cell.cellpar()[ii], 4)) for ii in [3, 4, 5]]
             ),
             "unit": "DEGREES",
             "label": "simulation_cell_angles",

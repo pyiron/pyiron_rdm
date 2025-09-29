@@ -80,7 +80,7 @@ class TestVersion(unittest.TestCase):
                 ],
                 "simulation_cell": [
                     {
-                        "value": "[np.float64(2.87), np.float64(2.87), np.float64(2.87)]",
+                        "value": "[2.87, 2.87, 2.87]",
                         "unit": "ANGSTROM",
                         "label": "simulation_cell_lengths",
                     },
@@ -90,7 +90,7 @@ class TestVersion(unittest.TestCase):
                         "label": "simulation_cell_vectors",
                     },
                     {
-                        "value": "[np.float64(90.0), np.float64(90.0), np.float64(90.0)]",
+                        "value": "[90.0, 90.0, 90.0]",
                         "unit": "DEGREES",
                         "label": "simulation_cell_angles",
                     },
