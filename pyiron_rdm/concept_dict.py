@@ -55,8 +55,8 @@ def process_structure_crystal(
     options=None,
 ):
     sample_dict = {}
-    sample_dict["@context"] = add_structure_contexts(sample_dict)
-    get_chemical_species(structure, sample_dict)
+    sample_dict["@context"] = add_structure_contexts()
+    sample_dict["atoms"] = get_chemical_species(structure)
     identify_structure_parameters(structure_parameters, sample_dict)
     sample_dict["simulation_cell"] = get_simulation_cell(structure, sample_dict)
     add_structure_software(pr.path, pr.name, structure_name, sample_dict)
@@ -805,7 +805,7 @@ def get_unit_cell_parameters(structure: Atoms):
     return structure_parameters
 
 
-def add_structure_contexts(sample_dict):
+def add_structure_contexts():
     return {
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
         "unit_cell": "http://purls.helmholtz-metadaten.de/cmso/UnitCell",
@@ -832,6 +832,7 @@ def add_structure_contexts(sample_dict):
         "simulation_cell_volume": "http://purls.helmholtz-metadaten.de/cmso/hasVolume",
         "simulation_cell_angle": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
     }
+
 
 def identify_structure_parameters(structure_parameters, sample_dict):
     if not structure_parameters:
@@ -909,20 +910,15 @@ def identify_structure_parameters(structure_parameters, sample_dict):
         sample_dict["unit_cell"] = unit_cell_details
 
 
-def get_chemical_species(structure, sample_dict):
-    structure = structure
-    natoms = structure.get_number_of_atoms()
+def get_chemical_species(structure):
     species_dict = dict(structure.get_number_species_atoms())
-    atoms_list = []
-    for k in species_dict.keys():
-        element = {}
-        element["value"] = species_dict[k]
-        element["label"] = k
-        atoms_list.append(element)
-
-    atoms_list.append({"value": natoms, "label": "total_number_atoms"})
-
-    sample_dict["atoms"] = atoms_list
+    atoms_list = [
+        {"value": species_dict[k], element["label"]: k} for k in species_dict.keys()
+    ]
+    atoms_list.append(
+        {"value": structure.get_number_of_atoms(), "label": "total_number_atoms"}
+    )
+    return atoms_list
 
 
 def get_simulation_cell(structure, sample_dict):
