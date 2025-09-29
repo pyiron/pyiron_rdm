@@ -108,7 +108,6 @@ def add_lammps_contexts(method_dict):
         "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
         "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
         "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
-        # 'software': '',
         "molecular_dynamics": "http://purls.helmholtz-metadaten.de/asmo/MolecularDynamics",
         "molecular_statics": "http://purls.helmholtz-metadaten.de/asmo/MolecularStatics",
         "ensemble": "http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble",
