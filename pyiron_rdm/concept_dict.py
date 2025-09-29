@@ -47,7 +47,8 @@ def process_lammps_job(job):
 
 
 def process_structure_crystal(
-    pr,
+    path,
+    name,
     structure,
     structure_name,
     structure_path,
@@ -57,9 +58,10 @@ def process_structure_crystal(
     sample_dict = {}
     sample_dict["@context"] = add_structure_contexts()
     sample_dict["atoms"] = get_chemical_species(structure)
-    identify_structure_parameters(structure_parameters, sample_dict)
+    if structure_parameters:
+        identify_structure_parameters(structure_parameters, sample_dict)
     sample_dict["simulation_cell"] = get_simulation_cell(structure, sample_dict)
-    add_structure_software(pr.path, pr.name, structure_name, sample_dict)
+    add_structure_software(path, name, structure_name, sample_dict)
     sample_dict["path"] = structure_path
     if options.get("defects"):
         sample_dict["defects"] = options["defects"]
@@ -835,85 +837,84 @@ def add_structure_contexts():
 
 
 def identify_structure_parameters(structure_parameters, sample_dict):
-    if not structure_parameters:
-        return
-    else:
 
-        unit_cell_details = []
+    unit_cell_details = []
 
-        cell_parameter_a_dict = {}
-        cell_parameter_a_dict["value"] = structure_parameters["a"]
-        cell_parameter_a_dict["unit"] = "ANGSTROM"
-        cell_parameter_a_dict["label"] = "lattice_parameter_a"
-        unit_cell_details.append(cell_parameter_a_dict)
-        if "b" in structure_parameters.keys():
-            cell_parameter_b_dict = {}
-            cell_parameter_b_dict["value"] = structure_parameters["b"]
-            cell_parameter_b_dict["unit"] = "ANGSTROM"
-            cell_parameter_b_dict["label"] = "lattice_parameter_b"
-            sample_dict["@context"][
-                "lattice_parameter_b"
-            ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+    cell_parameter_a_dict = {}
+    cell_parameter_a_dict["value"] = structure_parameters["a"]
+    cell_parameter_a_dict["unit"] = "ANGSTROM"
+    cell_parameter_a_dict["label"] = "lattice_parameter_a"
+    unit_cell_details.append(cell_parameter_a_dict)
+    if "b" in structure_parameters.keys():
+        cell_parameter_b_dict = {}
+        cell_parameter_b_dict["value"] = structure_parameters["b"]
+        cell_parameter_b_dict["unit"] = "ANGSTROM"
+        cell_parameter_b_dict["label"] = "lattice_parameter_b"
+        sample_dict["@context"][
+            "lattice_parameter_b"
+        ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
 
-            unit_cell_details.append(cell_parameter_b_dict)
-        if "c" in structure_parameters.keys():
-            cell_parameter_c_dict = {}
-            cell_parameter_c_dict["value"] = structure_parameters["c"]
-            cell_parameter_c_dict["unit"] = "ANGSTROM"
-            cell_parameter_c_dict["label"] = "lattice_parameter_c"
-            sample_dict["@context"][
-                "lattice_parameter_c"
-            ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
-            unit_cell_details.append(cell_parameter_c_dict)
-        if "c_over_a" in structure_parameters.keys():
-            cell_parameter_c_over_a_dict = {}
-            cell_parameter_c_over_a_dict["value"] = structure_parameters["c_over_a"]
-            cell_parameter_c_over_a_dict["unit"] = "ANGSTROM"
-            cell_parameter_c_over_a_dict["label"] = "lattice_parameter_c_over_a"
-            sample_dict["@context"][
-                "lattice_parameter_c_over_a"
-            ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
-            unit_cell_details.append(cell_parameter_c_over_a_dict)
+        unit_cell_details.append(cell_parameter_b_dict)
+    if "c" in structure_parameters.keys():
+        cell_parameter_c_dict = {}
+        cell_parameter_c_dict["value"] = structure_parameters["c"]
+        cell_parameter_c_dict["unit"] = "ANGSTROM"
+        cell_parameter_c_dict["label"] = "lattice_parameter_c"
+        sample_dict["@context"][
+            "lattice_parameter_c"
+        ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+        unit_cell_details.append(cell_parameter_c_dict)
+    if "c_over_a" in structure_parameters.keys():
+        cell_parameter_c_over_a_dict = {}
+        cell_parameter_c_over_a_dict["value"] = structure_parameters["c_over_a"]
+        cell_parameter_c_over_a_dict["unit"] = "ANGSTROM"
+        cell_parameter_c_over_a_dict["label"] = "lattice_parameter_c_over_a"
+        sample_dict["@context"][
+            "lattice_parameter_c_over_a"
+        ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+        unit_cell_details.append(cell_parameter_c_over_a_dict)
 
-        cell_parameter_alpha_dict = {}
-        cell_parameter_alpha_dict["value"] = structure_parameters["alpha"]
-        cell_parameter_alpha_dict["unit"] = "DEGREE"
-        cell_parameter_alpha_dict["label"] = "lattice_angle_alpha"
-        unit_cell_details.append(cell_parameter_alpha_dict)
-        cell_parameter_beta_dict = {}
-        cell_parameter_beta_dict["value"] = structure_parameters["beta"]
-        cell_parameter_beta_dict["unit"] = "DEGREE"
-        cell_parameter_beta_dict["label"] = "lattice_angle_beta"
-        unit_cell_details.append(cell_parameter_beta_dict)
-        cell_parameter_gamma_dict = {}
-        cell_parameter_gamma_dict["value"] = structure_parameters["gamma"]
-        cell_parameter_gamma_dict["unit"] = "DEGREE"
-        cell_parameter_gamma_dict["label"] = "lattice_angle_gamma"
-        unit_cell_details.append(cell_parameter_gamma_dict)
+    cell_parameter_alpha_dict = {}
+    cell_parameter_alpha_dict["value"] = structure_parameters["alpha"]
+    cell_parameter_alpha_dict["unit"] = "DEGREE"
+    cell_parameter_alpha_dict["label"] = "lattice_angle_alpha"
+    unit_cell_details.append(cell_parameter_alpha_dict)
+    cell_parameter_beta_dict = {}
+    cell_parameter_beta_dict["value"] = structure_parameters["beta"]
+    cell_parameter_beta_dict["unit"] = "DEGREE"
+    cell_parameter_beta_dict["label"] = "lattice_angle_beta"
+    unit_cell_details.append(cell_parameter_beta_dict)
+    cell_parameter_gamma_dict = {}
+    cell_parameter_gamma_dict["value"] = structure_parameters["gamma"]
+    cell_parameter_gamma_dict["unit"] = "DEGREE"
+    cell_parameter_gamma_dict["label"] = "lattice_angle_gamma"
+    unit_cell_details.append(cell_parameter_gamma_dict)
 
-        cell_parameter_vol_dict = {}
-        cell_parameter_vol_dict["value"] = structure_parameters["volume"]
-        cell_parameter_vol_dict["unit"] = "ANGSTROM3"
-        cell_parameter_vol_dict["label"] = "lattice_volume"
-        unit_cell_details.append(cell_parameter_vol_dict)
+    cell_parameter_vol_dict = {}
+    cell_parameter_vol_dict["value"] = structure_parameters["volume"]
+    cell_parameter_vol_dict["unit"] = "ANGSTROM3"
+    cell_parameter_vol_dict["label"] = "lattice_volume"
+    unit_cell_details.append(cell_parameter_vol_dict)
 
-        cell_parameter_spg_dict = {}
-        cell_parameter_spg_dict["value"] = structure_parameters["space_group"]
-        cell_parameter_spg_dict["label"] = "space_group"
-        unit_cell_details.append(cell_parameter_spg_dict)
+    cell_parameter_spg_dict = {}
+    cell_parameter_spg_dict["value"] = structure_parameters["space_group"]
+    cell_parameter_spg_dict["label"] = "space_group"
+    unit_cell_details.append(cell_parameter_spg_dict)
 
-        cell_parameter_bsl_dict = {}
-        cell_parameter_bsl_dict["value"] = structure_parameters["bravais_lattice"]
-        cell_parameter_bsl_dict["label"] = "bravais_lattice"
-        unit_cell_details.append(cell_parameter_bsl_dict)
+    cell_parameter_bsl_dict = {}
+    cell_parameter_bsl_dict["value"] = structure_parameters["bravais_lattice"]
+    cell_parameter_bsl_dict["label"] = "bravais_lattice"
+    unit_cell_details.append(cell_parameter_bsl_dict)
 
-        sample_dict["unit_cell"] = unit_cell_details
+    sample_dict["unit_cell"] = unit_cell_details
 
 
 def get_chemical_species(structure):
-    species_dict = dict(structure.get_number_species_atoms())
     atoms_list = [
-        {"value": species_dict[k], element["label"]: k} for k in species_dict.keys()
+        {"value": v, "label": k}
+        for k, v in zip(
+            *np.unique(structure.get_chemical_symbols(), return_counts=True)
+        )
     ]
     atoms_list.append(
         {"value": structure.get_number_of_atoms(), "label": "total_number_atoms"}
