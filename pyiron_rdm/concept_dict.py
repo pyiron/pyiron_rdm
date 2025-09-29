@@ -33,9 +33,7 @@ def process_general_job(job):
 
 
 def process_lammps_job(job):
-    method_dict = {}
-    add_lammps_contexts(method_dict)
-    # get_structures(job, method_dict)
+    method_dict = {"@context": add_lammps_contexts(method_dict)}
     identify_lammps_method(job, method_dict)
     extract_lammps_calculated_quantities(job, method_dict)
     add_simulation_software(job, method_dict)
@@ -102,7 +100,7 @@ def process_vasp_job(job):
 
 
 def add_lammps_contexts(method_dict):
-    method_dict["@context"] = {
+    return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
         "dof": "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF",
@@ -136,16 +134,6 @@ def add_lammps_contexts(method_dict):
         "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
         "time_step": "http://purls.helmholtz-metadaten.de/asmo/TimeStep",
         "simulation_time": "http://purls.helmholtz-metadaten.de/asmo/Time",
-    }
-
-
-def get_structures(job, method_dict):
-    initial_pyiron_structure = job.structure
-    final_pyiron_structure = job.get_structure(frame=-1)
-
-    method_dict["sample"] = {
-        "initial": initial_pyiron_structure,
-        "final": final_pyiron_structure,
     }
 
 
