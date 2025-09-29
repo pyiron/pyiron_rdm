@@ -54,7 +54,7 @@ def process_structure_crystal(
     structure_path,
     structure_parameters: dict = None,
     options=None,
-):
+) -> dict:
     if options is None:
         options = {}
     sample_dict = {}
