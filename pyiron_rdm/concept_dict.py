@@ -55,7 +55,7 @@ def process_structure_crystal(
     options=None,
 ):
     sample_dict = {}
-    add_structure_contexts(sample_dict)
+    sample_dict["@context"] = add_structure_contexts(sample_dict)
     get_chemical_species(structure, sample_dict)
     identify_structure_parameters(structure_parameters, sample_dict)
     sample_dict["simulation_cell"] = get_simulation_cell(structure, sample_dict)
@@ -806,71 +806,32 @@ def get_unit_cell_parameters(structure: Atoms):
 
 
 def add_structure_contexts(sample_dict):
-    sample_dict["@context"] = {}
-    sample_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    sample_dict["@context"][
-        "unit_cell"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/UnitCell"
-    sample_dict["@context"]["atoms"] = "http://purls.helmholtz-metadaten.de/cmso/Atom"
-    sample_dict["@context"][
-        "molecules"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/Molecule"
-    sample_dict["@context"][
-        "bravais_lattice"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice"
-    sample_dict["@context"][
-        "chemical_species"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/ChemicalSpecies"
-    sample_dict["@context"][
-        "simulation_cell"
-    ] = "http://www.w3.org/2000/01/rdf-schema#label"
-    sample_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    sample_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/cmso/hasUnit"
-    sample_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    sample_dict["@context"][
-        "vector"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/Vector"
-    sample_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    sample_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # sample_dict['@context']['software'] = ''
-    sample_dict["@context"][
-        "lattice_parameter_a"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
-    sample_dict["@context"][
-        "lattice_angle_alpha"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-    sample_dict["@context"][
-        "lattice_angle_beta"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-    sample_dict["@context"][
-        "lattice_angle_gamma"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-    sample_dict["@context"][
-        "lattice_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    sample_dict["@context"][
-        "space_group"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasSpaceGroup"
-    sample_dict["@context"][
-        "bravais_lattice"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice"
-    sample_dict["@context"][
-        "simulation_cell_lengths"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasLength"
-    sample_dict["@context"][
-        "simulation_cell_vectors"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasVector"
-    sample_dict["@context"][
-        "simulation_cell_volume"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasVolume"
-    sample_dict["@context"][
-        "simulation_cell_angle"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-
+    return {
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "unit_cell": "http://purls.helmholtz-metadaten.de/cmso/UnitCell",
+        "atoms": "http://purls.helmholtz-metadaten.de/cmso/Atom",
+        "molecules": "http://purls.helmholtz-metadaten.de/cmso/Molecule",
+        "bravais_lattice": "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice",
+        "chemical_species": "http://purls.helmholtz-metadaten.de/cmso/ChemicalSpecies",
+        "simulation_cell": "http://www.w3.org/2000/01/rdf-schema#label",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/cmso/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "vector": "http://purls.helmholtz-metadaten.de/cmso/Vector",
+        "job_details": "http://id-from-pmdco-pending",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "lattice_parameter_a": "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter",
+        "lattice_angle_alpha": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+        "lattice_angle_beta": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+        "lattice_angle_gamma": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+        "lattice_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "space_group": "http://purls.helmholtz-metadaten.de/cmso/hasSpaceGroup",
+        "bravais_lattice": "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice",
+        "simulation_cell_lengths": "http://purls.helmholtz-metadaten.de/cmso/hasLength",
+        "simulation_cell_vectors": "http://purls.helmholtz-metadaten.de/cmso/hasVector",
+        "simulation_cell_volume": "http://purls.helmholtz-metadaten.de/cmso/hasVolume",
+        "simulation_cell_angle": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+    }
 
 def identify_structure_parameters(structure_parameters, sample_dict):
     if not structure_parameters:
