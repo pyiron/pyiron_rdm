@@ -58,7 +58,7 @@ def process_structure_crystal(
     add_structure_contexts(sample_dict)
     get_chemical_species(structure, sample_dict)
     identify_structure_parameters(structure_parameters, sample_dict)
-    get_simulation_cell(structure, sample_dict)
+    sample_dict["simulation_cell"] = get_simulation_cell(structure, sample_dict)
     add_structure_software(pr.path, pr.name, structure_name, sample_dict)
     sample_dict["path"] = structure_path
     if options.get("defects"):
@@ -965,58 +965,32 @@ def get_chemical_species(structure, sample_dict):
 
 
 def get_simulation_cell(structure, sample_dict):
-    structure = structure
-    cell_lengths = str(
-        [
-            np.round(structure.cell.cellpar()[0], 4),
-            np.round(structure.cell.cellpar()[1], 4),
-            np.round(structure.cell.cellpar()[2], 4),
-        ]
-    )
-    cell_vectors = str(
-        [
-            np.round(structure.cell[0], 4),
-            np.round(structure.cell[1], 4),
-            np.round(structure.cell[2], 4),
-        ]
-    )
-    cell_angles = str(
-        [
-            np.round(structure.cell.cellpar()[3], 4),
-            np.round(structure.cell.cellpar()[4], 4),
-            np.round(structure.cell.cellpar()[5], 4),
-        ]
-    )
-    cell_volume = structure.get_volume()
-
-    simulation_cell_details = []
-
-    cell_lengths_dict = {}
-    cell_lengths_dict["value"] = cell_lengths
-    cell_lengths_dict["unit"] = "ANGSTROM"
-    cell_lengths_dict["label"] = "simulation_cell_lengths"
-    simulation_cell_details.append(cell_lengths_dict)
-
-    cell_vector_dict = {}
-    cell_vector_dict["value"] = cell_vectors
-    cell_vector_dict["unit"] = "ANGSTROM"
-    cell_vector_dict["label"] = "simulation_cell_vectors"
-    simulation_cell_details.append(cell_vector_dict)
-
-    cell_angles_dict = {}
-    cell_angles_dict["value"] = cell_angles
-    cell_angles_dict["unit"] = "DEGREES"
-    cell_angles_dict["label"] = "simulation_cell_angles"
-    simulation_cell_details.append(cell_angles_dict)
-
-    cell_volume_dict = {}
-    cell_volume_dict["value"] = np.round(cell_volume, decimals=4)
-    cell_volume_dict["unit"] = "ANGSTROM3"
-    cell_volume_dict["label"] = "simulation_cell_volume"
-
-    simulation_cell_details.append(cell_volume_dict)
-
-    sample_dict["simulation_cell"] = simulation_cell_details
+    return [
+        {
+            "value": str(
+                [np.round(structure.cell.cellpar()[ii], 4) for ii in range(3)]
+            ),
+            "unit": "ANGSTROM",
+            "label": "simulation_cell_lengths",
+        },
+        {
+            "value": str([np.round(structure.cell[ii], 4) for ii in range(3)]),
+            "unit": "ANGSTROM",
+            "label": "simulation_cell_vectors",
+        },
+        {
+            "value": str(
+                [np.round(structure.cell.cellpar()[ii], 4) for ii in [3, 4, 5]]
+            ),
+            "unit": "DEGREES",
+            "label": "simulation_cell_angles",
+        },
+        {
+            "value": np.round(structure.get_volume(), decimals=4),
+            "unit": "ANGSTROM3",
+            "label": "simulation_cell_volume",
+        },
+    ]
 
 
 def add_structure_software(path, name, structure_name, sample_dict):
