@@ -228,26 +228,10 @@ def identify_lammps_method(job, method_dict):
     if md_method == "molecular_statics":
         method_dict[md_method]["minimization_algorithm"] = input_dict["min_style"]
 
-    input_dict = {
-        job_dict["control_inp/data_dict"]["Parameter"][x]: job_dict[
-            "control_inp/data_dict"
-        ]["Value"][x]
-        for x in range(len(job_dict["control_inp/data_dict"]["Parameter"]))
-    }
-    pb = []
-    pb.append(input_dict["boundary"])
-    if pb[0][0] == "p":
-        method_dict[md_method]["periodicity_in_x"] = True
-    else:
-        method_dict[md_method]["periodicity_in_x"] = False
-    if pb[0][2] == "p":
-        method_dict[md_method]["periodicity_in_y"] = True
-    else:
-        method_dict[md_method]["periodicity_in_y"] = False
-    if pb[0][4] == "p":
-        method_dict[md_method]["periodicity_in_z"] = True
-    else:
-        method_dict[md_method]["periodicity_in_z"] = False
+    for xx, ii in zip(["x", "y", "z"], [0, 2, 4]):
+        method_dict[md_method][f"periodicity_in_{xx}"] = (
+            input_dict["boundary"][ii] == "p"
+        )
 
     method_dict[md_method]["inputs"] = [
         {
