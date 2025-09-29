@@ -55,6 +55,8 @@ def process_structure_crystal(
     structure_parameters: dict = None,
     options=None,
 ):
+    if options is None:
+        options = {}
     sample_dict = {}
     sample_dict["@context"] = add_structure_contexts()
     sample_dict["atoms"] = get_chemical_species(structure)
@@ -911,7 +913,7 @@ def identify_structure_parameters(structure_parameters, sample_dict):
 
 def get_chemical_species(structure):
     atoms_list = [
-        {"value": v, "label": k}
+        {"value": int(v), "label": str(k)}
         for k, v in zip(
             *np.unique(structure.get_chemical_symbols(), return_counts=True)
         )
