@@ -59,7 +59,7 @@ def process_structure_crystal(
     get_chemical_species(structure, sample_dict)
     identify_structure_parameters(structure_parameters, sample_dict)
     get_simulation_cell(structure, sample_dict)
-    add_structure_software(pr, structure_name, sample_dict)
+    add_structure_software(pr.path, pr.name, structure_name, sample_dict)
     sample_dict["path"] = structure_path
     if options.get("defects"):
         sample_dict["defects"] = options["defects"]
@@ -1019,8 +1019,7 @@ def get_simulation_cell(structure, sample_dict):
     sample_dict["simulation_cell"] = simulation_cell_details
 
 
-def add_structure_software(pr, structure_name, sample_dict):
-    sample_dict["workflow_manager"] = {}
+def add_structure_software(path, name, structure_name, sample_dict):
     import platform
     import subprocess
 
@@ -1030,12 +1029,12 @@ def add_structure_software(pr, structure_name, sample_dict):
                 [
                     "findstr",
                     "pyiron_atomistics",
-                    pr.path + "\\" + pr.name + "_environment.yml",
+                    path + "\\" + name + "_environment.yml",
                 ]
             )
         else:
             output1 = subprocess.check_output(
-                ["grep", "pyiron_atomistics", pr.path + pr.name + "_environment.yml"]
+                ["grep", "pyiron_atomistics", path + name + "_environment.yml"]
             )
         s1 = str((output1.decode("utf-8")))
     except:
@@ -1046,12 +1045,12 @@ def add_structure_software(pr, structure_name, sample_dict):
                 [
                     "findstr",
                     "pyiron_workflow",
-                    pr.path + "\\" + pr.name + "_environment.yml",
+                    path + "\\" + name + "_environment.yml",
                 ]
             )
         else:
             output2 = subprocess.check_output(
-                ["grep", "pyiron_workflow", pr.path + pr.name + "_environment.yml"]
+                ["grep", "pyiron_workflow", path + name + "_environment.yml"]
             )
         s2 = str((output2.decode("utf-8")))
     except:
@@ -1059,11 +1058,11 @@ def add_structure_software(pr, structure_name, sample_dict):
     try:
         if "Windows" in platform.system():
             output3 = subprocess.check_output(
-                ["findstr", "pyironflow", pr.path + "\\" + pr.name + "_environment.yml"]
+                ["findstr", "pyironflow", path + "\\" + name + "_environment.yml"]
             )
         else:
             output3 = subprocess.check_output(
-                ["grep", "pyironflow", pr.path + pr.name + "_environment.yml"]
+                ["grep", "pyironflow", path + name + "_environment.yml"]
             )
         s3 = str((output3.decode("utf-8")))
     except:
@@ -1074,12 +1073,12 @@ def add_structure_software(pr, structure_name, sample_dict):
                 [
                     "findstr",
                     "executorlib",
-                    pr.path + "\\" + pr.name + "_environment.yml",
+                    path + "\\" + name + "_environment.yml",
                 ]
             )
         else:
             output4 = subprocess.check_output(
-                ["grep", "executorlib", pr.path + pr.name + "_environment.yml"]
+                ["grep", "executorlib", path + name + "_environment.yml"]
             )
         s4 = str((output4.decode("utf-8")))
     except:
@@ -1102,25 +1101,19 @@ def add_structure_software(pr, structure_name, sample_dict):
         st4 = "e" + s3.split("=")[0].split("e")[1] + "=" + s4.split("=")[1] + ", "
     except:
         st4 = ""
-    st = st1 + st2 + st3 + st4
 
     # + ', pyiron_HDF_version=' + hdf_ver
-    sample_dict["workflow_manager"]["label"] = st
-
-    pyiron_job_details = []
-    pyiron_job_details.append(
+    sample_dict["workflow_manager"] = {"label": st1 + st2 + st3 + st4}
+    sample_dict["job_details"] = [
         {
             "label": "structure_name",
             "value": structure_name,
-        }
-    )
-    pyiron_job_details.append(
+        },
         {
             "label": "project_name",
-            "value": pr.name,
-        }
-    )
-    sample_dict["job_details"] = pyiron_job_details
+            "value": name,
+        },
+    ]
 
 
 def add_vasp_contexts(method_dict):
