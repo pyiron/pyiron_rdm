@@ -98,100 +98,42 @@ def process_vasp_job(job):
 
 
 def add_lammps_contexts(method_dict):
-    method_dict["@context"] = {}
-    method_dict["@context"][
-        "sample"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample"
-    method_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    method_dict["@context"][
-        "dof"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF"
-    method_dict["@context"][
-        "inputs"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter"
-    method_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    method_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/asmo/hasUnit"
-    method_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    method_dict["@context"][
-        "outputs"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty"
-    method_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # method_dict['@context']['software'] = ''
-    method_dict["@context"][
-        "molecular_dynamics"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/MolecularDynamics"
-    method_dict["@context"][
-        "molecular_statics"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/MolecularStatics"
-    method_dict["@context"][
-        "ensemble"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble"
-    method_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    method_dict["@context"][
-        "periodic_boundary_condition"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition"
-    method_dict["@context"][
-        "initial_temperature"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Temperature"
-    method_dict["@context"][
-        "initial_pressure"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Pressure"
-    method_dict["@context"][
-        "target_temperature"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Temperature"
-    method_dict["@context"][
-        "target_pressure"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Pressure"
-    method_dict["@context"][
-        "ionic_energy_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "force_tolerace"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "maximum_iterations"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "potential"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential"
-    method_dict["@context"][
-        "average_temperature"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Temperature"
-    method_dict["@context"][
-        "average_pressure"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Pressure"
-    method_dict["@context"][
-        "average_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "final_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "final_potential_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy"
-    method_dict["@context"][
-        "average_total_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    method_dict["@context"][
-        "final_total_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    method_dict["@context"][
-        "final_maximum_force"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Force"
-    method_dict["@context"][
-        "number_ionic_steps"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps"
-    method_dict["@context"][
-        "time_step"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TimeStep"
-    method_dict["@context"][
-        "simulation_time"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Time"
-    method_dict["@context"]["LAMMPS"] = "http://demo.fiz-karlsruhe.de/matwerk/E447986"
+    method_dict["@context"] = {
+        "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "dof": "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF",
+        "inputs": "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/asmo/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        # 'software': '',
+        "molecular_dynamics": "http://purls.helmholtz-metadaten.de/asmo/MolecularDynamics",
+        "molecular_statics": "http://purls.helmholtz-metadaten.de/asmo/MolecularStatics",
+        "ensemble": "http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble",
+        "job_details": "http://id-from-pmdco-pending",
+        "periodic_boundary_condition": "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition",
+        "initial_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
+        "initial_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
+        "target_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
+        "target_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
+        "ionic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "force_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "maximum_iterations": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "potential": "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential",
+        "average_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
+        "average_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
+        "average_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "final_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "final_potential_energy": "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy",
+        "average_total_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "final_total_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "final_maximum_force": "http://purls.helmholtz-metadaten.de/asmo/Force",
+        "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
+        "time_step": "http://purls.helmholtz-metadaten.de/asmo/TimeStep",
+        "simulation_time": "http://purls.helmholtz-metadaten.de/asmo/Time",
+    }
 
 
 def get_structures(job, method_dict):
@@ -308,69 +250,52 @@ def identify_lammps_method(job, method_dict):
     else:
         method_dict[md_method]["periodicity_in_z"] = False
 
-    method_dict[md_method]["inputs"] = []
-
-    temperature = {}
-    temperature["value"] = temp
-    temperature["unit"] = "K"
-    temperature["label"] = "initial_temperature"
-
-    method_dict[md_method]["inputs"].append(temperature)
-
-    target_temperature = {}
-    target_temperature["value"] = temp_target
-    target_temperature["unit"] = "K"
-    target_temperature["label"] = "target_temperature"
-
-    method_dict[md_method]["inputs"].append(target_temperature)
-
-    pressure = {}
-    pressure["value"] = press
-    pressure["unit"] = "GigaPA"
-    pressure["label"] = "initial_pressure"
-
-    method_dict[md_method]["inputs"].append(pressure)
-
-    target_pressure = {}
-    target_pressure["value"] = press_target
-    target_pressure["unit"] = "GigaPA"
-    target_pressure["label"] = "target_pressure"
-
-    method_dict[md_method]["inputs"].append(target_pressure)
-
-    energy_tol = {}
-    energy_tol["value"] = e_tol
-    energy_tol["unit"] = "EV"
-    energy_tol["label"] = "ionic_energy_tolerance"
-
-    method_dict[md_method]["inputs"].append(energy_tol)
-
-    force_tol = {}
-    force_tol["value"] = f_tol
-    force_tol["unit"] = "EV-PER-ANGSTROM"
-    force_tol["label"] = "force_tolerance"
-
-    method_dict[md_method]["inputs"].append(force_tol)
-
-    maximum_iterations = {}
-    maximum_iterations["value"] = maxiter
-    maximum_iterations["label"] = "maximum_iterations"
-
-    method_dict[md_method]["inputs"].append(maximum_iterations)
-
-    timestep_dict = {}
-    timestep_dict["value"] = timestep
-    timestep_dict["unit"] = "PICOSECOND"
-    timestep_dict["label"] = "timestep"
-
-    method_dict[md_method]["inputs"].append(timestep_dict)
-
-    sim_time_dict = {}
-    sim_time_dict["value"] = simulation_time
-    sim_time_dict["unit"] = "PICOSECOND"
-    sim_time_dict["label"] = "simulation_time"
-
-    method_dict[md_method]["inputs"].append(sim_time_dict)
+    method_dict[md_method]["inputs"] = [
+        {
+            "value": temp,
+            "unit": "K",
+            "label": "initial_temperature",
+        },
+        {
+            "value": temp_target,
+            "unit": "K",
+            "label": "target_temperature",
+        },
+        {
+            "value": press,
+            "unit": "GigaPA",
+            "label": "initial_pressure",
+        },
+        {
+            "value": press_target,
+            "unit": "GigaPA",
+            "label": "target_pressure",
+        },
+        {
+            "value": e_tol,
+            "unit": "EV",
+            "label": "ionic_energy_tolerance",
+        },
+        {
+            "value": f_tol,
+            "unit": "EV-PER-ANGSTROM",
+            "label": "force_tolerance",
+        },
+        {
+            "value": maxiter,
+            "label": "maximum_iterations",
+        },
+        {
+            "value": timestep,
+            "unit": "PICOSECOND",
+            "label": "timestep",
+        },
+        {
+            "value": simulation_time,
+            "unit": "PICOSECOND",
+            "label": "simulation_time",
+        },
+    ]
 
     method_dict[md_method]["ensemble"] = ensemble
 
@@ -382,9 +307,6 @@ def identify_lammps_method(job, method_dict):
     name = inpdict["potential_inp/potential/Name"]
     potstr = job.input.to_dict()["potential_inp/potential/Citations"]
     potdict = ast.literal_eval(potstr[1:-1])
-    url = None
-    if "url" in potdict[list(potdict.keys())[0]].keys():
-        url = potdict[list(potdict.keys())[0]]["url"]
     if "meam" in ps:
         method_dict["@context"][
             "potential"
@@ -402,10 +324,11 @@ def identify_lammps_method(job, method_dict):
             "potential"
         ] = "http://purls.helmholtz-metadaten.de/asmo/MachineLearningPotential"
 
-    method_dict[md_method]["potential"] = {}
-    method_dict[md_method]["potential"]["label"] = name
-    if url is not None:
-        method_dict[md_method]["potential"]["url"] = url
+    method_dict[md_method]["potential"] = {"label": name}
+    if "url" in potdict[list(potdict.keys())[0]].keys():
+        method_dict[md_method]["potential"]["url"] = potdict[list(potdict.keys())[0]][
+            "url"
+        ]
 
 
 def extract_lammps_calculated_quantities(job, method_dict):
