@@ -1391,7 +1391,7 @@ def flatten_cdict(cdict):
                         try:
                             flat[i["label"]] = i["value"]
                         # silently skips over terms that do not have label, value keys
-                        except KeyError:  
+                        except KeyError:
                             pass
                     else:
                         flat[k] = v

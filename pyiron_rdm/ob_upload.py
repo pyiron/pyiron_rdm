@@ -263,9 +263,7 @@ def validate_ob_destination(o, space, project, collection):
     try:
         o.get_space(space)
     except ValueError as e:
-        return [
-            f"{e}; available spaces: {[s.code for s in o.get_spaces()]}"
-        ]
+        return [f"{e}; available spaces: {[s.code for s in o.get_spaces()]}"]
     try:
         o.get_project(f"/{space}/{project}")
     except ValueError as e:
