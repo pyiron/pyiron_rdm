@@ -161,59 +161,58 @@ def openbis_upload_validated(
         return found_objects_ids
         # TODO: should return a single id to match 'else' return format, however, multiple objects of the same name possible
 
-    else:
-        object_ = o.new_object(
-            type=object_type,
-            space=space,
-            experiment=ob_coll,
-            parents=ob_parents,
-            props=props_dict,
-        )
-        object_.save()
+    object_ = o.new_object(
+        type=object_type,
+        space=space,
+        experiment=ob_coll,
+        parents=ob_parents,
+        props=props_dict,
+    )
+    object_.save()
 
-        import importlib
+    import importlib
 
-        for ds in ds_types:
-            if ds == "job_h5":
-                dataset_info = importlib.import_module(o.mapping).dataset_job_h5
-                file_path = cdict["path"] + ".h5"
-            elif ds == "structure_h5":
-                dataset_info = importlib.import_module(o.mapping).dataset_atom_struct_h5
-                file_path = cdict["path"] + cdict["structure_name"] + ".h5"
-            elif ds == "env_yml":
-                dataset_info = importlib.import_module(o.mapping).dataset_env_yml
-                file_path = cdict["path"] + "_environment.yml"
-            elif ds == "cdict_json":
-                dataset_info = importlib.import_module(o.mapping).dataset_cdict_jsonld
-                if "structure_name" in cdict.keys():
-                    file_path = (
-                        cdict["path"] + cdict["structure_name"] + "_concept_dict.json"
-                    )
-                else:
-                    file_path = cdict["path"] + "_concept_dict.json"
-            else:
-                raise ValueError(
-                    f"Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json."
+    for ds in ds_types:
+        if ds == "job_h5":
+            dataset_info = importlib.import_module(o.mapping).dataset_job_h5
+            file_path = cdict["path"] + ".h5"
+        elif ds == "structure_h5":
+            dataset_info = importlib.import_module(o.mapping).dataset_atom_struct_h5
+            file_path = cdict["path"] + cdict["structure_name"] + ".h5"
+        elif ds == "env_yml":
+            dataset_info = importlib.import_module(o.mapping).dataset_env_yml
+            file_path = cdict["path"] + "_environment.yml"
+        elif ds == "cdict_json":
+            dataset_info = importlib.import_module(o.mapping).dataset_cdict_jsonld
+            if "structure_name" in cdict.keys():
+                file_path = (
+                    cdict["path"] + cdict["structure_name"] + "_concept_dict.json"
                 )
+            else:
+                file_path = cdict["path"] + "_concept_dict.json"
+        else:
+            raise ValueError(
+                f"Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json."
+            )
 
-            ds_type, ds_props = dataset_info(cdict)
-            try:
-                upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
-            except (
-                ValueError,
-                FileNotFoundError,
-            ) as e:  # pybis: ValueError; OpenbisAixTended - shutil: FileNotFoundError
-                if ds == "env_yml":
-                    import warnings
+        ds_type, ds_props = dataset_info(cdict)
+        try:
+            upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+        except (
+            ValueError,
+            FileNotFoundError,
+        ) as e:  # pybis: ValueError; OpenbisAixTended - shutil: FileNotFoundError
+            if ds == "env_yml":
+                import warnings
 
-                    warnings.warn("The environment file was not uploaded.")
-                else:
-                    raise e
+                warnings.warn("The environment file was not uploaded.")
+            else:
+                raise e
 
-        if parent_ids:
-            link_parents(o, object_, parent_ids)
+    if parent_ids:
+        link_parents(o, object_, parent_ids)
 
-        return object_.identifier  # or object_.permId
+    return object_.identifier  # or object_.permId
 
 
 def link_parents(o, ob_object, parent_ids):
