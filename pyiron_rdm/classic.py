@@ -328,16 +328,15 @@ def upload_classic_pyiron(
     collection = collection.upper()
 
     # ------------------------------------VALIDATION----------------------------------------------
-    datamodel = get_datamodel(o)
-    upload_final_struct = datamodel == "sfb1394"
+    is_sfb = get_datamodel(o) == "sfb1394"
 
     cdicts_to_validate, proceed = get_cdicts_to_validate(
-        job,
-        options,
-        export_env_file,
-        is_init_struct,
-        init_structure,
-        upload_final_struct,
+        job=job,
+        options=options,
+        export_env_file=export_env_file,
+        is_init_struct=is_init_struct,
+        init_structure=init_structure,
+        upload_final_struct=is_sfb,
     )
 
     from pyiron_rdm.ob_upload import openbis_validate
@@ -369,10 +368,10 @@ def upload_classic_pyiron(
         cdict,
     )
 
-    if datamodel == "sfb1394":
+    if is_sfb:
         job_parents = None  # job does not have init structure as parent
         str_parent = ob_structure_id  # equil structure has init as parent
-    elif datamodel == "bam":
+    else:
         job_parents = ob_structure_id  # job has init structure as parent
         str_parent = None  # equil structure does not have init as parent
 

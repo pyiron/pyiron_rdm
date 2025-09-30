@@ -33,7 +33,7 @@ def process_general_job(job):
 
 
 def process_lammps_job(job):
-    method_dict = {"@context": add_lammps_contexts(method_dict)}
+    method_dict = {"@context": add_lammps_contexts()}
     identify_lammps_method(job, method_dict)
     extract_lammps_calculated_quantities(job, method_dict)
     add_simulation_software(job, method_dict)
@@ -99,7 +99,7 @@ def process_vasp_job(job):
     return method_dict
 
 
-def add_lammps_contexts(method_dict):
+def add_lammps_contexts():
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
@@ -1390,9 +1390,8 @@ def flatten_cdict(cdict):
                     if isinstance(i, dict):
                         try:
                             flat[i["label"]] = i["value"]
-                        except (
-                            KeyError
-                        ):  # silently skips over terms that do not have label, value keys
+                        # silently skips over terms that do not have label, value keys
+                        except KeyError:  
                             pass
                     else:
                         flat[k] = v
