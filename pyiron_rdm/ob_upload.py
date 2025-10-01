@@ -255,7 +255,7 @@ def validate_ob_destination(o, space, project, collection):
     except ValueError as e:
         create_project = input(
             f"Project with the code {project} was not found in space {space}."
-            "Type 'yes' to create it."
+            " Type 'yes' to create it."
         )
         if create_project.lower() in ["yes", "y"]:
             new_project = o.new_project(space=space, code=project)
@@ -264,13 +264,13 @@ def validate_ob_destination(o, space, project, collection):
             raise ValueError(
                 f"{e}; available projects in space {space}:"
                 f" {[p.code for p in o.get_projects(space=space)]}"
-                )
+            )
     try:
         o.get_collection(f"/{space}/{project}/{collection}")
     except ValueError as e:
         create_coll = input(
             f"Collection with the code {collection} was not found in project"
-            f"{space}/{project}. Type 'yes' to create it."
+            f" {space}/{project}. Type 'yes' to create it."
         )
         if create_coll.lower() in ["yes", "y"]:
             new_coll = o.new_collection(
@@ -308,7 +308,7 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             else:
                 raise ValueError(
                     f"Parent object not found: No objects of the type {ob_type}"
-                    f" and permId "{permids}" in inventory."
+                    f" and permId '{permids}' in inventory."
                 )
         elif code or where:  # single parent allowed otherwise; taking the first
             parent = o.get_objects(
@@ -318,7 +318,7 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
                 ob_parents.append(parent)
             else:
                 raise ValueError(
-                    f'Parent object not found: No objects of the type {ob_type}'
+                    f"Parent object not found: No objects of the type {ob_type}"
                     f' and property {where} / code "{code}" in inventory.'
                 )
         elif ob_type == "PSEUDOPOTENTIAL":  # don't fail when pseudopotential missing
