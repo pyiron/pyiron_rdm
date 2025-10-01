@@ -1033,7 +1033,7 @@ class OpenbisWithS3(Openbis):
 
     def new_dataset(
         self,
-        type=None,
+        type,
         kind="PHYSICAL",
         files=None,
         file=None,
@@ -1051,9 +1051,6 @@ class OpenbisWithS3(Openbis):
         if len(dms_codes) and kind == "LINK":
             if self.dms_code not in dms_codes:
                 raise ValueError("dms_code in config file is not recognized by openBIS")
-
-        if type is None:
-            raise ValueError("Please provide a dataSet type")
 
         if file:
             files = [file]
