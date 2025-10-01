@@ -68,7 +68,7 @@ def openbis_validate(
     all_issues = []
     outputs = []
     for concept_dict in concept_dicts:
-        issues = validate_ob_destination(o, space, project, collection)
+        validate_ob_destination(o, space, project, collection)
         from pyiron_rdm.concept_dict import flatten_cdict
 
         cdict = flatten_cdict(concept_dict)
@@ -78,29 +78,15 @@ def openbis_validate(
         object_type, ds_types, inv_parents = ob_ot()
         map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
         props_dict = map_cdict_to_ob(o, cdict, concept_dict)
-        inv_issues, ob_parents = validate_inventory_parents(
+        ob_parents = validate_inventory_parents(
             o, inv_parents, cdict, props_dict, options
         )
-        issues += inv_issues
         object_name = concept_dict["job_details"][0]["value"]
 
-        if issues:
-            issue_message = f"{object_name} object:\n" + "\n".join(
-                f"- {issue}" for issue in issues
-            )
-            all_issues.append(issue_message)
-            outputs.append(())
-        else:
-            outputs.append(
-                (cdict, props_dict, object_type, ds_types, ob_parents, object_name)
-            )
-
-    if all_issues:
-        raise ValueError(
-            "The following issues were found and need to be fixed before upload:\n\n"
-            + "\n\n".join(all_issues)
+        outputs.append(
+            (cdict, props_dict, object_type, ds_types, ob_parents, object_name)
         )
-        # TODO perhaps more suitable exception? Custom ValidationError(Exception)?
+
     return outputs
 
 
@@ -268,21 +254,23 @@ def validate_ob_destination(o, space, project, collection):
         o.get_project(f"/{space}/{project}")
     except ValueError as e:
         create_project = input(
-            f"Project with the code {project} was not found in space {space}. Type 'yes' to create it."
+            f"Project with the code {project} was not found in space {space}."
+            "Type 'yes' to create it."
         )
         if create_project.lower() in ["yes", "y"]:
             new_project = o.new_project(space=space, code=project)
             new_project.save()
         else:
-            return [
-                str(e)
-                + " and you chose not to create it. Collection will not be checked until project created/found."
-            ]
+            raise ValueError(
+                f"{e}; available projects in space {space}:"
+                f" {[p.code for p in o.get_projects(space=space)]}"
+                )
     try:
         o.get_collection(f"/{space}/{project}/{collection}")
     except ValueError as e:
         create_coll = input(
-            f"Collection with the code {collection} was not found in project {space}/{project}. Type 'yes' to create it."
+            f"Collection with the code {collection} was not found in project"
+            f"{space}/{project}. Type 'yes' to create it."
         )
         if create_coll.lower() in ["yes", "y"]:
             new_coll = o.new_collection(
@@ -292,14 +280,15 @@ def validate_ob_destination(o, space, project, collection):
             )
             new_coll.save()
         else:
-            return [str(e) + " and you chose not to create it."]
-    return []
+            raise ValueError(
+                f"{e}; available collections in project {space}/{project}:"
+                f" {[c.code for c in o.get_collections(project=f'/{space}/{project}')]} "
+            )
 
 
 def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
     import importlib
 
-    issues = []
     ob_parents = []
     get_inv_parent = importlib.import_module(o.ot).get_inv_parent
     for inv_parent in inv_parents:
@@ -317,8 +306,9 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             if parents:
                 ob_parents += parents
             else:
-                issues.append(
-                    f'Parent object not found: No objects of the type {ob_type} and permId "{permids}" in inventory.'
+                raise ValueError(
+                    f"Parent object not found: No objects of the type {ob_type}"
+                    f" and permId "{permids}" in inventory."
                 )
         elif code or where:  # single parent allowed otherwise; taking the first
             parent = o.get_objects(
@@ -327,18 +317,21 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             if parent:
                 ob_parents.append(parent)
             else:
-                issues.append(
-                    f'Parent object not found: No objects of the type {ob_type} and property {where} / code "{code}" in inventory.'
+                raise ValueError(
+                    f'Parent object not found: No objects of the type {ob_type}'
+                    f' and property {where} / code "{code}" in inventory.'
                 )
         elif ob_type == "PSEUDOPOTENTIAL":  # don't fail when pseudopotential missing
             import warnings
 
             warnings.warn(
-                "Pseudopotential permId was not given. Please link job to appropriate pseudopotential on openBIS."
+                "Pseudopotential permId was not given. Please link job to"
+                " appropriate pseudopotential on openBIS."
             )
         else:
-            issues_str = "Parent object not found: Not enough information to search. Known information: "
-            issues_str += f'type = {ob_type}, permId = "{permids}", code = "{code}", attribute match: {where}'
-            issues.append(issues_str)
-
-    return issues, ob_parents
+            raise ValueError(
+                "Parent object not found: Not enough information to search."
+                f' Known information: type = {ob_type}, permId = "{permids}",'
+                f' code = "{code}", attribute match: {where}'
+            )
+    return ob_parents
