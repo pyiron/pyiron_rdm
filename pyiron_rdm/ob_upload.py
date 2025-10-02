@@ -63,12 +63,12 @@ def openbis_login(
 def openbis_validate(
     o, space, project, collection, concept_dicts: dict | list, options: dict
 ):
+    validate_ob_destination(o, space, project, collection)
     if isinstance(concept_dicts, dict):
         concept_dicts = [concept_dicts]
     all_issues = []
     outputs = []
     for concept_dict in concept_dicts:
-        validate_ob_destination(o, space, project, collection)
         from pyiron_rdm.concept_dict import flatten_cdict
 
         cdict = flatten_cdict(concept_dict)
