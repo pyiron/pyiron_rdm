@@ -61,8 +61,8 @@ def openbis_login(
 
 
 def openbis_validate(
-    o, space, project, collection, concept_dicts: dict | list, options: dict
-):
+    o, space: str, project: str, collection: str, concept_dicts: dict | list, options: dict
+) -> list:
     validate_ob_destination(o, space, project, collection)
     if isinstance(concept_dicts, dict):
         concept_dicts = [concept_dicts]
@@ -244,7 +244,7 @@ def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
     #     print(f'Environment file not found in {file_path} and not uploaded.')
 
 
-def validate_ob_destination(o, space, project, collection):
+def validate_ob_destination(o, space: str, project: str, collection: str):
     try:
         o.get_space(space)
     except ValueError as e:
