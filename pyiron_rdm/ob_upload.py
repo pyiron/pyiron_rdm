@@ -66,7 +66,6 @@ def openbis_validate(
     validate_ob_destination(o, space, project, collection)
     if isinstance(concept_dicts, dict):
         concept_dicts = [concept_dicts]
-    all_issues = []
     outputs = []
     for concept_dict in concept_dicts:
         from pyiron_rdm.concept_dict import flatten_cdict
