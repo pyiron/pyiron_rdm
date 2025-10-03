@@ -195,7 +195,7 @@ def openbis_upload_validated(
 def link_parents(o, ob_object, parent_ids):
     if isinstance(ob_object, str):
         ob_object = o.get_object(ob_object)
-    if not isinstance(parent_ids, list):  # if string not list
+    if not isinstance(parent_ids, list):
         parent_ids = [parent_ids]
     for p in parent_ids:
         try:
@@ -210,7 +210,7 @@ def link_parents(o, ob_object, parent_ids):
 def link_children(o, ob_object, children_ids):
     if isinstance(ob_object, str):
         ob_object = o.get_object(ob_object)
-    if not isinstance(children_ids, list):  # if string not list
+    if not isinstance(children_ids, list):
         children_ids = [children_ids]
     for ch in children_ids:
         try:
@@ -225,15 +225,12 @@ def link_children(o, ob_object, children_ids):
 def upload_dataset(o, ob_object, ds_type, ds_props, file_path, kind):
     ds_hdf = o.new_dataset(
         type=ds_type,
-        # collection = collection,
         object=ob_object,
         files=[file_path],
         kind=kind,
         props=ds_props,
     )
     ds_hdf.save()
-    # except ValueError: # TODO handling of other errors? or none
-    #     print(f'Environment file not found in {file_path} and not uploaded.')
 
 
 def validate_ob_destination(o, space: str, project: str, collection: str):
