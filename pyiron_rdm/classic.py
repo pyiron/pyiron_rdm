@@ -352,20 +352,12 @@ def upload_classic_pyiron(
     from pyiron_rdm.ob_upload import openbis_upload_validated
 
     # Structure
-    cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-        validated_to_upload[0]
-    )
     ob_structure_id = openbis_upload_validated(
-        o,
-        space,
-        project,
-        collection,
-        object_name,
-        object_type,
-        ob_parents,
-        props_dict,
-        ds_types,
-        cdict,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+        **validated_to_upload[0],
     )
 
     if is_sfb:
@@ -376,59 +368,35 @@ def upload_classic_pyiron(
         str_parent = None  # equil structure does not have init as parent
 
     # (Main) job
-    cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-        validated_to_upload[1]
-    )
     ob_job_id = openbis_upload_validated(
-        o,
-        space,
-        project,
-        collection,
-        object_name,
-        object_type,
-        ob_parents,
-        props_dict,
-        ds_types,
-        cdict,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+        **validated_to_upload[1],
         parent_ids=job_parents,
     )
 
     if "murn" in job_type:
         ob_children_ids = []
         # Murn equilibrium structure
-        cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-            validated_to_upload[2]
-        )
         ob_equil_struct_id = openbis_upload_validated(
-            o,
-            space,
-            project,
-            collection,
-            object_name,
-            object_type,
-            ob_parents,
-            props_dict,
-            ds_types,
-            cdict,
+            o=o,
+            space=space,
+            project=project,
+            collection=collection,
+            **validated_to_upload[2],
             parent_ids=str_parent,
         )
         ob_children_ids.append(ob_equil_struct_id)
         # Murn children jobs
         for validated_child in validated_to_upload[3:]:
-            cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-                validated_child
-            )
             ob_child_id = openbis_upload_validated(
-                o,
-                space,
-                project,
-                collection,
-                object_name,
-                object_type,
-                ob_parents,
-                props_dict,
-                ds_types,
-                cdict,
+                o=o,
+                space=space,
+                project=project,
+                collection=collection,
+                **validated_child,
                 parent_ids=str_parent,
             )
             ob_children_ids.append(ob_child_id)
@@ -438,20 +406,12 @@ def upload_classic_pyiron(
 
     # Final structure upload (already included as equilibrium for murn)
     elif upload_final_struct:
-        cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-            validated_to_upload[-1]
-        )
         ob_final_structure_id = openbis_upload_validated(
-            o,
-            space,
-            project,
-            collection,
-            object_name,
-            object_type,
-            ob_parents,
-            props_dict,
-            ds_types,
-            cdict,
+            o=o,
+            space=space,
+            project=project,
+            collection=collection,
+            **validated_to_upload[-1],
             parent_ids=[ob_structure_id, ob_job_id],
         )
 
