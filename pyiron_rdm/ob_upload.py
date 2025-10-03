@@ -110,7 +110,7 @@ def openbis_upload(o, space, project, collection, concept_dict: dict, parent_ids
         project=project,
         collection=collection,
         parent_ids=parent_ids,
-        **validated_outputs[0]
+        **validated_outputs[0],
     )
     return object_id
 
