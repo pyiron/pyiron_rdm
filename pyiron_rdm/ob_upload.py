@@ -61,7 +61,12 @@ def openbis_login(
 
 
 def openbis_validate(
-    o, space: str, project: str, collection: str, concept_dicts: dict | list, options: dict
+    o,
+    space: str,
+    project: str,
+    collection: str,
+    concept_dicts: dict | list,
+    options: dict,
 ) -> list:
     validate_ob_destination(o, space, project, collection)
     if isinstance(concept_dicts, dict):
@@ -83,7 +88,14 @@ def openbis_validate(
         object_name = concept_dict["job_details"][0]["value"]
 
         outputs.append(
-            (cdict, props_dict, object_type, ds_types, ob_parents, object_name)
+            {
+                "cdict": cdict,
+                "props_dict": props_dict,
+                "object_type": object_type,
+                "ds_types": ds_types,
+                "ob_parents": ob_parents,
+                "object_name": object_name,
+            }
         )
 
     return outputs
@@ -91,21 +103,14 @@ def openbis_validate(
 
 def openbis_upload(o, space, project, collection, concept_dict: dict, parent_ids=None):
     """Currently assumes a single concept_dict, not a list of them"""
-    cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-        openbis_validate(o, space, project, collection, concept_dict)[0]
-    )
+    validated_outputs = openbis_validate(o, space, project, collection, concept_dict)
     object_id = openbis_upload_validated(
-        o,
-        space,
-        project,
-        collection,
-        object_name,
-        object_type,
-        ob_parents,
-        props_dict,
-        ds_types,
-        cdict,
-        parent_ids,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+        parent_ids=parent_ids,
+        **validated_outputs[0]
     )
     return object_id
 
