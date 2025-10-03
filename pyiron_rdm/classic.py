@@ -241,7 +241,6 @@ def get_cdicts_to_validate(
     cdicts_to_validate.append(struct_dict)
 
     job_type = job.to_dict()["TYPE"]
-    proceed = True
     if "lammps" in job_type:
         job_cdict = classic_lammps(job, export_env_file=export_env_file)
         cdicts_to_validate.append(job_cdict)
@@ -268,8 +267,7 @@ def get_cdicts_to_validate(
             job_cdict = classic_general_job(job, export_env_file=export_env_file)
             cdicts_to_validate.append(job_cdict)
         else:
-            print("Upload cancelled.")
-            proceed = False
+            raise ValueError("Aborted")
 
     if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
         if is_init_struct:
@@ -284,7 +282,7 @@ def get_cdicts_to_validate(
             init_structure=init_structure,
         )
         cdicts_to_validate.append(final_struct_dict)
-    return cdicts_to_validate, proceed
+    return cdicts_to_validate
 
 
 def upload_classic_pyiron(
@@ -330,7 +328,7 @@ def upload_classic_pyiron(
     # ------------------------------------VALIDATION----------------------------------------------
     is_sfb = get_datamodel(o) == "sfb1394"
 
-    cdicts_to_validate, proceed = get_cdicts_to_validate(
+    cdicts_to_validate = get_cdicts_to_validate(
         job=job,
         options=options,
         export_env_file=export_env_file,
@@ -344,8 +342,6 @@ def upload_classic_pyiron(
     validated_to_upload = openbis_validate(
         o, space, project, collection, cdicts_to_validate, options
     )
-    if not proceed:
-        raise ValueError("You asked to abort the upload.")
     # ---------------------------------------------------------------------------------------------
 
     # --------------------------------------UPLOAD-------------------------------------------------
