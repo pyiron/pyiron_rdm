@@ -377,7 +377,7 @@ def upload_classic_pyiron(
         parent_ids=job_parents,
     )
 
-    if "murn" in job_type:
+    if "murn" in job.to_dict()["TYPE"]:
         ob_children_ids = []
         # Murn equilibrium structure
         ob_equil_struct_id = openbis_upload_validated(
