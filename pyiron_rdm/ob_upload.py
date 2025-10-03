@@ -101,20 +101,6 @@ def openbis_validate(
     return outputs
 
 
-def openbis_upload(o, space, project, collection, concept_dict: dict, parent_ids=None):
-    """Currently assumes a single concept_dict, not a list of them"""
-    validated_outputs = openbis_validate(o, space, project, collection, concept_dict)
-    object_id = openbis_upload_validated(
-        o=o,
-        space=space,
-        project=project,
-        collection=collection,
-        parent_ids=parent_ids,
-        **validated_outputs[0],
-    )
-    return object_id
-
-
 def openbis_upload_validated(
     o,
     space,
