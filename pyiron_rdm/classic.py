@@ -3,7 +3,6 @@ def classic_structure(
 ):
     # TODO rename is_init_struct and init_structure to better reflect that it needs to not be manipulated (e.g. repeated)
     structure_path = pr.path
-    # structure_name = structure_name_prefix + '_input_structure'
 
     from pyiron_base.storage.hdfio import FileHDFio
 
@@ -98,9 +97,7 @@ def classic_murn(murn_job, export_env_file):
             shutil.copy(
                 murn_job.path + "_environment.yml", job.path + "_environment.yml"
             )
-        if (
-            "lammps" in job.to_dict()["TYPE"]
-        ):  # if it's not possible to have multiple types, do this only once
+        if "lammps" in job.to_dict()["TYPE"]:
             child_cdict = process_lammps_job(job)
         else:  # vasp
             child_cdict = process_vasp_job(job)
@@ -185,7 +182,6 @@ def validate_upload_options(o, options):
 def openbis_login(
     url, username=None, password=None, token=None, instance="bam", s3_config_path=None
 ):
-    # instance = get_datamodel(o)
     if instance != "bam" and instance != "sfb1394":
         raise ValueError(
             f"This script only supports upload to 'bam' and 'sfb1394' instances,\
@@ -297,8 +293,6 @@ def upload_classic_pyiron(
     options=None,
 ):
     # TODO should this return anything?
-
-    # check options keys
     if options is not None:
         options = validate_upload_options(o, options)
     else:
