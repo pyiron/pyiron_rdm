@@ -182,7 +182,8 @@ def openbis_upload_validated(
                 file_path = cdict["path"] + "_concept_dict.json"
         else:
             raise ValueError(
-                f"Dataset type {ds} not recognised. Supported datasets: job_h5, structure_h5, env_yml, cdict_json."
+                f"Dataset type {ds} not recognised. Supported datasets: job_h5,"
+                " structure_h5, env_yml, cdict_json."
             )
 
         ds_type, ds_props = dataset_info(cdict)
