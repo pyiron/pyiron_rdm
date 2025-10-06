@@ -11,7 +11,7 @@ def format_json_string(json_string):
     return json_string
 
 
-def map_cdict_to_ob(o, cdict, concept_dict):
+def map_cdict_to_ob(user_name, cdict, concept_dict):
 
     # cdict = flat concept_dict
 
@@ -20,7 +20,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         props = {}
     else:
         json_file = cdict["path"] + "_concept_dict.json"
-        props = {"user_name": o.get_session_info().userName}
+        props = {"user_name": user_name}
 
     with open(json_file, "r") as file:
         json_string = file.read()

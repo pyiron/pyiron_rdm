@@ -81,7 +81,9 @@ def openbis_validate(
         ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
         object_type, ds_types, inv_parents = ob_ot()
         map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
-        props_dict = map_cdict_to_ob(o, cdict, concept_dict)
+        props_dict = map_cdict_to_ob(
+            user_name=o.get_session_info().userName, cdict=cdict, concept_dict=concept_dict
+        )
         ob_parents = validate_inventory_parents(
             o, inv_parents, cdict, props_dict, options
         )
