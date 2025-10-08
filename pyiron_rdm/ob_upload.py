@@ -78,9 +78,9 @@ def openbis_validate(
         cdict = flatten_cdict(concept_dict)
         import importlib
 
-        object_type, ds_types, inv_parents = importlib.import_module(
-            o.ot
-        ).get_ot_info(cdict)
+        object_type, ds_types, inv_parents = importlib.import_module(o.ot).get_ot_info(
+            cdict
+        )
         map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
         props_dict = map_cdict_to_ob(
             user_name=o.get_session_info().userName,
