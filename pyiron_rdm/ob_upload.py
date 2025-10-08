@@ -78,10 +78,15 @@ def openbis_validate(
         cdict = flatten_cdict(concept_dict)
         import importlib
 
-        ob_ot = importlib.import_module(o.ot).get_ot_info(cdict)
-        object_type, ds_types, inv_parents = ob_ot()
+        object_type, ds_types, inv_parents = importlib.import_module(o.ot).get_ot_info(
+            cdict
+        )
         map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
-        props_dict = map_cdict_to_ob(o, cdict, concept_dict)
+        props_dict = map_cdict_to_ob(
+            user_name=o.get_session_info().userName,
+            cdict=cdict,
+            concept_dict=concept_dict,
+        )
         ob_parents = validate_inventory_parents(
             o, inv_parents, cdict, props_dict, options
         )
@@ -302,13 +307,12 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             parent = o.get_objects(
                 type=ob_type, permId=permids, code=code, where=where, attrs=attrs
             )[0]
-            if parent:
-                ob_parents.append(parent)
-            else:
+            if not parent:
                 raise ValueError(
                     f"Parent object not found: No objects of the type {ob_type}"
                     f' and property {where} / code "{code}" in inventory.'
                 )
+            ob_parents.append(parent)
         elif ob_type == "PSEUDOPOTENTIAL":  # don't fail when pseudopotential missing
             import warnings
 
