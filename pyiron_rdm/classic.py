@@ -168,10 +168,8 @@ def validate_upload_options(o, options):
                     f"Invalid defect(s) in \"options['defects']\": {sorted(invalid_defects)}. \
                     Allowed defects are: {sorted(allowed_defects)}"
                 )
-    materials = options.get("materials")
-    if materials:
-        if not isinstance(materials, list):
-            options["materials"] = [options["materials"]]
+    if "materials" in options and not isinstance(materials, list):
+        options["materials"] = [options["materials"]]
     pseudopots = options.get("pseudopotentials")
     if pseudopots:
         if not isinstance(pseudopots, list):
