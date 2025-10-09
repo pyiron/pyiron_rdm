@@ -1,3 +1,5 @@
+import json
+
 def format_json_string(json_string):
     json_string = json_string.replace("\n", "<br>")
     result = []
