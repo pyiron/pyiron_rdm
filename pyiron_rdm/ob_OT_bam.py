@@ -146,7 +146,7 @@ def species_by_num_to_pct(props):
 
     species_by_num = eval(props["chem_species_by_n_atoms"])
     species_by_pct = {
-        at: np.round(species_by_num[at] * 100 / props["n_atoms_total"], 2)
+        at: float(np.round(species_by_num[at] * 100 / props["n_atoms_total"], 2))
         for at in species_by_num.keys()
     }
     return str(species_by_pct)
