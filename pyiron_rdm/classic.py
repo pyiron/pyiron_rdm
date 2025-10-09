@@ -143,37 +143,35 @@ def validate_upload_options(o, options):
     import importlib
 
     options_cfg = importlib.import_module(o.ot)
-    allowed_keys = options_cfg.allowed_keys
-    allowed_defects = getattr(options_cfg, "allowed_defects", None)
 
     # currently not validating that materials/pseudopot is a string/list of strings
-    invalid_keys = set(options) - allowed_keys
+    invalid_keys = set(options) - options_cfg.allowed_keys
     if invalid_keys:
         raise KeyError(
             f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
-                       Allowed keys are: {sorted(allowed_keys)}'
+                       Allowed keys are: {sorted(options_cfg.allowed_keys)}'
         )
-    defects = options.get("defects")
-    if defects:
-        if not isinstance(defects, list) or not all(
-            isinstance(d, str) for d in defects
+    if "defects" in options:
+        if not isinstance(options["defects"], list) or not all(
+            isinstance(d, str) for d in options["defects"]
         ):
             raise TypeError('options["defects"] must be a list of strings.')
-        if allowed_defects:
+        if hasattr(options_cfg, "allowed_defects"):
             invalid_defects = (
-                set([d.lower().replace("_", " ") for d in defects]) - allowed_defects
+                set([d.lower().replace("_", " ") for d in defects])
+                - options_cfg.allowed_defects
             )
             if invalid_defects:
                 raise ValueError(
                     f"Invalid defect(s) in \"options['defects']\": {sorted(invalid_defects)}. \
-                    Allowed defects are: {sorted(allowed_defects)}"
+                    Allowed defects are: {sorted(options_cfg.allowed_defects)}"
                 )
     if "materials" in options and not isinstance(materials, list):
         options["materials"] = [options["materials"]]
-    pseudopots = options.get("pseudopotentials")
-    if pseudopots:
-        if not isinstance(pseudopots, list):
-            options["pseudopotentials"] = [options["pseudopotentials"]]
+    if "pseudopotentials" in options and not isinstance(
+        options["pseudopotentials"], list
+    ):
+        options["pseudopotentials"] = [options["pseudopotentials"]]
     return options
 
 

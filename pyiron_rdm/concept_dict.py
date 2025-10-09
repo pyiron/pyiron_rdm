@@ -35,7 +35,7 @@ def process_general_job(job):
 def process_lammps_job(job):
     method_dict = {"@context": add_lammps_contexts()}
     identify_lammps_method(job, method_dict)
-    extract_lammps_calculated_quantities(job, method_dict)
+    method_dict["outputs"] = extract_lammps_calculated_quantities(job)
     add_simulation_software(job, method_dict)
     get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
@@ -74,8 +74,7 @@ def process_structure_crystal(
 
 
 def process_murnaghan_job(job):
-    method_dict = {}
-    add_murnaghan_contexts(method_dict)
+    method_dict = {"@context": add_murnaghan_contexts()}
     identify_murnaghan_method(job, method_dict)
     extract_murnaghan_calculated_quantities(job, method_dict)
     add_simulation_software(job, method_dict)
@@ -87,8 +86,7 @@ def process_murnaghan_job(job):
 
 
 def process_vasp_job(job):
-    method_dict = {}
-    add_vasp_contexts(method_dict)
+    method_dict = {"@context": add_vasp_contexts()}
     identify_vasp_method(job, method_dict)
     extract_vasp_calculated_quantities(job, method_dict)
     add_simulation_software(job, method_dict)
@@ -306,7 +304,7 @@ def identify_lammps_method(job, method_dict):
         ]
 
 
-def extract_lammps_calculated_quantities(job, method_dict):
+def extract_lammps_calculated_quantities(job):
     """
     Extracts calculated quantities from a job.
 
@@ -321,96 +319,73 @@ def extract_lammps_calculated_quantities(job, method_dict):
         A list of dictionaries, each containing the label, value, unit, and associate_to_sample of a calculated quantity.
 
     """
-    aen = np.mean(job.output.energy_tot)
-    fen = job.output.energy_tot[-1]
-    fpe = job.output.energy_pot[-1]
-    avol = np.mean(job.output.volume)
-    fvol = job.output.volume[-1]
-    fmax = job.output.force_max[-1]
-    nionic = len(job.output.steps) - 1
-    atemp = np.mean(job.output.temperature)
-    apress = np.mean(
-        np.array(
-            [
-                (1 / 3 * (tensor[0, 0] + tensor[1, 1] + tensor[2, 2]))
-                for tensor in job.output.pressures
-            ]
-        )
-    )
-    apot = np.mean(job.output.energy_pot)
-    outputs = []
-    outputs.append(
+    outputs = [
         {
             "label": "average_total_energy",
-            "value": np.round(aen, decimals=4),
+            "value": np.round(np.mean(job.output.energy_tot), decimals=4),
             "unit": "EV",
-        }
-    )
-    outputs.append(
+        },
         {
             "label": "average_total_volume",
-            "value": np.round(avol, decimals=4),
+            "value": np.round(np.mean(job.output.volume), decimals=4),
             "unit": "ANGSTROM3",
-        }
-    )
-    outputs.append(
+        },
         {
             "label": "final_total_volume",
-            "value": np.round(fvol, decimals=4),
+            "value": np.round(job.output.volume[-1], decimals=4),
             "unit": "ANGSTROM3",
-        }
-    )
+        },
+    ]
     if "molecular_statics" in method_dict.keys():
-        outputs.append(
-            {
-                "label": "final_total_energy",
-                "value": np.round(fen, decimals=4),
-                "unit": "EV",
-            }
-        )
-        outputs.append(
-            {
-                "label": "final_potential_energy",
-                "value": np.round(fpe, decimals=4),
-                "unit": "EV",
-            }
-        )
-        outputs.append(
-            {
-                "label": "final_maximum_force",
-                "value": np.round(fmax, decimals=16),
-                "unit": "EV-PER-ANGSTROM",
-            }
-        )
-        outputs.append(
-            {
-                "label": "number_ionic_steps",
-                "value": nionic,
-            }
+        outputs.extend(
+            [
+                {
+                    "label": "final_total_energy",
+                    "value": np.round(job.output.energy_tot[-1], decimals=4),
+                    "unit": "EV",
+                },
+                {
+                    "label": "final_potential_energy",
+                    "value": np.round(job.output.energy_pot[-1], decimals=4),
+                    "unit": "EV",
+                },
+                {
+                    "label": "final_maximum_force",
+                    "value": np.round(job.output.force_max[-1], decimals=16),
+                    "unit": "EV-PER-ANGSTROM",
+                },
+                {
+                    "label": "number_ionic_steps",
+                    "value": len(job.output.steps) - 1,
+                },
+            ]
         )
     else:
-        outputs.append(
-            {
-                "label": "average_potential_energy",
-                "value": np.round(apot, decimals=4),
-                "unit": "EV",
-            }
+        outputs.extend(
+            [
+                {
+                    "label": "average_potential_energy",
+                    "value": np.round(np.mean(job.output.energy_pot), decimals=4),
+                    "unit": "EV",
+                },
+                {
+                    "label": "average_temperature",
+                    "value": np.round(np.mean(job.output.temperature), decimals=4),
+                    "unit": "K",
+                },
+                {
+                    "label": "average_pressure",
+                    "value": np.round(
+                        np.mean(
+                            [np.sum(t.diagonal()) / 3 for t in job.output.pressures]
+                        ),
+                        decimals=4,
+                    ),
+                    "unit": "GigaPA",
+                },
+            ]
         )
-        outputs.append(
-            {
-                "label": "average_temperature",
-                "value": np.round(atemp, decimals=4),
-                "unit": "K",
-            }
-        )
-        outputs.append(
-            {
-                "label": "average_pressure",
-                "value": np.round(apress, decimals=4),
-                "unit": "GigaPA",
-            }
-        )
-    method_dict["outputs"] = outputs
+    return outputs
 
 
 def add_simulation_software(job, method_dict):
@@ -596,48 +571,24 @@ def get_simulation_folder(job, method_dict):
 
 
 def add_murnaghan_contexts(method_dict):
-    method_dict["@context"] = {}
-    method_dict["@context"][
-        "sample"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample"
-    method_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    method_dict["@context"][
-        "equation_of_state_fit"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/EquationOfStateFit"
-    method_dict["@context"][
-        "inputs"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter"
-    method_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    method_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/asmo/hasUnit"
-    method_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    method_dict["@context"][
-        "outputs"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty"
-    method_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # method_dict['@context']['software'] = ''
-    method_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    method_dict["@context"][
-        "strain_axes"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "number_of_data_points"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "volume_range"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/VolumeRange"
-    method_dict["@context"][
-        "equilibrium_bulk_modulus"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/BulkModulus"
-    method_dict["@context"][
-        "equilibrium_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "equilibrium_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
+    return {
+        "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "equation_of_state_fit": "http://purls.helmholtz-metadaten.de/asmo/EquationOfStateFit",
+        "inputs": "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/asmo/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "job_details": "http://id-from-pmdco-pending",
+        "strain_axes": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "number_of_data_points": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "volume_range": "http://purls.helmholtz-metadaten.de/asmo/VolumeRange",
+        "equilibrium_bulk_modulus": "http://purls.helmholtz-metadaten.de/asmo/BulkModulus",
+        "equilibrium_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "equilibrium_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+    }
 
 
 def identify_murnaghan_method(job, method_dict):
@@ -1039,94 +990,39 @@ def add_structure_software(path, name, structure_name, sample_dict):
 
 
 def add_vasp_contexts(method_dict):
-    # TODO: check, expand on
-    method_dict["@context"] = {}
-    method_dict["@context"][
-        "sample"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample"
-    method_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    method_dict["@context"][
-        "dof"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF"
-    method_dict["@context"][
-        "inputs"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter"
-    method_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    method_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/asmo/hasUnit"
-    method_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    method_dict["@context"][
-        "outputs"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty"
-    method_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # method_dict['@context']['software'] = '"@id": "https://www.vasp.at/","label": "VASP"'
-    method_dict["@context"][
-        "dft"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/DensityFunctionalTheory"
-    method_dict["@context"][
-        "xc_functional"
-    ] = "https://w3id.org/mdo/calculation/hasXCFunctional"
-    method_dict["@context"][
-        "VASP"
-    ] = "https://purls.helmholtz-metadaten.de/msekg/E425582"
-    method_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    method_dict["@context"][
-        "periodic_boundary_condition"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition"
-    method_dict["@context"][
-        "k_point_mesh"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/KPointMesh"
-    method_dict["@context"][
-        "k_point_generation"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "electronic_smearing"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "smearing_parameter_sigma"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "electronic_minimization_algorithm"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "ionic_minimization_algorithm"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "spin_polarization"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "input_magnetic_moments"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "electronic_energy_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "ionic_energy_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "force_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "final_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "final_potential_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy"
-    method_dict["@context"][
-        "final_total_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    method_dict["@context"][
-        "final_maximum_force"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Force"
-    method_dict["@context"][
-        "final_total_magnetic_moment"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalMagneticMoment"
-    method_dict["@context"][
-        "number_ionic_steps"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps"
+    return {
+        "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "dof": "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF",
+        "inputs": "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/asmo/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "dft": "http://purls.helmholtz-metadaten.de/asmo/DensityFunctionalTheory",
+        "xc_functional": "https://w3id.org/mdo/calculation/hasXCFunctional",
+        "VASP": "https://purls.helmholtz-metadaten.de/msekg/E425582",
+        "job_details": "http://id-from-pmdco-pending",
+        "periodic_boundary_condition": "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition",
+        "k_point_mesh": "http://purls.helmholtz-metadaten.de/asmo/KPointMesh",
+        "k_point_generation": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "electronic_smearing": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "smearing_parameter_sigma": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "electronic_minimization_algorithm": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "ionic_minimization_algorithm": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "spin_polarization": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "input_magnetic_moments": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "electronic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "ionic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "force_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "final_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "final_potential_energy": "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy",
+        "final_total_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "final_maximum_force": "http://purls.helmholtz-metadaten.de/asmo/Force",
+        "final_total_magnetic_moment": "http://purls.helmholtz-metadaten.de/asmo/TotalMagneticMoment",
+        "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
+    }
 
 
 def identify_vasp_method(job, method_dict):
