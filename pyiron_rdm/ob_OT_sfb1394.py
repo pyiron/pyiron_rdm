@@ -145,7 +145,7 @@ allowed_defects = {
 
 def species_by_num_to_pct(props: dict, max_elements: int = 10):
     species_by_pct = {
-        props[f"element_{i}"]: props[f"element_{i}_at_percent"]
+        props[f"element_{i}"]: float(props[f"element_{i}_at_percent"])
         for i in range(1, max_elements + 1)
         if f"element_{i}" in props and f"element_{i}_at_percent" in props
     }
