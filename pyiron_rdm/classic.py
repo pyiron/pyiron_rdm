@@ -284,13 +284,13 @@ def get_cdicts_to_validate(
 def upload_classic_pyiron(
     job,
     o,
-    space,
-    project,
+    space: str,
+    project: str,
     collection: str | None = None,
     export_env_file: bool = True,
     is_init_struct: bool = True,
     init_structure=None,
-    options=None,
+    options: dict | None = None,
 ):
     # TODO should this return anything?
     if options is not None:
@@ -331,11 +331,11 @@ def upload_classic_pyiron(
         upload_final_struct=is_sfb,
     )
 
-    from pyiron_rdm.ob_upload import openbis_validate
+    from pyiron_rdm.ob_upload import openbis_validate, validate_ob_destination
 
-    validated_to_upload = openbis_validate(
-        o, space, project, collection, cdicts_to_validate, options
-    )
+    validate_ob_destination(o, space, project, collection)
+
+    validated_to_upload = openbis_validate(o, cdicts_to_validate, options)
     # ---------------------------------------------------------------------------------------------
 
     # --------------------------------------UPLOAD-------------------------------------------------
