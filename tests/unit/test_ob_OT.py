@@ -1,6 +1,6 @@
 import unittest
 
-from pyiron_rdm import ob_OT_sfb1394, ob_OT_bam
+from pyiron_rdm import ob_OT_bam, ob_OT_sfb1394
 
 
 class TestObOT(unittest.TestCase):
