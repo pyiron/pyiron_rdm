@@ -60,15 +60,7 @@ def openbis_login(
     return o
 
 
-def openbis_validate(
-    o,
-    space: str,
-    project: str,
-    collection: str,
-    concept_dicts: dict | list,
-    options: dict,
-) -> list:
-    validate_ob_destination(o, space, project, collection)
+def openbis_validate(o, concept_dicts: dict | list, options: dict) -> list:
     if isinstance(concept_dicts, dict):
         concept_dicts = [concept_dicts]
     outputs = []
