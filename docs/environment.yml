@@ -9,7 +9,7 @@ dependencies:
 - versioneer
 - numpy =1.26.4
 - setuptools >=68
-- pandas =2.3.2
+- pandas =2.3.3
 - python >=3.11,<3.14
 - pyiron_base =0.15.3
 - pybis =1.37.4
