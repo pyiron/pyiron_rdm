@@ -160,14 +160,14 @@ def validate_options(
         if not isinstance(defects, list) or not all(
             isinstance(d, str) for d in defects
         ):
-            raise TypeError('defects must be a list of strings.')
+            raise TypeError("defects must be a list of strings.")
         invalid_defects = (
             set([d.lower().replace("_", " ") for d in defects]) - allowed_defects
         )
         if invalid_defects:
             raise ValueError(
-                f"Invalid defect(s) in \"defects\": {sorted(invalid_defects)}. \
-                Allowed defects are: {sorted(allowed_defects)}"
+                f'Invalid defect(s) in "defects": {sorted(invalid_defects)}. \
+                Allowed defects are: {sorted(allowed_defects)}'
             )
 
 
