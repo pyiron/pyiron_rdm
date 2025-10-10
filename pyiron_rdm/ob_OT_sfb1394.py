@@ -124,19 +124,25 @@ def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
 
 
 # upload options ______________________________________________
-def validate_options(options: dict):
+def validate_options(
+    materials: str | list[str] | None = None,
+    defects: list[str] | None = None,
+    pseudopotentials: str | list[str] | None = None,
+    comments: str | None = None,
+):
     """
     Validates the options dictionary for supported keys and values.
 
     Args:
-        options (dict): A dictionary containing upload options.
+        materials (str | list[str] | None): Material permId(s) or None.
+        defects (list[str] | None): List of defect types or None.
+        pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
+        comments (str | None): Comments string or None.
 
     Raises:
-        KeyError: If unsupported keys are found in the options dictionary.
         TypeError: If the value associated with the "defects" key is not a list of strings.
         ValueError: If invalid defect types are found in the "defects" list.
     """
-    allowed_keys = {"materials", "defects", "pseudopotentials", "comments"}
     allowed_defects = {
         "vacancy",
         "antisite",
@@ -150,24 +156,17 @@ def validate_options(options: dict):
         "surface",
         "phase boundary",
     }
-    invalid_keys = set(options) - allowed_keys
-    if invalid_keys:
-        raise KeyError(
-            f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
-                       Allowed keys are: {sorted(allowed_keys)}'
-        )
-    if "defects" in options:
-        if not isinstance(options["defects"], list) or not all(
-            isinstance(d, str) for d in options["defects"]
+    if defects is not None:
+        if not isinstance(defects, list) or not all(
+            isinstance(d, str) for d in defects
         ):
-            raise TypeError('options["defects"] must be a list of strings.')
+            raise TypeError('defects must be a list of strings.')
         invalid_defects = (
-            set([d.lower().replace("_", " ") for d in options["defects"]])
-            - allowed_defects
+            set([d.lower().replace("_", " ") for d in defects]) - allowed_defects
         )
         if invalid_defects:
             raise ValueError(
-                f"Invalid defect(s) in \"options['defects']\": {sorted(invalid_defects)}. \
+                f"Invalid defect(s) in \"defects\": {sorted(invalid_defects)}. \
                 Allowed defects are: {sorted(allowed_defects)}"
             )
 

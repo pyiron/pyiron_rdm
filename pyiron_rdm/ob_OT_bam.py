@@ -137,23 +137,20 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
 # upload options ______________________________________________
 
 
-def validate_options(options: dict):
+def validate_options(
+    materials: str | list[str] | None = None,
+    pseudopotentials: str | list[str] | None = None,
+    comments: str | None = None,
+):
     """
     Validates the options dictionary for supported keys and values.
 
     Args:
-        options (dict): A dictionary containing upload options.
-
-    Raises:
-        KeyError: If unsupported keys are found in the options dictionary.
+        materials (str | list[str] | None): Material permId(s) or None.
+        pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
+        comments (str | None): Comments string or None.
     """
-    allowed_keys = {"materials", "pseudopotentials", "comments"}
-    invalid_keys = set(options) - allowed_keys
-    if invalid_keys:
-        raise KeyError(
-            f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
-                       Allowed keys are: {sorted(allowed_keys)}'
-        )
+    pass
 
 
 # else ________________________________________________________
