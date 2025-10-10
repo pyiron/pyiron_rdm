@@ -136,7 +136,16 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
 
 # upload options ______________________________________________
 
-allowed_keys = {"materials", "pseudopotentials", "comments"}
+
+def validate_options(options: dict):
+    allowed_keys = {"materials", "pseudopotentials", "comments"}
+    invalid_keys = set(options) - allowed_keys
+    if invalid_keys:
+        raise KeyError(
+            f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
+                       Allowed keys are: {sorted(allowed_keys)}'
+        )
+
 
 # else ________________________________________________________
 

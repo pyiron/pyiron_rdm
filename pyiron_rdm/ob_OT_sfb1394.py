@@ -124,21 +124,42 @@ def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
 
 
 # upload options ______________________________________________
+def validate_options(options: dict):
+    allowed_keys = {"materials", "defects", "pseudopotentials", "comments"}
+    allowed_defects = {
+        "vacancy",
+        "antisite",
+        "substitutional",
+        "interstitial",
+        "perfect dislocation",
+        "partial dislocation",
+        "superdislocation",
+        "stacking fault",
+        "grain boundary",
+        "surface",
+        "phase boundary",
+    }
+    invalid_keys = set(options) - allowed_keys
+    if invalid_keys:
+        raise KeyError(
+            f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
+                       Allowed keys are: {sorted(allowed_keys)}'
+        )
+    if "defects" in options:
+        if not isinstance(options["defects"], list) or not all(
+            isinstance(d, str) for d in options["defects"]
+        ):
+            raise TypeError('options["defects"] must be a list of strings.')
+        invalid_defects = (
+            set([d.lower().replace("_", " ") for d in options["defects"]])
+            - allowed_defects
+        )
+        if invalid_defects:
+            raise ValueError(
+                f"Invalid defect(s) in \"options['defects']\": {sorted(invalid_defects)}. \
+                Allowed defects are: {sorted(allowed_defects)}"
+            )
 
-allowed_keys = {"materials", "defects", "pseudopotentials", "comments"}
-allowed_defects = {
-    "vacancy",
-    "antisite",
-    "substitutional",
-    "interstitial",
-    "perfect dislocation",
-    "partial dislocation",
-    "superdislocation",
-    "stacking fault",
-    "grain boundary",
-    "surface",
-    "phase boundary",
-}
 
 # else ________________________________________________________
 
