@@ -124,21 +124,52 @@ def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
 
 
 # upload options ______________________________________________
+def validate_options(
+    materials: str | list[str] | None = None,
+    defects: list[str] | None = None,
+    pseudopotentials: str | list[str] | None = None,
+    comments: str | None = None,
+):
+    """
+    Validates the options dictionary for supported keys and values.
 
-allowed_keys = {"materials", "defects", "pseudopotentials", "comments"}
-allowed_defects = {
-    "vacancy",
-    "antisite",
-    "substitutional",
-    "interstitial",
-    "perfect dislocation",
-    "partial dislocation",
-    "superdislocation",
-    "stacking fault",
-    "grain boundary",
-    "surface",
-    "phase boundary",
-}
+    Args:
+        materials (str | list[str] | None): Material permId(s) or None.
+        defects (list[str] | None): List of defect types or None.
+        pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
+        comments (str | None): Comments string or None.
+
+    Raises:
+        TypeError: If the value associated with the "defects" key is not a list of strings.
+        ValueError: If invalid defect types are found in the "defects" list.
+    """
+    allowed_defects = {
+        "vacancy",
+        "antisite",
+        "substitutional",
+        "interstitial",
+        "perfect dislocation",
+        "partial dislocation",
+        "superdislocation",
+        "stacking fault",
+        "grain boundary",
+        "surface",
+        "phase boundary",
+    }
+    if defects is not None:
+        if not isinstance(defects, list) or not all(
+            isinstance(d, str) for d in defects
+        ):
+            raise TypeError("defects must be a list of strings.")
+        invalid_defects = (
+            set([d.lower().replace("_", " ") for d in defects]) - allowed_defects
+        )
+        if invalid_defects:
+            raise ValueError(
+                f'Invalid defect(s) in "defects": {sorted(invalid_defects)}. \
+                Allowed defects are: {sorted(allowed_defects)}'
+            )
+
 
 # else ________________________________________________________
 

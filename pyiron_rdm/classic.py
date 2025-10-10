@@ -139,33 +139,11 @@ def get_datamodel(o):
     )
 
 
-def validate_upload_options(o, options):
+def validate_upload_options(ot_module: str, options: dict):
     import importlib
 
-    options_cfg = importlib.import_module(o.ot)
+    importlib.import_module(ot_module).validate_options(**options)
 
-    # currently not validating that materials/pseudopot is a string/list of strings
-    invalid_keys = set(options) - options_cfg.allowed_keys
-    if invalid_keys:
-        raise KeyError(
-            f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
-                       Allowed keys are: {sorted(options_cfg.allowed_keys)}'
-        )
-    if "defects" in options:
-        if not isinstance(options["defects"], list) or not all(
-            isinstance(d, str) for d in options["defects"]
-        ):
-            raise TypeError('options["defects"] must be a list of strings.')
-        if hasattr(options_cfg, "allowed_defects"):
-            invalid_defects = (
-                set([d.lower().replace("_", " ") for d in defects])
-                - options_cfg.allowed_defects
-            )
-            if invalid_defects:
-                raise ValueError(
-                    f"Invalid defect(s) in \"options['defects']\": {sorted(invalid_defects)}. \
-                    Allowed defects are: {sorted(options_cfg.allowed_defects)}"
-                )
     if "materials" in options and not isinstance(materials, list):
         options["materials"] = [options["materials"]]
     if "pseudopotentials" in options and not isinstance(
@@ -290,7 +268,7 @@ def upload_classic_pyiron(
 ):
     # TODO should this return anything?
     if options is not None:
-        options = validate_upload_options(o, options)
+        options = validate_upload_options(o.ot, options)
     else:
         options = {}
 
