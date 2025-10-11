@@ -84,12 +84,7 @@ def openbis_validate(
             concept_dict=concept_dict,
         )
         ob_parents = validate_inventory_parents(
-            o,
-            inv_parents,
-            cdict,
-            props_dict,
-            options,
-            require_parents=require_parents
+            o, inv_parents, cdict, props_dict, options, require_parents=require_parents
         )
         object_name = concept_dict["job_details"][0]["value"]
 
