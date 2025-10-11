@@ -63,12 +63,10 @@ def openbis_login(
 
 
 def openbis_validate(
-    o, concept_dicts: dict | list, options: dict, require_parents: bool = True
+    o, concept_dicts: dict, options: dict, require_parents: bool = True
 ) -> list:
-    if isinstance(concept_dicts, dict):
-        concept_dicts = [concept_dicts]
-    outputs = []
-    for concept_dict in concept_dicts:
+    outputs = {}
+    for key, concept_dict in concept_dicts.items():
         from pyiron_rdm.concept_dict import flatten_cdict
 
         cdict = flatten_cdict(concept_dict)
@@ -88,16 +86,14 @@ def openbis_validate(
         )
         object_name = concept_dict["job_details"][0]["value"]
 
-        outputs.append(
-            {
-                "cdict": cdict,
-                "props_dict": props_dict,
-                "object_type": object_type,
-                "ds_types": ds_types,
-                "ob_parents": ob_parents,
-                "object_name": object_name,
-            }
-        )
+        outputs[key] = {
+            "cdict": cdict,
+            "props_dict": props_dict,
+            "object_type": object_type,
+            "ds_types": ds_types,
+            "ob_parents": ob_parents,
+            "object_name": object_name,
+        }
 
     return outputs
 
