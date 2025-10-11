@@ -1,3 +1,6 @@
+import json
+
+
 def format_json_string(json_string):
     json_string = json_string.replace("\n", "<br>")
     result = []
@@ -15,19 +18,12 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
 
     # cdict = flat concept_dict
 
-    if "structure_name" in cdict.keys():
-        json_file = cdict["path"] + cdict["structure_name"] + "_concept_dict.json"
-        props = {}
-    else:
-        json_file = cdict["path"] + "_concept_dict.json"
-        props = {"user_name": user_name}
-
-    with open(json_file, "r") as file:
-        json_string = file.read()
-    json_string = format_json_string(json_string)
+    props = {}
+    if "structure_name" not in cdict.keys():
+        props["user_name"] = user_name
 
     props |= {
-        "pyiron_conceptual_dictionary": json_string,
+        "pyiron_conceptual_dictionary": json.dumps(concept_dict),
         "description_multiline": '<p><span style="color:hsl(240,75%,60%);">'
         + "<strong>Scroll down below other properties to view conceptual dictionary with ontological ids of selected properties and values.</strong></span>"
         + '<br>The conceptual dictionary is in JSON-LD format. Learn more about it <a href="https://www.w3.org/ns/json-ld/">here</a></p>',
