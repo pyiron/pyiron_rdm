@@ -35,7 +35,9 @@ def process_general_job(job):
 def process_lammps_job(job):
     method_dict = {"@context": add_lammps_contexts()}
     identify_lammps_method(job, method_dict)
-    method_dict["outputs"] = extract_lammps_calculated_quantities(job)
+    method_dict["outputs"] = extract_lammps_calculated_quantities(
+        job, molecular_statics="molecular_statics" in method_dict.keys()
+    )
     add_simulation_software(job, method_dict)
     get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
@@ -304,7 +306,7 @@ def identify_lammps_method(job, method_dict):
         ]
 
 
-def extract_lammps_calculated_quantities(job):
+def extract_lammps_calculated_quantities(job, molecular_statics: bool = True):
     """
     Extracts calculated quantities from a job.
 
@@ -336,7 +338,7 @@ def extract_lammps_calculated_quantities(job):
             "unit": "ANGSTROM3",
         },
     ]
-    if "molecular_statics" in method_dict.keys():
+    if molecular_statics:
         outputs.extend(
             [
                 {
