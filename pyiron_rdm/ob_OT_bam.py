@@ -136,7 +136,22 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
 
 # upload options ______________________________________________
 
-allowed_keys = {"materials", "pseudopotentials", "comments"}
+
+def validate_options(
+    materials: str | list[str] | None = None,
+    pseudopotentials: str | list[str] | None = None,
+    comments: str | None = None,
+):
+    """
+    Validates the options dictionary for supported keys and values.
+
+    Args:
+        materials (str | list[str] | None): Material permId(s) or None.
+        pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
+        comments (str | None): Comments string or None.
+    """
+    pass
+
 
 # else ________________________________________________________
 

@@ -1,5 +1,7 @@
 # TODO better imports for multiple openbis instances
 
+import warnings
+
 
 def openbis_login(
     url: str,
@@ -60,7 +62,9 @@ def openbis_login(
     return o
 
 
-def openbis_validate(o, concept_dicts: dict | list, options: dict) -> list:
+def openbis_validate(
+    o, concept_dicts: dict | list, options: dict, require_parents: bool = True
+) -> list:
     if isinstance(concept_dicts, dict):
         concept_dicts = [concept_dicts]
     outputs = []
@@ -80,7 +84,12 @@ def openbis_validate(o, concept_dicts: dict | list, options: dict) -> list:
             concept_dict=concept_dict,
         )
         ob_parents = validate_inventory_parents(
-            o, inv_parents, cdict, props_dict, options
+            o,
+            inv_parents,
+            cdict,
+            props_dict,
+            options,
+            require_parents=require_parents
         )
         object_name = concept_dict["job_details"][0]["value"]
 
@@ -177,7 +186,6 @@ def openbis_upload_validated(
             FileNotFoundError,
         ) as e:  # pybis: ValueError; OpenbisAixTended - shutil: FileNotFoundError
             if ds == "env_yml":
-                import warnings
 
                 warnings.warn("The environment file was not uploaded.")
             else:
@@ -271,11 +279,14 @@ def validate_ob_destination(o, space: str, project: str, collection: str):
             )
 
 
-def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
+def validate_inventory_parents(
+    o, inv_parents, cdict, props_dict, options, require_parents: bool = True
+):
     import importlib
 
     ob_parents = []
     get_inv_parent = importlib.import_module(o.ot).get_inv_parent
+    issues = []
     for inv_parent in inv_parents:
         ob_type, permids, where, attrs, code = get_inv_parent(
             inv_parent, cdict, props_dict, options
@@ -291,7 +302,7 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
             if parents:
                 ob_parents += parents
             else:
-                raise ValueError(
+                issues.append(
                     f"Parent object not found: No objects of the type {ob_type}"
                     f" and permId '{permids}' in inventory."
                 )
@@ -300,22 +311,26 @@ def validate_inventory_parents(o, inv_parents, cdict, props_dict, options):
                 type=ob_type, permId=permids, code=code, where=where, attrs=attrs
             )[0]
             if not parent:
-                raise ValueError(
+                issues.append(
                     f"Parent object not found: No objects of the type {ob_type}"
                     f' and property {where} / code "{code}" in inventory.'
                 )
             ob_parents.append(parent)
         elif ob_type == "PSEUDOPOTENTIAL":  # don't fail when pseudopotential missing
-            import warnings
-
             warnings.warn(
                 "Pseudopotential permId was not given. Please link job to"
                 " appropriate pseudopotential on openBIS."
             )
         else:
-            raise ValueError(
+            issues.append(
                 "Parent object not found: Not enough information to search."
                 f' Known information: type = {ob_type}, permId = "{permids}",'
                 f' code = "{code}", attribute match: {where}'
             )
+            ob_parents.append(None)
+    if issues and require_parents:
+        raise ValueError(" \n".join(issues))
+    else:
+        for issue in issues:
+            warnings.warn(issue)
     return ob_parents
