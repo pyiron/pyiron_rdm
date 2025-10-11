@@ -265,6 +265,7 @@ def upload_classic_pyiron(
     is_init_struct: bool = True,
     init_structure=None,
     options: dict | None = None,
+    require_parents: bool = True,
 ):
     # TODO should this return anything?
     if options is not None:
@@ -309,7 +310,9 @@ def upload_classic_pyiron(
 
     validate_ob_destination(o, space, project, collection)
 
-    validated_to_upload = openbis_validate(o, cdicts_to_validate, options)
+    validated_to_upload = openbis_validate(
+        o, cdicts_to_validate, options, require_parents=require_parents
+    )
     # ---------------------------------------------------------------------------------------------
 
     # --------------------------------------UPLOAD-------------------------------------------------
