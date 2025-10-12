@@ -198,7 +198,7 @@ def get_cdicts_to_validate(
 ):
     if options is None:
         options = {}
-    cdicts_to_validate = []
+    cdicts_to_validate = {}
 
     struct_dict = classic_structure(
         job.project,
@@ -208,25 +208,27 @@ def get_cdicts_to_validate(
         is_init_struct=is_init_struct,
         init_structure=init_structure,
     )
-    cdicts_to_validate.append(struct_dict)
+    cdicts_to_validate["structure"] = struct_dict
 
     job_type = job.to_dict()["TYPE"]
     if "lammps" in job_type:
         job_cdict = classic_lammps(job, export_env_file=export_env_file)
-        cdicts_to_validate.append(job_cdict)
+        cdicts_to_validate["job"] = job_cdict
 
     elif "vasp" in job_type:
         job_cdict = classic_vasp(job, export_env_file=export_env_file)
-        cdicts_to_validate.append(job_cdict)
+        cdicts_to_validate["job"] = job_cdict
 
     elif "murn" in job_type:
         job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
         equil_struct_dict = classic_murn_equil_structure(
             job, options, is_init_struct, init_structure
         )
-        cdicts_to_validate.append(job_cdict)
-        cdicts_to_validate.append(equil_struct_dict)
-        cdicts_to_validate += [child_cdict for child_cdict in child_jobs_cdict]
+        cdicts_to_validate["job"] = job_cdict
+        cdicts_to_validate["equilibrium_structure"] = equil_struct_dict
+        cdicts_to_validate["child_jobs"] = [
+            child_cdict for child_cdict in child_jobs_cdict
+        ]
 
     else:
         print(f"The {job_type} job type is not implemented for OpenBIS upload yet.")
@@ -235,7 +237,7 @@ def get_cdicts_to_validate(
         )
         if proceed.lower() == "yes" or proceed.lower() == "y":
             job_cdict = classic_general_job(job, export_env_file=export_env_file)
-            cdicts_to_validate.append(job_cdict)
+            cdicts_to_validate["job"] = job_cdict
         else:
             raise ValueError("Aborted")
 
@@ -251,7 +253,7 @@ def get_cdicts_to_validate(
             is_init_struct=False,
             init_structure=init_structure,
         )
-        cdicts_to_validate.append(final_struct_dict)
+        cdicts_to_validate["final_structure"] = final_struct_dict
     return cdicts_to_validate
 
 
@@ -324,7 +326,7 @@ def upload_classic_pyiron(
         space=space,
         project=project,
         collection=collection,
-        **validated_to_upload[0],
+        **validated_to_upload["structure"],
     )
 
     if is_sfb:
@@ -334,30 +336,27 @@ def upload_classic_pyiron(
         job_parents = ob_structure_id  # job has init structure as parent
         str_parent = None  # equil structure does not have init as parent
 
-    # (Main) job
     ob_job_id = openbis_upload_validated(
         o=o,
         space=space,
         project=project,
         collection=collection,
-        **validated_to_upload[1],
+        **validated_to_upload["job"],
         parent_ids=job_parents,
     )
 
-    if "murn" in job.to_dict()["TYPE"]:
+    if "equilibrium_structure" in validated_to_upload:
         ob_children_ids = []
-        # Murn equilibrium structure
         ob_equil_struct_id = openbis_upload_validated(
             o=o,
             space=space,
             project=project,
             collection=collection,
-            **validated_to_upload[2],
+            **validated_to_upload["equilibrium_structure"],
             parent_ids=str_parent,
         )
         ob_children_ids.append(ob_equil_struct_id)
-        # Murn children jobs
-        for validated_child in validated_to_upload[3:]:
+        for validated_child in validated_to_upload["child_jobs"]:
             ob_child_id = openbis_upload_validated(
                 o=o,
                 space=space,
@@ -372,13 +371,13 @@ def upload_classic_pyiron(
         link_children(o, ob_job_id, ob_children_ids)
 
     # Final structure upload (already included as equilibrium for murn)
-    elif upload_final_struct:
+    elif "final_structure" in validated_to_upload:
         ob_final_structure_id = openbis_upload_validated(
             o=o,
             space=space,
             project=project,
             collection=collection,
-            **validated_to_upload[-1],
+            **validated_to_upload["final_structure"],
             parent_ids=[ob_structure_id, ob_job_id],
         )
 
