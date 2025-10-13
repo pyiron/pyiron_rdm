@@ -9,7 +9,7 @@ from pyiron_rdm.concept_dict import flatten_cdict
 class TestObCFG(unittest.TestCase):
     def test_map_cdict_to_ob(self):
         d = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(d, "..", "static", "lammps_concept_dict.json") as f:
+        with open(os.path.join(d, "..", "static", "lammps_concept_dict.json")) as f:
             concept_dicts = json.load(f)
         for key, concept_dict in concept_dicts.items():
             cdict = flatten_cdict(concept_dict)
