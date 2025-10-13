@@ -143,20 +143,20 @@ def openbis_upload_validated(
     )
     object_.save()
 
-    import importlib
+    from importlib import import_module
 
     for ds in ds_types:
         if ds == "job_h5":
-            dataset_info = importlib.import_module(o.mapping).dataset_job_h5
+            ds_type, ds_props = import_module(o.mapping).dataset_job_h5(cdict)
             file_path = cdict["path"] + ".h5"
         elif ds == "structure_h5":
-            dataset_info = importlib.import_module(o.mapping).dataset_atom_struct_h5
+            ds_type, ds_props = import_module(o.mapping).dataset_atom_struct_h5(cdict)
             file_path = cdict["path"] + cdict["structure_name"] + ".h5"
         elif ds == "env_yml":
-            dataset_info = importlib.import_module(o.mapping).dataset_env_yml
+            ds_type, ds_props = import_module(o.mapping).dataset_env_yml(cdict)
             file_path = cdict["path"] + "_environment.yml"
         elif ds == "cdict_json":
-            dataset_info = importlib.import_module(o.mapping).dataset_cdict_jsonld
+            ds_type, ds_props = import_module(o.mapping).dataset_cdict_jsonld(cdict)
             if "structure_name" in cdict.keys():
                 file_path = (
                     cdict["path"] + cdict["structure_name"] + "_concept_dict.json"
@@ -169,9 +169,15 @@ def openbis_upload_validated(
                 " structure_h5, env_yml, cdict_json."
             )
 
-        ds_type, ds_props = dataset_info(cdict)
         try:
-            upload_dataset(o, object_, ds_type, ds_props, file_path, kind)
+            upload_dataset(
+                o=o,
+                object_=object_,
+                ds_type=ds_type,
+                ds_props=ds_props,
+                file_path=file_path,
+                kind=kind,
+            )
         except (
             ValueError,
             FileNotFoundError,
@@ -183,7 +189,11 @@ def openbis_upload_validated(
                 raise e
 
     if parent_ids:
-        link_parents(o, object_, parent_ids)
+        link_parents(
+            o=o,
+            object_=object_,
+            parent_ids=parent_ids,
+        )
 
     return object_.identifier  # or object_.permId
 
