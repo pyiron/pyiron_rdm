@@ -89,16 +89,16 @@ def murn_job_ot():
 
 def get_ot_info(cdict):
     if "structure_name" in cdict.keys():
-        return struct_ot
+        return struct_ot()
     elif "job_type" in cdict.keys():
         if "lammps" in cdict["job_type"].lower():
-            return lammps_job_ot
+            return lammps_job_ot()
         elif "vasp" in cdict["job_type"].lower():
-            return vasp_job_ot
+            return vasp_job_ot()
         elif "murn" in cdict["job_type"].lower():
-            return murn_job_ot
+            return murn_job_ot()
         else:
-            return pyiron_job_ot
+            return pyiron_job_ot()
     else:
         raise ValueError(
             "Neither structure_name nor job_type in conceptual dictionary. Cannot proceed."
@@ -124,28 +124,59 @@ def get_inv_parent(parent_name, cdict, props_dict: dict, options: dict):
 
 
 # upload options ______________________________________________
+def validate_options(
+    materials: str | list[str] | None = None,
+    defects: list[str] | None = None,
+    pseudopotentials: str | list[str] | None = None,
+    comments: str | None = None,
+):
+    """
+    Validates the options dictionary for supported keys and values.
 
-allowed_keys = {"materials", "defects", "pseudopotentials", "comments"}
-allowed_defects = {
-    "vacancy",
-    "antisite",
-    "substitutional",
-    "interstitial",
-    "perfect dislocation",
-    "partial dislocation",
-    "superdislocation",
-    "stacking fault",
-    "grain boundary",
-    "surface",
-    "phase boundary",
-}
+    Args:
+        materials (str | list[str] | None): Material permId(s) or None.
+        defects (list[str] | None): List of defect types or None.
+        pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
+        comments (str | None): Comments string or None.
+
+    Raises:
+        TypeError: If the value associated with the "defects" key is not a list of strings.
+        ValueError: If invalid defect types are found in the "defects" list.
+    """
+    allowed_defects = {
+        "vacancy",
+        "antisite",
+        "substitutional",
+        "interstitial",
+        "perfect dislocation",
+        "partial dislocation",
+        "superdislocation",
+        "stacking fault",
+        "grain boundary",
+        "surface",
+        "phase boundary",
+    }
+    if defects is not None:
+        if not isinstance(defects, list) or not all(
+            isinstance(d, str) for d in defects
+        ):
+            raise TypeError("defects must be a list of strings.")
+        invalid_defects = (
+            set([d.lower().replace("_", " ") for d in defects]) - allowed_defects
+        )
+        if invalid_defects:
+            raise ValueError(
+                f'Invalid defect(s) in "defects": {sorted(invalid_defects)}. \
+                Allowed defects are: {sorted(allowed_defects)}'
+            )
+
 
 # else ________________________________________________________
 
 
 def species_by_num_to_pct(props: dict, max_elements: int = 10):
     species_by_pct = {
-        props[f"element_{i}"]: props[f"element_{i}_at_percent"]
+        props[f"element_{i}"]: float(props[f"element_{i}_at_percent"])
         for i in range(1, max_elements + 1)
         if f"element_{i}" in props and f"element_{i}_at_percent" in props
     }

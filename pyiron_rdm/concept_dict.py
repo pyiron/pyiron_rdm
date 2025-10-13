@@ -18,7 +18,8 @@ import warnings
 from typing import Optional
 
 import numpy as np
-from ase import units
+from ase import Atoms, units
+from structuretoolkit import get_symmetry
 
 
 def process_general_job(job):
@@ -32,11 +33,11 @@ def process_general_job(job):
 
 
 def process_lammps_job(job):
-    method_dict = {}
-    _add_lammps_contexts(method_dict)
-    # get_structures(job, method_dict)
+    method_dict = {"@context": add_lammps_contexts()}
     _identify_lammps_method(job, method_dict)
-    _extract_lammps_calculated_quantities(job, method_dict)
+    _method_dict["outputs"] = extract_lammps_calculated_quantities(
+        job, molecular_statics="molecular_statics" in method_dict.keys()
+    )
     _add_simulation_software(job, method_dict)
     _get_simulation_folder(job, method_dict)
     file_name = job.path + "_concept_dict.json"
@@ -46,19 +47,23 @@ def process_lammps_job(job):
 
 
 def process_structure_crystal(
-    pr,
+    path,
+    name,
     structure,
     structure_name,
     structure_path,
     structure_parameters: dict = None,
     options=None,
-):
+) -> dict:
+    if options is None:
+        options = {}
     sample_dict = {}
-    _add_structure_contexts(sample_dict)
-    _get_chemical_species(structure, sample_dict)
-    _identify_structure_parameters(structure_parameters, sample_dict)
-    _get_simulation_cell(structure, sample_dict)
-    _add_structure_software(pr, structure_name, sample_dict)
+    sample_dict["@context"] = _add_structure_contexts()
+    sample_dict["atoms"] = _get_chemical_species(structure)
+    if structure_parameters:
+        _identify_structure_parameters(structure_parameters, sample_dict)
+    sample_dict["simulation_cell"] = _get_simulation_cell(structure, sample_dict)
+    _add_structure_software(path, name, structure_name, sample_dict)
     sample_dict["path"] = structure_path
     if options.get("defects"):
         sample_dict["defects"] = options["defects"]
@@ -71,8 +76,7 @@ def process_structure_crystal(
 
 
 def process_murnaghan_job(job):
-    method_dict = {}
-    _add_murnaghan_contexts(method_dict)
+    method_dict = {"@context": _add_murnaghan_contexts()}
     _identify_murnaghan_method(job, method_dict)
     _extract_murnaghan_calculated_quantities(job, method_dict)
     _add_simulation_software(job, method_dict)
@@ -84,8 +88,7 @@ def process_murnaghan_job(job):
 
 
 def process_vasp_job(job):
-    method_dict = {}
-    _add_vasp_contexts(method_dict)
+    method_dict = {"@context": add_vasp_contexts()}
     _identify_vasp_method(job, method_dict)
     _extract_vasp_calculated_quantities(job, method_dict)
     _add_simulation_software(job, method_dict)
@@ -96,110 +99,42 @@ def process_vasp_job(job):
     return method_dict
 
 
-def _add_lammps_contexts(method_dict):
-    method_dict["@context"] = {}
-    method_dict["@context"][
-        "sample"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample"
-    method_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    method_dict["@context"][
-        "dof"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF"
-    method_dict["@context"][
-        "inputs"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter"
-    method_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    method_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/asmo/hasUnit"
-    method_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    method_dict["@context"][
-        "outputs"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty"
-    method_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # method_dict['@context']['software'] = ''
-    method_dict["@context"][
-        "molecular_dynamics"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/MolecularDynamics"
-    method_dict["@context"][
-        "molecular_statics"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/MolecularStatics"
-    method_dict["@context"][
-        "ensemble"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble"
-    method_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    method_dict["@context"][
-        "periodic_boundary_condition"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition"
-    method_dict["@context"][
-        "initial_temperature"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Temperature"
-    method_dict["@context"][
-        "initial_pressure"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Pressure"
-    method_dict["@context"][
-        "target_temperature"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Temperature"
-    method_dict["@context"][
-        "target_pressure"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Pressure"
-    method_dict["@context"][
-        "ionic_energy_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "force_tolerace"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "maximum_iterations"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "potential"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential"
-    method_dict["@context"][
-        "average_temperature"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Temperature"
-    method_dict["@context"][
-        "average_pressure"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Pressure"
-    method_dict["@context"][
-        "average_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "final_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "final_potential_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy"
-    method_dict["@context"][
-        "average_total_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    method_dict["@context"][
-        "final_total_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    method_dict["@context"][
-        "final_maximum_force"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Force"
-    method_dict["@context"][
-        "number_ionic_steps"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps"
-    method_dict["@context"][
-        "time_step"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TimeStep"
-    method_dict["@context"][
-        "simulation_time"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Time"
-    method_dict["@context"]["LAMMPS"] = "http://demo.fiz-karlsruhe.de/matwerk/E447986"
 
-
-def get_structures(job, method_dict):
-    initial_pyiron_structure = job.structure
-    final_pyiron_structure = job.get_structure(frame=-1)
-
-    method_dict["sample"] = {
-        "initial": initial_pyiron_structure,
-        "final": final_pyiron_structure,
+def _add_lammps_contexts():
+    return {
+        "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "dof": "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF",
+        "inputs": "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/asmo/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "molecular_dynamics": "http://purls.helmholtz-metadaten.de/asmo/MolecularDynamics",
+        "molecular_statics": "http://purls.helmholtz-metadaten.de/asmo/MolecularStatics",
+        "ensemble": "http://purls.helmholtz-metadaten.de/asmo/hasStatisticalEnsemble",
+        "job_details": "http://id-from-pmdco-pending",
+        "periodic_boundary_condition": "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition",
+        "initial_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
+        "initial_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
+        "target_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
+        "target_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
+        "ionic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "force_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "maximum_iterations": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "potential": "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential",
+        "average_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
+        "average_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
+        "average_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "final_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "final_potential_energy": "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy",
+        "average_total_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "final_total_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "final_maximum_force": "http://purls.helmholtz-metadaten.de/asmo/Force",
+        "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
+        "time_step": "http://purls.helmholtz-metadaten.de/asmo/TimeStep",
+        "simulation_time": "http://purls.helmholtz-metadaten.de/asmo/Time",
     }
 
 
@@ -286,90 +221,57 @@ def _identify_lammps_method(job, method_dict):
     if md_method == "molecular_statics":
         method_dict[md_method]["minimization_algorithm"] = input_dict["min_style"]
 
-    input_dict = {
-        job_dict["control_inp/data_dict"]["Parameter"][x]: job_dict[
-            "control_inp/data_dict"
-        ]["Value"][x]
-        for x in range(len(job_dict["control_inp/data_dict"]["Parameter"]))
-    }
-    pb = []
-    pb.append(input_dict["boundary"])
-    if pb[0][0] == "p":
-        method_dict[md_method]["periodicity_in_x"] = True
-    else:
-        method_dict[md_method]["periodicity_in_x"] = False
-    if pb[0][2] == "p":
-        method_dict[md_method]["periodicity_in_y"] = True
-    else:
-        method_dict[md_method]["periodicity_in_y"] = False
-    if pb[0][4] == "p":
-        method_dict[md_method]["periodicity_in_z"] = True
-    else:
-        method_dict[md_method]["periodicity_in_z"] = False
+    for xx, ii in zip(["x", "y", "z"], [0, 2, 4]):
+        method_dict[md_method][f"periodicity_in_{xx}"] = (
+            input_dict["boundary"][ii] == "p"
+        )
 
-    method_dict[md_method]["inputs"] = []
-
-    temperature = {}
-    temperature["value"] = temp
-    temperature["unit"] = "K"
-    temperature["label"] = "initial_temperature"
-
-    method_dict[md_method]["inputs"].append(temperature)
-
-    target_temperature = {}
-    target_temperature["value"] = temp_target
-    target_temperature["unit"] = "K"
-    target_temperature["label"] = "target_temperature"
-
-    method_dict[md_method]["inputs"].append(target_temperature)
-
-    pressure = {}
-    pressure["value"] = press
-    pressure["unit"] = "GigaPA"
-    pressure["label"] = "initial_pressure"
-
-    method_dict[md_method]["inputs"].append(pressure)
-
-    target_pressure = {}
-    target_pressure["value"] = press_target
-    target_pressure["unit"] = "GigaPA"
-    target_pressure["label"] = "target_pressure"
-
-    method_dict[md_method]["inputs"].append(target_pressure)
-
-    energy_tol = {}
-    energy_tol["value"] = e_tol
-    energy_tol["unit"] = "EV"
-    energy_tol["label"] = "ionic_energy_tolerance"
-
-    method_dict[md_method]["inputs"].append(energy_tol)
-
-    force_tol = {}
-    force_tol["value"] = f_tol
-    force_tol["unit"] = "EV-PER-ANGSTROM"
-    force_tol["label"] = "force_tolerance"
-
-    method_dict[md_method]["inputs"].append(force_tol)
-
-    maximum_iterations = {}
-    maximum_iterations["value"] = maxiter
-    maximum_iterations["label"] = "maximum_iterations"
-
-    method_dict[md_method]["inputs"].append(maximum_iterations)
-
-    timestep_dict = {}
-    timestep_dict["value"] = timestep
-    timestep_dict["unit"] = "PICOSECOND"
-    timestep_dict["label"] = "timestep"
-
-    method_dict[md_method]["inputs"].append(timestep_dict)
-
-    sim_time_dict = {}
-    sim_time_dict["value"] = simulation_time
-    sim_time_dict["unit"] = "PICOSECOND"
-    sim_time_dict["label"] = "simulation_time"
-
-    method_dict[md_method]["inputs"].append(sim_time_dict)
+    method_dict[md_method]["inputs"] = [
+        {
+            "value": temp,
+            "unit": "K",
+            "label": "initial_temperature",
+        },
+        {
+            "value": temp_target,
+            "unit": "K",
+            "label": "target_temperature",
+        },
+        {
+            "value": press,
+            "unit": "GigaPA",
+            "label": "initial_pressure",
+        },
+        {
+            "value": press_target,
+            "unit": "GigaPA",
+            "label": "target_pressure",
+        },
+        {
+            "value": e_tol,
+            "unit": "EV",
+            "label": "ionic_energy_tolerance",
+        },
+        {
+            "value": f_tol,
+            "unit": "EV-PER-ANGSTROM",
+            "label": "force_tolerance",
+        },
+        {
+            "value": maxiter,
+            "label": "maximum_iterations",
+        },
+        {
+            "value": timestep,
+            "unit": "PICOSECOND",
+            "label": "timestep",
+        },
+        {
+            "value": simulation_time,
+            "unit": "PICOSECOND",
+            "label": "simulation_time",
+        },
+    ]
 
     method_dict[md_method]["ensemble"] = ensemble
 
@@ -381,9 +283,6 @@ def _identify_lammps_method(job, method_dict):
     name = inpdict["potential_inp/potential/Name"]
     potstr = job.input.to_dict()["potential_inp/potential/Citations"]
     potdict = ast.literal_eval(potstr[1:-1])
-    url = None
-    if "url" in potdict[list(potdict.keys())[0]].keys():
-        url = potdict[list(potdict.keys())[0]]["url"]
     if "meam" in ps:
         method_dict["@context"][
             "potential"
@@ -401,13 +300,14 @@ def _identify_lammps_method(job, method_dict):
             "potential"
         ] = "http://purls.helmholtz-metadaten.de/asmo/MachineLearningPotential"
 
-    method_dict[md_method]["potential"] = {}
-    method_dict[md_method]["potential"]["label"] = name
-    if url is not None:
-        method_dict[md_method]["potential"]["url"] = url
+    method_dict[md_method]["potential"] = {"label": name}
+    if "url" in potdict[list(potdict.keys())[0]].keys():
+        method_dict[md_method]["potential"]["url"] = potdict[list(potdict.keys())[0]][
+            "url"
+        ]
 
 
-def _extract_lammps_calculated_quantities(job, method_dict):
+def _extract_lammps_calculated_quantities(job, molecular_statics: bool = True):
     """
     Extracts calculated quantities from a job.
 
@@ -422,96 +322,73 @@ def _extract_lammps_calculated_quantities(job, method_dict):
         A list of dictionaries, each containing the label, value, unit, and associate_to_sample of a calculated quantity.
 
     """
-    aen = np.mean(job.output.energy_tot)
-    fen = job.output.energy_tot[-1]
-    fpe = job.output.energy_pot[-1]
-    avol = np.mean(job.output.volume)
-    fvol = job.output.volume[-1]
-    fmax = job.output.force_max[-1]
-    nionic = len(job.output.steps) - 1
-    atemp = np.mean(job.output.temperature)
-    apress = np.mean(
-        np.array(
-            [
-                (1 / 3 * (tensor[0, 0] + tensor[1, 1] + tensor[2, 2]))
-                for tensor in job.output.pressures
-            ]
-        )
-    )
-    apot = np.mean(job.output.energy_pot)
-    outputs = []
-    outputs.append(
+    outputs = [
         {
             "label": "average_total_energy",
-            "value": np.round(aen, decimals=4),
+            "value": np.round(np.mean(job.output.energy_tot), decimals=4),
             "unit": "EV",
-        }
-    )
-    outputs.append(
+        },
         {
             "label": "average_total_volume",
-            "value": np.round(avol, decimals=4),
+            "value": np.round(np.mean(job.output.volume), decimals=4),
             "unit": "ANGSTROM3",
-        }
-    )
-    outputs.append(
+        },
         {
             "label": "final_total_volume",
-            "value": np.round(fvol, decimals=4),
+            "value": np.round(job.output.volume[-1], decimals=4),
             "unit": "ANGSTROM3",
-        }
-    )
-    if "molecular_statics" in method_dict.keys():
-        outputs.append(
-            {
-                "label": "final_total_energy",
-                "value": np.round(fen, decimals=4),
-                "unit": "EV",
-            }
-        )
-        outputs.append(
-            {
-                "label": "final_potential_energy",
-                "value": np.round(fpe, decimals=4),
-                "unit": "EV",
-            }
-        )
-        outputs.append(
-            {
-                "label": "final_maximum_force",
-                "value": np.round(fmax, decimals=16),
-                "unit": "EV-PER-ANGSTROM",
-            }
-        )
-        outputs.append(
-            {
-                "label": "number_ionic_steps",
-                "value": nionic,
-            }
+        },
+    ]
+    if molecular_statics:
+        outputs.extend(
+            [
+                {
+                    "label": "final_total_energy",
+                    "value": np.round(job.output.energy_tot[-1], decimals=4),
+                    "unit": "EV",
+                },
+                {
+                    "label": "final_potential_energy",
+                    "value": np.round(job.output.energy_pot[-1], decimals=4),
+                    "unit": "EV",
+                },
+                {
+                    "label": "final_maximum_force",
+                    "value": np.round(job.output.force_max[-1], decimals=16),
+                    "unit": "EV-PER-ANGSTROM",
+                },
+                {
+                    "label": "number_ionic_steps",
+                    "value": len(job.output.steps) - 1,
+                },
+            ]
         )
     else:
-        outputs.append(
-            {
-                "label": "average_potential_energy",
-                "value": np.round(apot, decimals=4),
-                "unit": "EV",
-            }
+        outputs.extend(
+            [
+                {
+                    "label": "average_potential_energy",
+                    "value": np.round(np.mean(job.output.energy_pot), decimals=4),
+                    "unit": "EV",
+                },
+                {
+                    "label": "average_temperature",
+                    "value": np.round(np.mean(job.output.temperature), decimals=4),
+                    "unit": "K",
+                },
+                {
+                    "label": "average_pressure",
+                    "value": np.round(
+                        np.mean(
+                            [np.sum(t.diagonal()) / 3 for t in job.output.pressures]
+                        ),
+                        decimals=4,
+                    ),
+                    "unit": "GigaPA",
+                },
+            ]
         )
-        outputs.append(
-            {
-                "label": "average_temperature",
-                "value": np.round(atemp, decimals=4),
-                "unit": "K",
-            }
-        )
-        outputs.append(
-            {
-                "label": "average_pressure",
-                "value": np.round(apress, decimals=4),
-                "unit": "GigaPA",
-            }
-        )
-    method_dict["outputs"] = outputs
+    return outputs
 
 
 def _add_simulation_software(job, method_dict):
@@ -696,49 +573,26 @@ def _get_simulation_folder(job, method_dict):
     method_dict["path"] = job.path
 
 
+
 def _add_murnaghan_contexts(method_dict):
-    method_dict["@context"] = {}
-    method_dict["@context"][
-        "sample"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample"
-    method_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    method_dict["@context"][
-        "equation_of_state_fit"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/EquationOfStateFit"
-    method_dict["@context"][
-        "inputs"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter"
-    method_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    method_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/asmo/hasUnit"
-    method_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    method_dict["@context"][
-        "outputs"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty"
-    method_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # method_dict['@context']['software'] = ''
-    method_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    method_dict["@context"][
-        "strain_axes"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "number_of_data_points"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "volume_range"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/VolumeRange"
-    method_dict["@context"][
-        "equilibrium_bulk_modulus"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/BulkModulus"
-    method_dict["@context"][
-        "equilibrium_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "equilibrium_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
+    return {
+        "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "equation_of_state_fit": "http://purls.helmholtz-metadaten.de/asmo/EquationOfStateFit",
+        "inputs": "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/asmo/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "job_details": "http://id-from-pmdco-pending",
+        "strain_axes": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "number_of_data_points": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "volume_range": "http://purls.helmholtz-metadaten.de/asmo/VolumeRange",
+        "equilibrium_bulk_modulus": "http://purls.helmholtz-metadaten.de/asmo/BulkModulus",
+        "equilibrium_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "equilibrium_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+    }
 
 
 def _identify_murnaghan_method(job, method_dict):
@@ -821,19 +675,18 @@ def _extract_murnaghan_calculated_quantities(job, method_dict):
     method_dict["outputs"] = outputs
 
 
-def get_unit_cell_parameters(structure):
-    if structure.get_symmetry().spacegroup["InternationalTableSymbol"] == "Im-3m":
-        if structure.get_number_of_atoms() == 1:
+def get_unit_cell_parameters(structure: Atoms):
+    symmetry = get_symmetry(structure)
+    if symmetry.spacegroup["InternationalTableSymbol"] == "Im-3m":
+        if len(structure) == 1:
             structure_parameters = {
                 "a": np.round(structure.cell[1][0] * 2, 4),
                 "alpha": 90.0,
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "bcc",
             }
         else:
@@ -843,24 +696,20 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "bcc",
             }
-    elif structure.get_symmetry().spacegroup["InternationalTableSymbol"] == "Fm-3m":
-        if structure.get_number_of_atoms() == 1:
+    elif symmetry.spacegroup["InternationalTableSymbol"] == "Fm-3m":
+        if len(structure) == 1:
             structure_parameters = {
                 "a": np.round(structure.cell[1][0] * 2, 4),
                 "alpha": 90.0,
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "fcc",
             }
         else:
@@ -870,14 +719,12 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 90.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "fcc",
             }
-    elif structure.get_symmetry().spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
-        if structure.get_number_of_atoms() == 2:
+    elif symmetry.spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
+        if len(structure) == 2:
             structure_parameters = {
                 "a": np.round(structure.cell[0][0], 4),
                 "c": np.round(structure.cell[2][2], 4),
@@ -885,10 +732,8 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 120.0,
                 "volume": np.round(structure.get_volume() * 3, 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "hcp",
             }
         else:
@@ -899,232 +744,160 @@ def get_unit_cell_parameters(structure):
                 "beta": 90.0,
                 "gamma": 120.0,
                 "volume": np.round(structure.get_volume(), 4),
-                "space_group": structure.get_symmetry().spacegroup[
-                    "InternationalTableSymbol"
-                ],
-                "space_group_number": structure.get_symmetry().spacegroup["Number"],
+                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+                "space_group_number": symmetry.spacegroup["Number"],
                 "bravais_lattice": "hcp",
             }
 
     return structure_parameters
 
 
-def _add_structure_contexts(sample_dict):
-    sample_dict["@context"] = {}
-    sample_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    sample_dict["@context"][
-        "unit_cell"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/UnitCell"
-    sample_dict["@context"]["atoms"] = "http://purls.helmholtz-metadaten.de/cmso/Atom"
-    sample_dict["@context"][
-        "molecules"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/Molecule"
-    sample_dict["@context"][
-        "bravais_lattice"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice"
-    sample_dict["@context"][
-        "chemical_species"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/ChemicalSpecies"
-    sample_dict["@context"][
-        "simulation_cell"
-    ] = "http://www.w3.org/2000/01/rdf-schema#label"
-    sample_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    sample_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/cmso/hasUnit"
-    sample_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    sample_dict["@context"][
-        "vector"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/Vector"
-    sample_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    sample_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # sample_dict['@context']['software'] = ''
-    sample_dict["@context"][
-        "lattice_parameter_a"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
-    sample_dict["@context"][
-        "lattice_angle_alpha"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-    sample_dict["@context"][
-        "lattice_angle_beta"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-    sample_dict["@context"][
-        "lattice_angle_gamma"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
-    sample_dict["@context"][
-        "lattice_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    sample_dict["@context"][
-        "space_group"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasSpaceGroup"
-    sample_dict["@context"][
-        "bravais_lattice"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice"
-    sample_dict["@context"][
-        "simulation_cell_lengths"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasLength"
-    sample_dict["@context"][
-        "simulation_cell_vectors"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasVector"
-    sample_dict["@context"][
-        "simulation_cell_volume"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasVolume"
-    sample_dict["@context"][
-        "simulation_cell_angle"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasAngle"
+
+def _add_structure_contexts():
+    return {
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "unit_cell": "http://purls.helmholtz-metadaten.de/cmso/UnitCell",
+        "atoms": "http://purls.helmholtz-metadaten.de/cmso/Atom",
+        "molecules": "http://purls.helmholtz-metadaten.de/cmso/Molecule",
+        "bravais_lattice": "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice",
+        "chemical_species": "http://purls.helmholtz-metadaten.de/cmso/ChemicalSpecies",
+        "simulation_cell": "http://www.w3.org/2000/01/rdf-schema#label",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/cmso/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "vector": "http://purls.helmholtz-metadaten.de/cmso/Vector",
+        "job_details": "http://id-from-pmdco-pending",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "lattice_parameter_a": "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter",
+        "lattice_angle_alpha": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+        "lattice_angle_beta": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+        "lattice_angle_gamma": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+        "lattice_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "space_group": "http://purls.helmholtz-metadaten.de/cmso/hasSpaceGroup",
+        "bravais_lattice": "http://purls.helmholtz-metadaten.de/cmso/hasBravaisLattice",
+        "simulation_cell_lengths": "http://purls.helmholtz-metadaten.de/cmso/hasLength",
+        "simulation_cell_vectors": "http://purls.helmholtz-metadaten.de/cmso/hasVector",
+        "simulation_cell_volume": "http://purls.helmholtz-metadaten.de/cmso/hasVolume",
+        "simulation_cell_angle": "http://purls.helmholtz-metadaten.de/cmso/hasAngle",
+    }
 
 
 def _identify_structure_parameters(structure_parameters, sample_dict):
-    if not structure_parameters:
-        return
-    else:
 
-        unit_cell_details = []
+    unit_cell_details = []
 
-        cell_parameter_a_dict = {}
-        cell_parameter_a_dict["value"] = structure_parameters["a"]
-        cell_parameter_a_dict["unit"] = "ANGSTROM"
-        cell_parameter_a_dict["label"] = "lattice_parameter_a"
-        unit_cell_details.append(cell_parameter_a_dict)
-        if "b" in structure_parameters.keys():
-            cell_parameter_b_dict = {}
-            cell_parameter_b_dict["value"] = structure_parameters["b"]
-            cell_parameter_b_dict["unit"] = "ANGSTROM"
-            cell_parameter_b_dict["label"] = "lattice_parameter_b"
-            sample_dict["@context"][
-                "lattice_parameter_b"
-            ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+    cell_parameter_a_dict = {}
+    cell_parameter_a_dict["value"] = structure_parameters["a"]
+    cell_parameter_a_dict["unit"] = "ANGSTROM"
+    cell_parameter_a_dict["label"] = "lattice_parameter_a"
+    unit_cell_details.append(cell_parameter_a_dict)
+    if "b" in structure_parameters.keys():
+        cell_parameter_b_dict = {}
+        cell_parameter_b_dict["value"] = structure_parameters["b"]
+        cell_parameter_b_dict["unit"] = "ANGSTROM"
+        cell_parameter_b_dict["label"] = "lattice_parameter_b"
+        sample_dict["@context"][
+            "lattice_parameter_b"
+        ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
 
-            unit_cell_details.append(cell_parameter_b_dict)
-        if "c" in structure_parameters.keys():
-            cell_parameter_c_dict = {}
-            cell_parameter_c_dict["value"] = structure_parameters["c"]
-            cell_parameter_c_dict["unit"] = "ANGSTROM"
-            cell_parameter_c_dict["label"] = "lattice_parameter_c"
-            sample_dict["@context"][
-                "lattice_parameter_c"
-            ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
-            unit_cell_details.append(cell_parameter_c_dict)
-        if "c_over_a" in structure_parameters.keys():
-            cell_parameter_c_over_a_dict = {}
-            cell_parameter_c_over_a_dict["value"] = structure_parameters["c_over_a"]
-            cell_parameter_c_over_a_dict["unit"] = "ANGSTROM"
-            cell_parameter_c_over_a_dict["label"] = "lattice_parameter_c_over_a"
-            sample_dict["@context"][
-                "lattice_parameter_c_over_a"
-            ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
-            unit_cell_details.append(cell_parameter_c_over_a_dict)
+        unit_cell_details.append(cell_parameter_b_dict)
+    if "c" in structure_parameters.keys():
+        cell_parameter_c_dict = {}
+        cell_parameter_c_dict["value"] = structure_parameters["c"]
+        cell_parameter_c_dict["unit"] = "ANGSTROM"
+        cell_parameter_c_dict["label"] = "lattice_parameter_c"
+        sample_dict["@context"][
+            "lattice_parameter_c"
+        ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+        unit_cell_details.append(cell_parameter_c_dict)
+    if "c_over_a" in structure_parameters.keys():
+        cell_parameter_c_over_a_dict = {}
+        cell_parameter_c_over_a_dict["value"] = structure_parameters["c_over_a"]
+        cell_parameter_c_over_a_dict["unit"] = "ANGSTROM"
+        cell_parameter_c_over_a_dict["label"] = "lattice_parameter_c_over_a"
+        sample_dict["@context"][
+            "lattice_parameter_c_over_a"
+        ] = "http://purls.helmholtz-metadaten.de/cmso/hasLatticeParameter"
+        unit_cell_details.append(cell_parameter_c_over_a_dict)
 
-        cell_parameter_alpha_dict = {}
-        cell_parameter_alpha_dict["value"] = structure_parameters["alpha"]
-        cell_parameter_alpha_dict["unit"] = "DEGREE"
-        cell_parameter_alpha_dict["label"] = "lattice_angle_alpha"
-        unit_cell_details.append(cell_parameter_alpha_dict)
-        cell_parameter_beta_dict = {}
-        cell_parameter_beta_dict["value"] = structure_parameters["beta"]
-        cell_parameter_beta_dict["unit"] = "DEGREE"
-        cell_parameter_beta_dict["label"] = "lattice_angle_beta"
-        unit_cell_details.append(cell_parameter_beta_dict)
-        cell_parameter_gamma_dict = {}
-        cell_parameter_gamma_dict["value"] = structure_parameters["gamma"]
-        cell_parameter_gamma_dict["unit"] = "DEGREE"
-        cell_parameter_gamma_dict["label"] = "lattice_angle_gamma"
-        unit_cell_details.append(cell_parameter_gamma_dict)
+    cell_parameter_alpha_dict = {}
+    cell_parameter_alpha_dict["value"] = structure_parameters["alpha"]
+    cell_parameter_alpha_dict["unit"] = "DEGREE"
+    cell_parameter_alpha_dict["label"] = "lattice_angle_alpha"
+    unit_cell_details.append(cell_parameter_alpha_dict)
+    cell_parameter_beta_dict = {}
+    cell_parameter_beta_dict["value"] = structure_parameters["beta"]
+    cell_parameter_beta_dict["unit"] = "DEGREE"
+    cell_parameter_beta_dict["label"] = "lattice_angle_beta"
+    unit_cell_details.append(cell_parameter_beta_dict)
+    cell_parameter_gamma_dict = {}
+    cell_parameter_gamma_dict["value"] = structure_parameters["gamma"]
+    cell_parameter_gamma_dict["unit"] = "DEGREE"
+    cell_parameter_gamma_dict["label"] = "lattice_angle_gamma"
+    unit_cell_details.append(cell_parameter_gamma_dict)
 
-        cell_parameter_vol_dict = {}
-        cell_parameter_vol_dict["value"] = structure_parameters["volume"]
-        cell_parameter_vol_dict["unit"] = "ANGSTROM3"
-        cell_parameter_vol_dict["label"] = "lattice_volume"
-        unit_cell_details.append(cell_parameter_vol_dict)
+    cell_parameter_vol_dict = {}
+    cell_parameter_vol_dict["value"] = structure_parameters["volume"]
+    cell_parameter_vol_dict["unit"] = "ANGSTROM3"
+    cell_parameter_vol_dict["label"] = "lattice_volume"
+    unit_cell_details.append(cell_parameter_vol_dict)
 
-        cell_parameter_spg_dict = {}
-        cell_parameter_spg_dict["value"] = structure_parameters["space_group"]
-        cell_parameter_spg_dict["label"] = "space_group"
-        unit_cell_details.append(cell_parameter_spg_dict)
+    cell_parameter_spg_dict = {}
+    cell_parameter_spg_dict["value"] = structure_parameters["space_group"]
+    cell_parameter_spg_dict["label"] = "space_group"
+    unit_cell_details.append(cell_parameter_spg_dict)
 
-        cell_parameter_bsl_dict = {}
-        cell_parameter_bsl_dict["value"] = structure_parameters["bravais_lattice"]
-        cell_parameter_bsl_dict["label"] = "bravais_lattice"
-        unit_cell_details.append(cell_parameter_bsl_dict)
+    cell_parameter_bsl_dict = {}
+    cell_parameter_bsl_dict["value"] = structure_parameters["bravais_lattice"]
+    cell_parameter_bsl_dict["label"] = "bravais_lattice"
+    unit_cell_details.append(cell_parameter_bsl_dict)
 
-        sample_dict["unit_cell"] = unit_cell_details
+    sample_dict["unit_cell"] = unit_cell_details
 
 
-def _get_chemical_species(structure, sample_dict):
-    structure = structure
-    natoms = structure.get_number_of_atoms()
-    species_dict = dict(structure.get_number_species_atoms())
-    atoms_list = []
-    for k in species_dict.keys():
-        element = {}
-        element["value"] = species_dict[k]
-        element["label"] = k
-        atoms_list.append(element)
-
-    atoms_list.append({"value": natoms, "label": "total_number_atoms"})
-
-    sample_dict["atoms"] = atoms_list
-
-
-def _get_simulation_cell(structure, sample_dict):
-    structure = structure
-    cell_lengths = str(
-        [
-            np.round(structure.cell.cellpar()[0], 4),
-            np.round(structure.cell.cellpar()[1], 4),
-            np.round(structure.cell.cellpar()[2], 4),
-        ]
+def _get_chemical_species(structure):
+    atoms_list = [
+        {"value": int(v), "label": str(k)}
+        for k, v in zip(
+            *np.unique(structure.get_chemical_symbols(), return_counts=True)
+        )
+    ]
+    atoms_list.append(
+        {"value": structure.get_number_of_atoms(), "label": "total_number_atoms"}
     )
-    cell_vectors = str(
-        [
-            np.round(structure.cell[0], 4),
-            np.round(structure.cell[1], 4),
-            np.round(structure.cell[2], 4),
-        ]
-    )
-    cell_angles = str(
-        [
-            np.round(structure.cell.cellpar()[3], 4),
-            np.round(structure.cell.cellpar()[4], 4),
-            np.round(structure.cell.cellpar()[5], 4),
-        ]
-    )
-    cell_volume = structure.get_volume()
-
-    simulation_cell_details = []
-
-    cell_lengths_dict = {}
-    cell_lengths_dict["value"] = cell_lengths
-    cell_lengths_dict["unit"] = "ANGSTROM"
-    cell_lengths_dict["label"] = "simulation_cell_lengths"
-    simulation_cell_details.append(cell_lengths_dict)
-
-    cell_vector_dict = {}
-    cell_vector_dict["value"] = cell_vectors
-    cell_vector_dict["unit"] = "ANGSTROM"
-    cell_vector_dict["label"] = "simulation_cell_vectors"
-    simulation_cell_details.append(cell_vector_dict)
-
-    cell_angles_dict = {}
-    cell_angles_dict["value"] = cell_angles
-    cell_angles_dict["unit"] = "DEGREES"
-    cell_angles_dict["label"] = "simulation_cell_angles"
-    simulation_cell_details.append(cell_angles_dict)
-
-    cell_volume_dict = {}
-    cell_volume_dict["value"] = np.round(cell_volume, decimals=4)
-    cell_volume_dict["unit"] = "ANGSTROM3"
-    cell_volume_dict["label"] = "simulation_cell_volume"
-
-    simulation_cell_details.append(cell_volume_dict)
-
-    sample_dict["simulation_cell"] = simulation_cell_details
+    return atoms_list
 
 
-def _add_structure_software(pr, structure_name, sample_dict):
-    sample_dict["workflow_manager"] = {}
+def get_simulation_cell(structure, sample_dict):
+    return [
+        {
+            "value": str(
+                [float(np.round(structure.cell.cellpar()[ii], 4)) for ii in range(3)]
+            ),
+            "unit": "ANGSTROM",
+            "label": "simulation_cell_lengths",
+        },
+        {
+            "value": str([np.round(structure.cell[ii], 4) for ii in range(3)]),
+            "unit": "ANGSTROM",
+            "label": "simulation_cell_vectors",
+        },
+        {
+            "value": str(
+                [float(np.round(structure.cell.cellpar()[ii], 4)) for ii in [3, 4, 5]]
+            ),
+            "unit": "DEGREES",
+            "label": "simulation_cell_angles",
+        },
+        {
+            "value": np.round(structure.get_volume(), decimals=4),
+            "unit": "ANGSTROM3",
+            "label": "simulation_cell_volume",
+        },
+    ]
+
+
+def _add_structure_software(path, name, structure_name, sample_dict):
     import platform
     import subprocess
 
@@ -1134,12 +907,12 @@ def _add_structure_software(pr, structure_name, sample_dict):
                 [
                     "findstr",
                     "pyiron_atomistics",
-                    pr.path + "\\" + pr.name + "_environment.yml",
+                    path + "\\" + name + "_environment.yml",
                 ]
             )
         else:
             output1 = subprocess.check_output(
-                ["grep", "pyiron_atomistics", pr.path + pr.name + "_environment.yml"]
+                ["grep", "pyiron_atomistics", path + name + "_environment.yml"]
             )
         s1 = str((output1.decode("utf-8")))
     except:
@@ -1150,12 +923,12 @@ def _add_structure_software(pr, structure_name, sample_dict):
                 [
                     "findstr",
                     "pyiron_workflow",
-                    pr.path + "\\" + pr.name + "_environment.yml",
+                    path + "\\" + name + "_environment.yml",
                 ]
             )
         else:
             output2 = subprocess.check_output(
-                ["grep", "pyiron_workflow", pr.path + pr.name + "_environment.yml"]
+                ["grep", "pyiron_workflow", path + name + "_environment.yml"]
             )
         s2 = str((output2.decode("utf-8")))
     except:
@@ -1163,11 +936,11 @@ def _add_structure_software(pr, structure_name, sample_dict):
     try:
         if "Windows" in platform.system():
             output3 = subprocess.check_output(
-                ["findstr", "pyironflow", pr.path + "\\" + pr.name + "_environment.yml"]
+                ["findstr", "pyironflow", path + "\\" + name + "_environment.yml"]
             )
         else:
             output3 = subprocess.check_output(
-                ["grep", "pyironflow", pr.path + pr.name + "_environment.yml"]
+                ["grep", "pyironflow", path + name + "_environment.yml"]
             )
         s3 = str((output3.decode("utf-8")))
     except:
@@ -1178,12 +951,12 @@ def _add_structure_software(pr, structure_name, sample_dict):
                 [
                     "findstr",
                     "executorlib",
-                    pr.path + "\\" + pr.name + "_environment.yml",
+                    path + "\\" + name + "_environment.yml",
                 ]
             )
         else:
             output4 = subprocess.check_output(
-                ["grep", "executorlib", pr.path + pr.name + "_environment.yml"]
+                ["grep", "executorlib", path + name + "_environment.yml"]
             )
         s4 = str((output4.decode("utf-8")))
     except:
@@ -1206,116 +979,56 @@ def _add_structure_software(pr, structure_name, sample_dict):
         st4 = "e" + s3.split("=")[0].split("e")[1] + "=" + s4.split("=")[1] + ", "
     except:
         st4 = ""
-    st = st1 + st2 + st3 + st4
 
     # + ', pyiron_HDF_version=' + hdf_ver
-    sample_dict["workflow_manager"]["label"] = st
-
-    pyiron_job_details = []
-    pyiron_job_details.append(
+    sample_dict["workflow_manager"] = {"label": st1 + st2 + st3 + st4}
+    sample_dict["job_details"] = [
         {
             "label": "structure_name",
             "value": structure_name,
-        }
-    )
-    pyiron_job_details.append(
+        },
         {
             "label": "project_name",
-            "value": pr.name,
-        }
-    )
-    sample_dict["job_details"] = pyiron_job_details
+            "value": name,
+        },
+    ]
+
 
 
 def _add_vasp_contexts(method_dict):
-    # TODO: check, expand on
-    method_dict["@context"] = {}
-    method_dict["@context"][
-        "sample"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample"
-    method_dict["@context"]["path"] = "http://purls.helmholtz-metadaten.de/cmso/hasPath"
-    method_dict["@context"][
-        "dof"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF"
-    method_dict["@context"][
-        "inputs"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter"
-    method_dict["@context"]["label"] = "http://www.w3.org/2000/01/rdf-schema#label"
-    method_dict["@context"]["unit"] = "http://purls.helmholtz-metadaten.de/asmo/hasUnit"
-    method_dict["@context"][
-        "value"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/hasValue"
-    method_dict["@context"][
-        "outputs"
-    ] = "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty"
-    method_dict["@context"][
-        "workflow_manager"
-    ] = "http://demo.fiz-karlsruhe.de/matwerk/E457491"
-    # method_dict['@context']['software'] = '"@id": "https://www.vasp.at/","label": "VASP"'
-    method_dict["@context"][
-        "dft"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/DensityFunctionalTheory"
-    method_dict["@context"][
-        "xc_functional"
-    ] = "https://w3id.org/mdo/calculation/hasXCFunctional"
-    method_dict["@context"][
-        "VASP"
-    ] = "https://purls.helmholtz-metadaten.de/msekg/E425582"
-    method_dict["@context"]["job_details"] = "http://id-from-pmdco-pending"
-    method_dict["@context"][
-        "periodic_boundary_condition"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition"
-    method_dict["@context"][
-        "k_point_mesh"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/KPointMesh"
-    method_dict["@context"][
-        "k_point_generation"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "electronic_smearing"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "smearing_parameter_sigma"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "electronic_minimization_algorithm"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "ionic_minimization_algorithm"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "spin_polarization"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "input_magnetic_moments"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "electronic_energy_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "ionic_energy_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "force_tolerance"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/InputParameter"
-    method_dict["@context"][
-        "final_total_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy"
-    method_dict["@context"][
-        "final_potential_energy"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy"
-    method_dict["@context"][
-        "final_total_volume"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Volume"
-    method_dict["@context"][
-        "final_maximum_force"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/Force"
-    method_dict["@context"][
-        "final_total_magnetic_moment"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/TotalMagneticMoment"
-    method_dict["@context"][
-        "number_ionic_steps"
-    ] = "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps"
+    return {
+        "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
+        "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
+        "dof": "http://purls.helmholtz-metadaten.de/asmo/hasRelaxationDOF",
+        "inputs": "http://purls.helmholtz-metadaten.de/asmo/hasInputParameter",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "unit": "http://purls.helmholtz-metadaten.de/asmo/hasUnit",
+        "value": "http://purls.helmholtz-metadaten.de/asmo/hasValue",
+        "outputs": "http://purls.helmholtz-metadaten.de/cmso/hasCalculatedProperty",
+        "workflow_manager": "http://demo.fiz-karlsruhe.de/matwerk/E457491",
+        "dft": "http://purls.helmholtz-metadaten.de/asmo/DensityFunctionalTheory",
+        "xc_functional": "https://w3id.org/mdo/calculation/hasXCFunctional",
+        "VASP": "https://purls.helmholtz-metadaten.de/msekg/E425582",
+        "job_details": "http://id-from-pmdco-pending",
+        "periodic_boundary_condition": "http://purls.helmholtz-metadaten.de/asmo/PeriodicBoundaryCondition",
+        "k_point_mesh": "http://purls.helmholtz-metadaten.de/asmo/KPointMesh",
+        "k_point_generation": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "electronic_smearing": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "smearing_parameter_sigma": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "electronic_minimization_algorithm": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "ionic_minimization_algorithm": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "spin_polarization": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "input_magnetic_moments": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "electronic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "ionic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "force_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        "final_total_energy": "http://purls.helmholtz-metadaten.de/asmo/TotalEnergy",
+        "final_potential_energy": "http://purls.helmholtz-metadaten.de/asmo/PotentialEnergy",
+        "final_total_volume": "http://purls.helmholtz-metadaten.de/asmo/Volume",
+        "final_maximum_force": "http://purls.helmholtz-metadaten.de/asmo/Force",
+        "final_total_magnetic_moment": "http://purls.helmholtz-metadaten.de/asmo/TotalMagneticMoment",
+        "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
+    }
 
 
 def _identify_vasp_method(job, method_dict):
@@ -1579,9 +1292,8 @@ def flatten_cdict(cdict):
                     if isinstance(i, dict):
                         try:
                             flat[i["label"]] = i["value"]
-                        except (
-                            KeyError
-                        ):  # silently skips over terms that do not have label, value keys
+                        # silently skips over terms that do not have label, value keys
+                        except KeyError:
                             pass
                     else:
                         flat[k] = v

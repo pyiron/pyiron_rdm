@@ -11,7 +11,7 @@ def format_json_string(json_string):
     return json_string
 
 
-def map_cdict_to_ob(o, cdict, concept_dict):
+def map_cdict_to_ob(user_name, cdict, concept_dict):
 
     # concept_dict to be kicked out
     # cdict = flat concept_dict
@@ -21,9 +21,7 @@ def map_cdict_to_ob(o, cdict, concept_dict):
         props = {}
     else:
         json_file = cdict["path"] + "_concept_dict.json"
-        props = {
-            "bam_username": o.get_session_info().userName
-        }  # TODO can we avoid o as input?
+        props = {"bam_username": user_name}
 
     with open(json_file, "r") as file:
         json_string = file.read()

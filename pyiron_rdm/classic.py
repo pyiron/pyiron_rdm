@@ -3,7 +3,6 @@ def classic_structure(
 ):
     # TODO rename is_init_struct and init_structure to better reflect that it needs to not be manipulated (e.g. repeated)
     structure_path = pr.path
-    # structure_name = structure_name_prefix + '_input_structure'
 
     from pyiron_base.storage.hdfio import FileHDFio
 
@@ -25,7 +24,13 @@ def classic_structure(
     else:
         struct_params = {}
     struct_cdict = process_structure_crystal(
-        pr, structure, structure_name, structure_path, struct_params, options
+        path=pr.path,
+        name=pr.name,
+        structure=structure,
+        structure_name=structure_name,
+        structure_path=structure_path,
+        structure_parameters=struct_params,
+        options=options,
     )
 
     return struct_cdict
@@ -92,9 +97,7 @@ def classic_murn(murn_job, export_env_file):
             shutil.copy(
                 murn_job.path + "_environment.yml", job.path + "_environment.yml"
             )
-        if (
-            "lammps" in job.to_dict()["TYPE"]
-        ):  # if it's not possible to have multiple types, do this only once
+        if "lammps" in job.to_dict()["TYPE"]:
             child_cdict = process_lammps_job(job)
         else:  # vasp
             child_cdict = process_vasp_job(job)
@@ -114,12 +117,12 @@ def classic_murn_equil_structure(
     equil_structure = murn_job.get_structure()
     structure_name = murn_job.name + "_equilibrium_structure"
     struct_cdict = classic_structure(
-        murn_job.project,
-        equil_structure,
-        structure_name,
-        options,
-        is_init_struct,
-        init_structure,
+        pr=murn_job.project,
+        structure=equil_structure,
+        structure_name=structure_name,
+        options=options,
+        is_init_struct=is_init_struct,
+        init_structure=init_structure,
     )
 
     return struct_cdict
@@ -136,41 +139,23 @@ def get_datamodel(o):
     )
 
 
-def validate_upload_options(options, allowed_keys, allowed_defects=None):
-    # currently not validating that materials/pseudopot is a string/list of strings
-    invalid_keys = set(options) - allowed_keys
-    if invalid_keys:
-        raise KeyError(
-            f'Unsupported key(s) in "options" dictionary: {sorted(invalid_keys)}. \
-                       Allowed keys are: {sorted(allowed_keys)}'
-        )
-    defects = options.get("defects")
-    if defects:
-        if not isinstance(defects, list) or not all(
-            isinstance(d, str) for d in defects
-        ):
-            raise TypeError('options["defects"] must be a list of strings.')
-        if allowed_defects:
-            invalid_defects = (
-                set([d.lower().replace("_", " ") for d in defects]) - allowed_defects
-            )
-            if invalid_defects:
-                raise ValueError(
-                    f"Invalid defect(s) in \"options['defects']\": {sorted(invalid_defects)}. \
-                    Allowed defects are: {sorted(allowed_defects)}"
-                )
-    materials = options.get("materials")
-    if materials:
-        if not isinstance(materials, list):
-            options["materials"] = [options["materials"]]
-    pseudopots = options.get("pseudopotentials")
-    if pseudopots:
-        if not isinstance(pseudopots, list):
-            options["pseudopotentials"] = [options["pseudopotentials"]]
+def validate_upload_options(ot_module: str, options: dict):
+    import importlib
+
+    importlib.import_module(ot_module).validate_options(**options)
+
+    if "materials" in options and not isinstance(materials, list):
+        options["materials"] = [options["materials"]]
+    if "pseudopotentials" in options and not isinstance(
+        options["pseudopotentials"], list
+    ):
+        options["pseudopotentials"] = [options["pseudopotentials"]]
+    return options
 
 
-def openbis_login(url, username=None, token=None, instance="bam", s3_config_path=None):
-    # instance = get_datamodel(o)
+def openbis_login(
+    url, username=None, password=None, token=None, instance="bam", s3_config_path=None
+):
     if instance != "bam" and instance != "sfb1394":
         raise ValueError(
             f"This script only supports upload to 'bam' and 'sfb1394' instances,\
@@ -182,16 +167,19 @@ def openbis_login(url, username=None, token=None, instance="bam", s3_config_path
         OT_path = "pyiron_rdm.ob_OT_bam"
         s3_config_path = None
     elif instance == "sfb1394":
+        if not s3_config_path:
+            raise ValueError(
+                "s3_config_path must be provided when uploading to sfb1394 instance."
+            )
         mapping_path = "pyiron_rdm.ob_cfg_sfb1394"
         OT_path = "pyiron_rdm.ob_OT_sfb1394"
-        if not s3_config_path:
-            s3_config_path = "test_sfb.cfg"
 
     from pyiron_rdm.ob_upload import openbis_login as ob_login
 
     o = ob_login(
         url=url,
         username=username,
+        password=password,
         token=token,
         s3_config_path=s3_config_path,
         mapping_path=mapping_path,
@@ -200,27 +188,90 @@ def openbis_login(url, username=None, token=None, instance="bam", s3_config_path
     return o
 
 
+def get_cdicts_to_validate(
+    job,
+    options: dict | None = None,
+    export_env_file: bool = True,
+    is_init_struct: bool = True,
+    init_structure=None,
+    upload_final_struct: bool = True,
+):
+    if options is None:
+        options = {}
+    cdicts_to_validate = {}
+
+    struct_dict = classic_structure(
+        pr=job.project,
+        structure=job.structure,
+        structure_name=job.name + "_structure",
+        options=options,
+        is_init_struct=is_init_struct,
+        init_structure=init_structure,
+    )
+    cdicts_to_validate["structure"] = struct_dict
+
+    job_type = job.to_dict()["TYPE"]
+    if "lammps" in job_type:
+        job_cdict = classic_lammps(job, export_env_file=export_env_file)
+        cdicts_to_validate["job"] = job_cdict
+
+    elif "vasp" in job_type:
+        job_cdict = classic_vasp(job, export_env_file=export_env_file)
+        cdicts_to_validate["job"] = job_cdict
+
+    elif "murn" in job_type:
+        job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
+        equil_struct_dict = classic_murn_equil_structure(
+            job, options, is_init_struct, init_structure
+        )
+        cdicts_to_validate["job"] = job_cdict
+        cdicts_to_validate["equilibrium_structure"] = equil_struct_dict
+        cdicts_to_validate["child_jobs"] = [
+            child_cdict for child_cdict in child_jobs_cdict
+        ]
+
+    else:
+        print(f"The {job_type} job type is not implemented for OpenBIS upload yet.")
+        proceed = input(
+            "Type 'yes' to proceed with an upload to general pyiron job type."
+        )
+        if proceed.lower() == "yes" or proceed.lower() == "y":
+            job_cdict = classic_general_job(job, export_env_file=export_env_file)
+            cdicts_to_validate["job"] = job_cdict
+        else:
+            raise ValueError("Aborted")
+
+    if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
+        if is_init_struct:
+            init_structure = job.structure
+        final_structure = job.get_structure()
+        final_struct_dict = classic_structure(
+            job.project,
+            final_structure,
+            structure_name=job.name + "_final_structure",
+            options=options,
+            is_init_struct=False,
+            init_structure=init_structure,
+        )
+        cdicts_to_validate["final_structure"] = final_struct_dict
+    return cdicts_to_validate
+
+
 def upload_classic_pyiron(
     job,
     o,
-    space,
-    project,
-    collection=None,
-    export_env_file=True,
+    space: str,
+    project: str,
+    collection: str | None = None,
+    export_env_file: bool = True,
     is_init_struct: bool = True,
     init_structure=None,
-    options=None,
+    options: dict | None = None,
+    require_parents: bool = True,
 ):
     # TODO should this return anything?
-
-    # check options keys
-    if options:
-        import importlib
-
-        options_cfg = importlib.import_module(o.ot)
-        allowed_keys = options_cfg.allowed_keys
-        allowed_defects = getattr(options_cfg, "allowed_defects", None)
-        validate_upload_options(options, allowed_keys, allowed_defects)
+    if options is not None:
+        options = validate_upload_options(o.ot, options)
     else:
         options = {}
 
@@ -239,166 +290,82 @@ def upload_classic_pyiron(
 
         export_env(pr.path + pr.name)
 
-    if not collection:
+    if collection is None:
         collection = pr.name
     space = space.upper()
     project = project.upper()
     collection = collection.upper()
 
     # ------------------------------------VALIDATION----------------------------------------------
-    cdicts_to_validate = []
+    is_sfb = get_datamodel(o) == "sfb1394"
 
-    struct_dict = classic_structure(
-        pr,
-        structure,
-        structure_name=job.name + "_structure",
+    cdicts_to_validate = get_cdicts_to_validate(
+        job=job,
         options=options,
+        export_env_file=export_env_file,
         is_init_struct=is_init_struct,
         init_structure=init_structure,
+        upload_final_struct=is_sfb,
     )
-    cdicts_to_validate.append(struct_dict)
 
-    job_type = job.to_dict()["TYPE"]
-    proceed = True
-    if "lammps" in job_type:
-        job_cdict = classic_lammps(job, export_env_file=export_env_file)
-        cdicts_to_validate.append(job_cdict)
+    from pyiron_rdm.ob_upload import openbis_validate, validate_ob_destination
 
-    elif "vasp" in job_type:
-        job_cdict = classic_vasp(job, export_env_file=export_env_file)
-        cdicts_to_validate.append(job_cdict)
-
-    elif "murn" in job_type:
-        job_cdict, child_jobs_cdict = classic_murn(job, export_env_file=export_env_file)
-        equil_struct_dict = classic_murn_equil_structure(
-            job, options, is_init_struct, init_structure
-        )
-        cdicts_to_validate.append(job_cdict)
-        cdicts_to_validate.append(equil_struct_dict)
-        cdicts_to_validate += [child_cdict for child_cdict in child_jobs_cdict]
-
-    else:
-        print(f"The {job_type} job type is not implemented for OpenBIS upload yet.")
-        proceed = input(
-            "Type 'yes' to proceed with an upload to general pyiron job type."
-        )
-        if proceed.lower() == "yes" or proceed.lower() == "y":
-            job_cdict = classic_general_job(job, export_env_file=export_env_file)
-            cdicts_to_validate.append(job_cdict)
-        else:
-            print("Upload cancelled.")
-            proceed = False
-
-    datamodel = get_datamodel(o)
-    if datamodel == "sfb1394":
-        upload_final_struct = True
-    elif datamodel == "bam":
-        upload_final_struct = False
-
-    if upload_final_struct and (not "murn" in job.to_dict()["TYPE"]):
-        if is_init_struct:
-            init_structure = structure
-        final_structure = job.get_structure()
-        final_struct_dict = classic_structure(
-            pr,
-            final_structure,
-            structure_name=job.name + "_final_structure",
-            options=options,
-            is_init_struct=False,
-            init_structure=init_structure,
-        )
-        cdicts_to_validate.append(final_struct_dict)
-
-    from pyiron_rdm.ob_upload import openbis_validate
+    validate_ob_destination(o=o, space=space, project=project, collection=collection)
 
     validated_to_upload = openbis_validate(
-        o, space, project, collection, cdicts_to_validate, options
+        o=o,
+        cdicts_to_validate=cdicts_to_validate,
+        options=options,
+        require_parents=require_parents,
     )
-    if not proceed:
-        raise ValueError("You asked to abort the upload.")
     # ---------------------------------------------------------------------------------------------
 
     # --------------------------------------UPLOAD-------------------------------------------------
     from pyiron_rdm.ob_upload import openbis_upload_validated
 
     # Structure
-    cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-        validated_to_upload[0]
-    )
     ob_structure_id = openbis_upload_validated(
-        o,
-        space,
-        project,
-        collection,
-        object_name,
-        object_type,
-        ob_parents,
-        props_dict,
-        ds_types,
-        cdict,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+        **validated_to_upload["structure"],
     )
 
-    if datamodel == "sfb1394":
+    if is_sfb:
         job_parents = None  # job does not have init structure as parent
         str_parent = ob_structure_id  # equil structure has init as parent
-    elif datamodel == "bam":
+    else:
         job_parents = ob_structure_id  # job has init structure as parent
         str_parent = None  # equil structure does not have init as parent
 
-    # (Main) job
-    cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-        validated_to_upload[1]
-    )
     ob_job_id = openbis_upload_validated(
-        o,
-        space,
-        project,
-        collection,
-        object_name,
-        object_type,
-        ob_parents,
-        props_dict,
-        ds_types,
-        cdict,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+        **validated_to_upload["job"],
         parent_ids=job_parents,
     )
 
-    if "murn" in job_type:
+    if "equilibrium_structure" in validated_to_upload:
         ob_children_ids = []
-        # Murn equilibrium structure
-        cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-            validated_to_upload[2]
-        )
         ob_equil_struct_id = openbis_upload_validated(
-            o,
-            space,
-            project,
-            collection,
-            object_name,
-            object_type,
-            ob_parents,
-            props_dict,
-            ds_types,
-            cdict,
+            o=o,
+            space=space,
+            project=project,
+            collection=collection,
+            **validated_to_upload["equilibrium_structure"],
             parent_ids=str_parent,
         )
         ob_children_ids.append(ob_equil_struct_id)
-        # Murn children jobs
-        for validated_child in validated_to_upload[3:]:
-            cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-                validated_child
-            )
+        for validated_child in validated_to_upload["child_jobs"]:
             ob_child_id = openbis_upload_validated(
-                o,
-                space,
-                project,
-                collection,
-                object_name,
-                object_type,
-                ob_parents,
-                props_dict,
-                ds_types,
-                cdict,
+                o=o,
+                space=space,
+                project=project,
+                collection=collection,
+                **validated_child,
                 parent_ids=str_parent,
             )
             ob_children_ids.append(ob_child_id)
@@ -407,21 +374,13 @@ def upload_classic_pyiron(
         link_children(o, ob_job_id, ob_children_ids)
 
     # Final structure upload (already included as equilibrium for murn)
-    elif upload_final_struct:
-        cdict, props_dict, object_type, ds_types, ob_parents, object_name = (
-            validated_to_upload[-1]
-        )
+    elif "final_structure" in validated_to_upload:
         ob_final_structure_id = openbis_upload_validated(
-            o,
-            space,
-            project,
-            collection,
-            object_name,
-            object_type,
-            ob_parents,
-            props_dict,
-            ds_types,
-            cdict,
+            o=o,
+            space=space,
+            project=project,
+            collection=collection,
+            **validated_to_upload["final_structure"],
             parent_ids=[ob_structure_id, ob_job_id],
         )
 

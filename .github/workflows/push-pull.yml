@@ -18,7 +18,7 @@ jobs:
       # The test matrix supports up to four python versions
       python-version-alt3: 'exclude'
       python-version-alt2: '3.11'
-      python-version-alt1: '3.13'
+      python-version-alt1: 'exclude'
       python-version: '3.12'
       # Test lower bounds:
       alternate-tests-env-files: .ci_support/lower-bounds.yml

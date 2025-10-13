@@ -1,3 +1,6 @@
+import json
+
+
 def format_json_string(json_string):
     json_string = json_string.replace("\n", "<br>")
     result = []
@@ -11,23 +14,17 @@ def format_json_string(json_string):
     return json_string
 
 
-def map_cdict_to_ob(o, cdict, concept_dict):
+def map_cdict_to_ob(user_name, cdict, concept_dict):
 
+    asmo = "http://purls.helmholtz-metadaten.de/asmo"
     # cdict = flat concept_dict
 
-    if "structure_name" in cdict.keys():
-        json_file = cdict["path"] + cdict["structure_name"] + "_concept_dict.json"
-        props = {}
-    else:
-        json_file = cdict["path"] + "_concept_dict.json"
-        props = {"user_name": o.get_session_info().userName}
-
-    with open(json_file, "r") as file:
-        json_string = file.read()
-    json_string = format_json_string(json_string)
+    props = {}
+    if "structure_name" not in cdict.keys():
+        props["user_name"] = user_name
 
     props |= {
-        "pyiron_conceptual_dictionary": json_string,
+        "pyiron_conceptual_dictionary": json.dumps(concept_dict),
         "description_multiline": '<p><span style="color:hsl(240,75%,60%);">'
         + "<strong>Scroll down below other properties to view conceptual dictionary with ontological ids of selected properties and values.</strong></span>"
         + '<br>The conceptual dictionary is in JSON-LD format. Learn more about it <a href="https://www.w3.org/ns/json-ld/">here</a></p>',
@@ -56,8 +53,6 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 props["sim_job_finished"] = True
             else:
                 props["sim_job_finished"] = False
-        if "job_starttime" in cdict.keys():
-            props["start_date"] = cdict["job_starttime"]
         if "job_starttime" in cdict.keys() and "job_stoptime" in cdict.keys():
             from datetime import datetime
 
@@ -67,80 +62,49 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 cdict["job_stoptime"], "%Y-%m-%d %H:%M:%S"
             ) - datetime.strptime(cdict["job_starttime"], "%Y-%m-%d %H:%M:%S")
             props["sim_walltime_in_hours"] = np.round(delta.total_seconds() / 3600, 6)
-        if "sim_coretime_hours" in cdict.keys():
-            props["sim_coretime_in_hours"] = cdict["sim_coretime_hours"]
-        if "number_cores" in cdict.keys():
-            props["ncores"] = cdict["number_cores"]
-        if "queue" in cdict.keys():
-            props["hpc_job_queue"] = cdict["queue"]
-        if "queue id" in cdict.keys():
-            props["hpc_job_id"] = cdict["queue id"]
+        job_name_pairs = {
+            "job_starttime": "start_date",
+            "sim_coretime_hours": "sim_coretime_in_hours",
+            "number_cores": "ncores",
+            "queue": "hpc_job_queue",
+            "queue id": "hpc_job_id",
+            "maximum_iterations": "max_iters",
+            "ionic_energy_tolerance": "atom_e_tol_ion_in_ev",
+            "force_tolerance": "atom_f_tol_in_ev_a",
+            "number_ionic_steps": "atom_ionic_steps",
+            "final_maximum_force": "atom_force_max_in_ev_a",
+            "periodicity_in_x": "periodic_boundary_x",
+            "periodicity_in_y": "periodic_boundary_y",
+            "periodicity_in_z": "periodic_boundary_z",
+            "final_total_energy": "atom_fin_tot_eng_in_ev",
+            "final_total_volume": "atom_fin_vol_in_a3",
+            "final_potential_energy": "atom_fin_pot_eng_in_ev",
+        }
+        for key, val in job_name_pairs.items():
+            if key in cdict.keys():
+                props[val] = cdict[key]
 
-        # scientific
-        if "maximum_iterations" in cdict.keys():
-            props["max_iters"] = cdict["maximum_iterations"]
-        if "ionic_energy_tolerance" in cdict.keys():
-            props["atom_e_tol_ion_in_ev"] = cdict["ionic_energy_tolerance"]
-        if "force_tolerance" in cdict.keys():
-            props["atom_f_tol_in_ev_a"] = cdict["force_tolerance"]
-        if "number_ionic_steps" in cdict.keys():
-            props["atom_ionic_steps"] = cdict["number_ionic_steps"]
-        if "final_maximum_force" in cdict.keys():
-            props["atom_force_max_in_ev_a"] = cdict["final_maximum_force"]
-        if "periodicity_in_x" in cdict.keys():
-            props["periodic_boundary_x"] = cdict["periodicity_in_x"]
-        if "periodicity_in_y" in cdict.keys():
-            props["periodic_boundary_y"] = cdict["periodicity_in_y"]
-        if "periodicity_in_z" in cdict.keys():
-            props["periodic_boundary_z"] = cdict["periodicity_in_z"]
-        if "dof" in cdict.keys():
+        if "dof" in cdict:
             props |= {
-                "atom_cell_vol_relax": (
-                    True
-                    if "http://purls.helmholtz-metadaten.de/asmo/CellVolumeRelaxation"
-                    in cdict["dof"]
-                    else False
-                ),
-                "atom_cell_shp_relax": (
-                    True
-                    if "http://purls.helmholtz-metadaten.de/asmo/CellShapeRelaxation"
-                    in cdict["dof"]
-                    else False
-                ),
-                "atom_pos_relax": (
-                    True
-                    if "http://purls.helmholtz-metadaten.de/asmo/AtomicPositionRelaxation"
-                    in cdict["dof"]
-                    else False
-                ),
+                "atom_cell_vol_relax": f"{asmo}/CellVolumeRelaxation" in cdict["dof"],
+                "atom_cell_shp_relax": f"{asmo}/CellShapeRelaxation" in cdict["dof"],
+                "atom_pos_relax": f"{asmo}/AtomicPositionRelaxation" in cdict["dof"],
             }
-        if "final_total_energy" in cdict.keys():
-            props["atom_fin_tot_eng_in_ev"] = cdict["final_total_energy"]
-        if "final_total_volume" in cdict.keys():
-            props["atom_fin_vol_in_a3"] = cdict["final_total_volume"]
-        if "final_potential_energy" in cdict.keys():
-            props["atom_fin_pot_eng_in_ev"] = cdict["final_potential_energy"]
-        if (
-            "molecular_statics" in concept_dict.keys()
-            and "minimization_algorithm" in cdict.keys()
-        ):
+        if "molecular_statics" in concept_dict and "minimization_algorithm" in cdict:
             description = (
                 f'{cdict["job_type"]} simulation using pyiron for energy minimization/structural optimization.'
                 + props["description_multiline"]
             )  # TODO double check correctness
-            if cdict["minimization_algorithm"] == "fire":
-                min_algo = "MIN_ALGO_FIRE"
-            elif cdict["minimization_algorithm"] == "cg":
-                min_algo = "MIN_ALGO_CG"
-            elif cdict["minimization_algorithm"] == "hftn":
-                min_algo = "MIN_ALGO_HFTN"
-            elif cdict["minimization_algorithm"] == "lbfgs":
-                min_algo = "MIN_ALGO_LBFGS"
-            elif cdict["minimization_algorithm"] == "quickmin":
-                min_algo = "MIN_ALGO_QUICKMIN"
-            elif cdict["minimization_algorithm"] == "sd":
-                min_algo = "MIN_ALGO_STEEP_DESC"
-            else:
+            try:
+                min_algo = {
+                    "fire": "MIN_ALGO_FIRE",
+                    "cg": "MIN_ALGO_CG",
+                    "hftn": "MIN_ALGO_HFTN",
+                    "lbfgs": "MIN_ALGO_LBFGS",
+                    "quickmin": "MIN_ALGO_QUICKMIN",
+                    "sd": "MIN_ALGO_STEEP_DESC",
+                }[cdict["minimization_algorithm"]]
+            except KeyError:
                 raise ValueError("Unknown minimization algorithm")
             props |= {
                 "atomistic_calc_type": "atom_calc_struc_opt",
@@ -153,28 +117,19 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             ):
                 props["atom_targ_press_in_gpa"] = cdict["target_pressure"]
         if "molecular_dynamics" in concept_dict.keys():
-            if (
-                "http://purls.helmholtz-metadaten.de/asmo/MicrocanonicalEnsemble"
-                in cdict["ensemble"]
-            ):
+            if f"{asmo}/MicrocanonicalEnsemble" in cdict["ensemble"]:
                 description = (
                     f'{cdict["job_type"]} simulation using pyiron for microcanonical ensemble.'
                     + props["description_multiline"]
                 )
                 props["atom_md_ensemble"] = "TD_ENSEMBLE_NVE"
-            elif (
-                "http://purls.helmholtz-metadaten.de/asmo/CanonicalEnsemble"
-                in cdict["ensemble"]
-            ):
+            elif "{asmo}CanonicalEnsemble" in cdict["ensemble"]:
                 description = (
                     f'{cdict["job_type"]} simulation using pyiron for canonical ensemble.'
                     + props["description_multiline"]
                 )
                 props["atom_md_ensemble"] = "TD_ENSEMBLE_ATOM_ENS_NVT"
-            elif (
-                "http://purls.helmholtz-metadaten.de/asmo/IsothermalIsobaricEnsemble"
-                in cdict["ensemble"]
-            ):
+            elif f"{asmo}/IsothermalIsobaricEnsemble" in cdict["ensemble"]:
                 description = (
                     f'{cdict["job_type"]} simulation using pyiron for isothermal-isobaric ensemble.'
                     + props["description_multiline"]
@@ -185,66 +140,41 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                 "description_multiline": description,
             }
 
-            if "timestep" in cdict.keys():
-                props["atom_md_time_stp_in_ps"] = cdict["timestep"]
-            if "simulation_time" in cdict.keys():
-                props["atom_sim_time_ps_in_ps"] = cdict["simulation_time"]
-            if "average_total_energy" in cdict.keys():
-                props["atom_avg_tot_eng_in_ev"] = cdict["average_total_energy"]
-            if "average_potential_energy" in cdict.keys():
-                props["atom_avg_pot_eng_in_ev"] = cdict["average_potential_energy"]
-            if "average_temperature" in cdict.keys():
-                props["atom_md_avg_temp_in_k"] = cdict["average_temperature"]
-            if "average_pressure" in cdict.keys():
-                props["atom_avg_press_in_gpa"] = cdict["average_pressure"]
-            if "average_total_volume" in cdict.keys():
-                props["atom_avg_vol_in_a3"] = cdict["average_total_volume"]
-            if "initial_temperature" in cdict.keys():
-                props["atom_md_init_temp_in_k"] = cdict["initial_temperature"]
-            if "target_temperature" in cdict.keys():
-                props["atom_md_targ_temp_in_k"] = cdict["target_temperature"]
-            if "initial_pressure" in cdict.keys():
-                props["atom_md_init_press_in_gpa"] = cdict["initial_pressure"]
-            if "target_pressure" in cdict.keys():
-                props["atom_targ_press_in_gpa"] = cdict["target_pressure"]
+            for key, val in {
+                "timestep": "atom_md_time_stp_in_ps",
+                "simulation_time": "atom_sim_time_ps_in_ps",
+                "average_total_energy": "atom_avg_tot_eng_in_ev",
+                "average_potential_energy": "atom_avg_pot_eng_in_ev",
+                "average_temperature": "atom_md_avg_temp_in_k",
+                "average_pressure": "atom_avg_press_in_gpa",
+                "average_total_volume": "atom_avg_vol_in_a3",
+                "initial_temperature": "atom_md_init_temp_in_k",
+                "target_temperature": "atom_md_targ_temp_in_k",
+                "initial_pressure": "atom_md_init_press_in_gpa",
+                "target_pressure": "atom_targ_press_in_gpa",
+                "strain_axes": "murn_strain_axes",
+                "number_of_data_points": "murn_n_data_points",
+                "volume_range": "murn_strainvol_range",
+                "equilibrium_bulk_modulus": "atom_equil_k_mod_in_gpa",
+                "equilibrium_total_energy": "atom_equil_toteng_in_ev",
+                "equilibrium_volume": "atom_equil_vol_in_a3",
+            }.items():
+                if key in cdict.keys():
+                    props[val] = cdict[key]
 
         if "job_type" in cdict.keys() and "Murn" in cdict["job_type"]:
             props["description_multiline"] = (
                 "Murnaghan job for structural optimization."
                 + props["description_multiline"]
             )
-        if "strain_axes" in cdict.keys():
-            props["murn_strain_axes"] = cdict["strain_axes"]
-        if "number_of_data_points" in cdict.keys():
-            props["murn_n_data_points"] = cdict["number_of_data_points"]
-        if "volume_range" in cdict.keys():
-            props["murn_strainvol_range"] = cdict["volume_range"]
-        if "equilibrium_bulk_modulus" in cdict.keys():
-            props["atom_equil_k_mod_in_gpa"] = cdict["equilibrium_bulk_modulus"]
-        if "equilibrium_total_energy" in cdict.keys():
-            props["atom_equil_toteng_in_ev"] = cdict["equilibrium_total_energy"]
-        if "equilibrium_volume" in cdict.keys():
-            props["atom_equil_vol_in_a3"] = cdict["equilibrium_volume"]
         if "equation_of_state_fit" in cdict.keys():
-            if (
-                cdict["equation_of_state_fit"]
-                == "http://purls.helmholtz-metadaten.de/asmo/BirchMurnaghan"
-            ):
+            if cdict["equation_of_state_fit"] == f"{asmo}/BirchMurnaghan":
                 props["murn_eqn_of_state"] = "EOS_BIRCH_MURNAGHAN"
-            elif (
-                cdict["equation_of_state_fit"]
-                == "http://purls.helmholtz-metadaten.de/asmo/Murnaghan"
-            ):
+            elif cdict["equation_of_state_fit"] == f"{asma}/Murnaghan":
                 props["murn_eqn_of_state"] = "EOS_MURNAGHAN"
-            elif (
-                cdict["equation_of_state_fit"]
-                == "http://purls.helmholtz-metadaten.de/asmo/Vinet"
-            ):
+            elif cdict["equation_of_state_fit"] == f"{asmo}/Vinet":
                 props["murn_eqn_of_state"] = "EOS_VINET"
-            elif (
-                cdict["equation_of_state_fit"]
-                == "http://purls.helmholtz-metadaten.de/asmo/PolynomialFit"
-            ):
+            elif cdict["equation_of_state_fit"] == f"{asmo}/PolynomialFit":
                 props["murn_eqn_of_state"] = "EOS_POLYNOMIAL"
                 props["murn_fit_eqn_order"] = cdict["fit_order"]
             else:
@@ -269,8 +199,6 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                     f"XC functional '{props['atom_xc_functional']}' is not yet mapped."
                 )
 
-        if "spin_polarization" in cdict.keys():
-            props["atom_spin_polarized"] = cdict["spin_polarization"]
         if "electronic_smearing" in cdict.keys():
             elsmear_map = {
                 "Methfessel-Paxton": "ELEC_SMEAR_MP",
@@ -282,12 +210,14 @@ def map_cdict_to_ob(o, cdict, concept_dict):
             elsmear_val = elsmear_map.get(cdict.get("electronic_smearing"))
             if elsmear_val:
                 props |= {"electronic_smearing": elsmear_val}
-        if "electronic_energy_tolerance" in cdict.keys():
-            props["atom_el_e_tol_in_ev"] = cdict["electronic_energy_tolerance"]
-        if "smearing_parameter_sigma" in cdict.keys():
-            props["atom_sigma_in_ev"] = cdict["smearing_parameter_sigma"]
-        if "final_pressure" in cdict.keys():
-            props["atom_fin_press_in_gpa"] = cdict["final_pressure"]
+        for key, val in {
+            "spin_polarization": "atom_spin_polarized",
+            "electronic_energy_tolerance": "atom_el_e_tol_in_ev",
+            "smearing_parameter_sigma": "atom_sigma_in_ev",
+            "final_pressure": "atom_fin_press_in_gpa",
+        }.items():
+            if key in cdict:
+                props[val] = cdict[key]
         if "final_total_magnetic_moment" in cdict.keys():
             props["atom_fin_totmgmo_in_mub"] = str(cdict["final_total_magnetic_moment"])
         if "dft" in concept_dict.keys():
@@ -296,13 +226,11 @@ def map_cdict_to_ob(o, cdict, concept_dict):
                     f'{cdict["job_type"]} simulation using pyiron for energy minimization/structural optimization.'
                     + props["description_multiline"]
                 )  # TODO double check correctness
-                min_algo = None
-                if cdict["ionic_minimization_algorithm"] == "rmm-diis":
-                    min_algo = "MIN_ALGO_RMM_DIIS"
-                elif cdict["ionic_minimization_algorithm"] == "cg":
-                    min_algo = "MIN_ALGO_CG"
-                elif cdict["ionic_minimization_algorithm"] == "damped_md":
-                    min_algo = "MIN_ALGO_DAMPED_MD"
+                min_algo = {
+                    "rmm-diis": "MIN_ALGO_RMM_DIIS",
+                    "cg": "MIN_ALGO_CG",
+                    "damped_md": "MIN_ALGO_DAMPED_MD",
+                }.get(cdict["ionic_minimization_algorithm"])
                 if min_algo:
                     props |= {
                         "atomistic_calc_type": "atom_calc_struc_opt",

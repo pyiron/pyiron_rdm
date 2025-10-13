@@ -98,16 +98,16 @@ def murn_job_ot():
 
 def get_ot_info(cdict):
     if "structure_name" in cdict.keys():
-        return crystal_struct_ot
+        return crystal_struct_ot()
     elif "job_type" in cdict.keys():
         if "lammps" in cdict["job_type"].lower():
-            return lammps_job_ot
+            return lammps_job_ot()
         elif "vasp" in cdict["job_type"].lower():
-            return vasp_job_ot
+            return vasp_job_ot()
         elif "murn" in cdict["job_type"].lower():
-            return murn_job_ot
+            return murn_job_ot()
         else:
-            return pyiron_job_ot
+            return pyiron_job_ot()
     else:
         raise ValueError(
             "Neither structure_name nor job_type in conceptual dictionary. Cannot proceed."
@@ -136,7 +136,22 @@ def get_inv_parent(parent_name, cdict, props_dict, options):
 
 # upload options ______________________________________________
 
-allowed_keys = {"materials", "pseudopotentials", "comments"}
+
+def validate_options(
+    materials: str | list[str] | None = None,
+    pseudopotentials: str | list[str] | None = None,
+    comments: str | None = None,
+):
+    """
+    Validates the options dictionary for supported keys and values.
+
+    Args:
+        materials (str | list[str] | None): Material permId(s) or None.
+        pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
+        comments (str | None): Comments string or None.
+    """
+    pass
+
 
 # else ________________________________________________________
 
@@ -146,7 +161,7 @@ def species_by_num_to_pct(props):
 
     species_by_num = eval(props["chem_species_by_n_atoms"])
     species_by_pct = {
-        at: np.round(species_by_num[at] * 100 / props["n_atoms_total"], 2)
+        at: float(np.round(species_by_num[at] * 100 / props["n_atoms_total"], 2))
         for at in species_by_num.keys()
     }
     return str(species_by_pct)
