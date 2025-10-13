@@ -1,0 +1,50 @@
+{
+    "structure": {
+        "workflow_manager": "",
+        "$name": "Fe_minimize_structure",
+        "location": "virtual",
+        "composition_desc": "ATOMIC_FRACTION",
+        "element_1": "Fe",
+        "element_1_at_percent": 100.0,
+        "element_1_number": 27,
+        "sample_dim": "7.4565 A x 7.4565 A x 7.4565 A",
+        "sim_cell_vectors": "[array([-4.305,  4.305,  4.305]), array([ 4.305, -4.305,  4.305]), array([ 4.305,  4.305, -4.305])]"
+    },
+    "job": {
+        "user_name": "test",
+        "workflow_manager": "pyiron_workflow=0.7.1, pyironflow=0.0.9, executorlib=1.6.0",
+        "$name": "Fe_minimize",
+        "sim_job_finished": true,
+        "sim_walltime_in_hours": 0.000833,
+        "start_date": "2025-10-11 15:16:37",
+        "sim_coretime_in_hours": 0.000833,
+        "ncores": 1,
+        "max_iters": 100000,
+        "atom_e_tol_ion_in_ev": 0.0,
+        "atom_f_tol_in_ev_a": 1e-08,
+        "atom_ionic_steps": 1,
+        "atom_force_max_in_ev_a": 1.029079e-10,
+        "periodic_boundary_x": true,
+        "periodic_boundary_y": true,
+        "periodic_boundary_z": true,
+        "atom_fin_tot_eng_in_ev": -108.3722,
+        "atom_fin_vol_in_a3": 319.1387,
+        "atom_fin_pot_eng_in_ev": -108.3722,
+        "atom_cell_vol_relax": false,
+        "atom_cell_shp_relax": false,
+        "atom_pos_relax": true,
+        "atomistic_calc_type": "atom_calc_struc_opt",
+        "atom_ionic_min_algo": "MIN_ALGO_CG"
+    },
+    "final_structure": {
+        "workflow_manager": "",
+        "$name": "Fe_minimize_final_structure",
+        "location": "virtual",
+        "composition_desc": "ATOMIC_FRACTION",
+        "element_1": "Fe",
+        "element_1_at_percent": 100.0,
+        "element_1_number": 27,
+        "sample_dim": "7.4565 A x 7.4565 A x 7.4565 A",
+        "sim_cell_vectors": "[array([-4.305,  4.305,  4.305]), array([ 4.305, -4.305,  4.305]), array([ 4.305,  4.305, -4.305])]"
+    }
+}
