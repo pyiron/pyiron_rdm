@@ -99,7 +99,6 @@ def process_vasp_job(job):
     return method_dict
 
 
-
 def _add_lammps_contexts():
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
@@ -573,7 +572,6 @@ def _get_simulation_folder(job, method_dict):
     method_dict["path"] = job.path
 
 
-
 def _add_murnaghan_contexts(method_dict):
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
@@ -752,7 +750,6 @@ def get_unit_cell_parameters(structure: Atoms):
     return structure_parameters
 
 
-
 def _add_structure_contexts():
     return {
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
@@ -868,7 +865,7 @@ def _get_chemical_species(structure):
     return atoms_list
 
 
-def get_simulation_cell(structure, sample_dict):
+def _get_simulation_cell(structure, sample_dict):
     return [
         {
             "value": str(
@@ -992,7 +989,6 @@ def _add_structure_software(path, name, structure_name, sample_dict):
             "value": name,
         },
     ]
-
 
 
 def _add_vasp_contexts(method_dict):
