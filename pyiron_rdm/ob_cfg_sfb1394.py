@@ -215,7 +215,7 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
             "electronic_energy_tolerance": "atom_el_e_tol_in_ev",
             "smearing_parameter_sigma": "atom_sigma_in_ev",
             "final_pressure": "atom_fin_press_in_gpa",
-        }.item():
+        }.items():
             if key in cdict:
                 props[val] = cdict[key]
         if "final_total_magnetic_moment" in cdict.keys():
