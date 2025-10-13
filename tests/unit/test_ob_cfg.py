@@ -16,6 +16,8 @@ class TestObCFG(unittest.TestCase):
                 cdict=cdict,
                 concept_dict=concept_dict,
             )
+            print(props_dict)
+            print("\n\n\n============================\n\n\n")
 
 
 if __name__ == "__main__":
