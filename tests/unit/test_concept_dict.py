@@ -1,3 +1,5 @@
+import json
+import os
 import unittest
 
 from ase.build import bulk
@@ -5,7 +7,7 @@ from ase.build import bulk
 from pyiron_rdm import concept_dict
 
 
-class TestVersion(unittest.TestCase):
+class TestConceptDict(unittest.TestCase):
     def test_get_unit_cell_parameters(self):
         Al = bulk("Al", cubic=True)
         self.assertDictEqual(
@@ -108,6 +110,15 @@ class TestVersion(unittest.TestCase):
                 "path": "structure_path",
             },
         )
+
+    def test_flatten_cdict(self):
+        d = os.path.dirname(os.path.realpath(__file__))
+        with open(os.path.join(d, "..", "static", "lammps_concept_dict.json")) as f:
+            concept_dicts = json.load(f)
+        flattened_dicts = {
+            key: concept_dict.flatten_cdict(value) for key, value in concept_dicts.items()
+        }
+        print(json.dumps(flattened_dicts, indent=4))
 
 
 if __name__ == "__main__":
