@@ -70,19 +70,24 @@ def openbis_validate(
         from pyiron_rdm.concept_dict import flatten_cdict
 
         cdict = flatten_cdict(concept_dict)
-        import importlib
+        from importlib import import_module
 
-        object_type, ds_types, inv_parents = importlib.import_module(o.ot).get_ot_info(
+        object_type, ds_types, inv_parents = import_module(o.ot).get_ot_info(
             cdict
         )
-        map_cdict_to_ob = importlib.import_module(o.mapping).map_cdict_to_ob
+        map_cdict_to_ob = import_module(o.mapping).map_cdict_to_ob
         props_dict = map_cdict_to_ob(
             user_name=o.get_session_info().userName,
             cdict=cdict,
             concept_dict=concept_dict,
         )
         ob_parents = validate_inventory_parents(
-            o, inv_parents, cdict, props_dict, options, require_parents=require_parents
+            o=o,
+            inv_parents=inv_parents,
+            cdict=cdict,
+            props_dict=props_dict,
+            options=options,
+            require_parents=require_parents,
         )
         object_name = concept_dict["job_details"][0]["value"]
 
