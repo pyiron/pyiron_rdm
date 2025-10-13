@@ -118,7 +118,9 @@ class TestConceptDict(unittest.TestCase):
         flattened_dicts = {
             key: concept_dict.flatten_cdict(value) for key, value in concept_dicts.items()
         }
-        print(json.dumps(flattened_dicts, indent=4))
+        with open(os.path.join(d, "..", "static", "lammps_flattened_dict.json")) as f:
+            ref_flattened_dicts = json.load(f)
+        self.assertDictEqual(flattened_dicts, ref_flattened_dicts)
 
 
 if __name__ == "__main__":
