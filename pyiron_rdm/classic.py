@@ -24,13 +24,13 @@ def classic_structure(
     else:
         struct_params = {}
     struct_cdict = process_structure_crystal(
-        pr.path,
-        pr.name,
-        structure,
-        structure_name,
-        structure_path,
-        struct_params,
-        options,
+        path=pr.path,
+        name=pr.name,
+        structure=structure,
+        structure_name=structure_name,
+        structure_path=structure_path,
+        structure_parameters=struct_params,
+        options=options,
     )
 
     return struct_cdict
@@ -117,12 +117,12 @@ def classic_murn_equil_structure(
     equil_structure = murn_job.get_structure()
     structure_name = murn_job.name + "_equilibrium_structure"
     struct_cdict = classic_structure(
-        murn_job.project,
-        equil_structure,
-        structure_name,
-        options,
-        is_init_struct,
-        init_structure,
+        pr=murn_job.project,
+        structure=equil_structure,
+        structure_name=structure_name,
+        options=options,
+        is_init_struct=is_init_struct,
+        init_structure=init_structure,
     )
 
     return struct_cdict
@@ -201,8 +201,8 @@ def get_cdicts_to_validate(
     cdicts_to_validate = {}
 
     struct_dict = classic_structure(
-        job.project,
-        job.structure,
+        pr=job.project,
+        structure=job.structure,
         structure_name=job.name + "_structure",
         options=options,
         is_init_struct=is_init_struct,
@@ -310,10 +310,13 @@ def upload_classic_pyiron(
 
     from pyiron_rdm.ob_upload import openbis_validate, validate_ob_destination
 
-    validate_ob_destination(o, space, project, collection)
+    validate_ob_destination(o=o, space=space, project=project, collection=collection)
 
     validated_to_upload = openbis_validate(
-        o, cdicts_to_validate, options, require_parents=require_parents
+        o=o,
+        cdicts_to_validate=cdicts_to_validate,
+        options=options,
+        require_parents=require_parents,
     )
     # ---------------------------------------------------------------------------------------------
 
