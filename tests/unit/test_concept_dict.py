@@ -116,7 +116,8 @@ class TestConceptDict(unittest.TestCase):
         with open(os.path.join(d, "..", "static", "lammps_concept_dict.json")) as f:
             concept_dicts = json.load(f)
         flattened_dicts = {
-            key: concept_dict.flatten_cdict(value) for key, value in concept_dicts.items()
+            key: concept_dict.flatten_cdict(value)
+            for key, value in concept_dicts.items()
         }
         with open(os.path.join(d, "..", "static", "lammps_flattened_dict.json")) as f:
             ref_flattened_dicts = json.load(f)
