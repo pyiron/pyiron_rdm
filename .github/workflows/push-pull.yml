@@ -24,3 +24,17 @@ jobs:
       alternate-tests-env-files: .ci_support/lower-bounds.yml
       alternate-tests-python-version: '3.11'
       alternate-tests-dir: tests/unit
+
+  openbis:
+    unit-tests:
+    runs-on: 'ubuntu-22.04' 
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+      printf '%s' '${{ secrets.TEST }}' > some.conf
+    - uses: pyiron/actions/unit-tests@actions-4.0.10
+      with:
+        python-version: '3.11' 
+        env-files: .ci_support/lower-bounds.yml .ci_support/environment-notebooks.yml
+        test-dir: 'tests/integration' 
+      timeout-minutes: 10 
