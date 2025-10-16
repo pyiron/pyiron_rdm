@@ -29,7 +29,8 @@ jobs:
     runs-on: 'ubuntu-22.04' 
     steps:
     - uses: actions/checkout@v4
-    - run: |
+    - name: write config
+      run: |
       printf '%s' '${{ secrets.TEST }}' > some.conf
     - uses: pyiron/actions/unit-tests@actions-4.0.10
       with:
