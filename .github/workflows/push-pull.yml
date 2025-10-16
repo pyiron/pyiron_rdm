@@ -39,3 +39,5 @@ jobs:
         env-files: .ci_support/lower-bounds.yml .ci_support/environment-notebooks.yml
         test-dir: 'tests/integration' 
       timeout-minutes: 10 
+      env:
+        pyironautouser: ${{ secrets.TEST }}
