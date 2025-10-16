@@ -1,6 +1,8 @@
+import os
 import unittest
 
 
-class TestNothing(unittest.TestCase):
-    def test_nothing(self):
-        self.assertTrue(True)
+class TestConf(unittest.TestCase):
+    def test_conf_present(self):
+        print(os.getcwd())
+        self.assertTrue(os.isfile('some.conf'))
