@@ -1,6 +1,6 @@
+import json
 import os
 import unittest
-import json
 
 from pybis_aixtended import OpenbisWithS3
 
