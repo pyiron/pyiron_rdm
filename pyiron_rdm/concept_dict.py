@@ -57,14 +57,15 @@ def process_structure_crystal(
 ) -> dict:
     if options is None:
         options = {}
-    sample_dict = {}
-    sample_dict["@context"] = _add_structure_contexts()
-    sample_dict["atoms"] = _get_chemical_species(structure)
+    sample_dict = {
+        "@context": _add_structure_contexts(),
+        "atoms": _get_chemical_species(structure),
+        "simulation_cell": _get_simulation_cell(structure),
+        "path": structure_path,
+    }
     if structure_parameters:
         _identify_structure_parameters(structure_parameters, sample_dict)
-    sample_dict["simulation_cell"] = _get_simulation_cell(structure, sample_dict)
     _add_structure_software(path, name, structure_name, sample_dict)
-    sample_dict["path"] = structure_path
     if options.get("defects"):
         sample_dict["defects"] = options["defects"]
     if options.get("comments"):
@@ -865,7 +866,7 @@ def _get_chemical_species(structure):
     return atoms_list
 
 
-def _get_simulation_cell(structure, sample_dict):
+def _get_simulation_cell(structure):
     return [
         {
             "value": str(
