@@ -1,11 +1,21 @@
 import os
 import unittest
+import json
+
+from pybis_aixtended import OpenbisWithS3
 
 
 class TestConf(unittest.TestCase):
-    def test_env_present(self):
-        self.assertEqual(os.environ[pyironautouser], "some")
-
     def test_conf_present(self):
         print(os.getcwd())
         self.assertTrue(os.path.isfile("some.conf"))
+
+    def test_login_sfb1394_instance(self):
+        ob = OpenbisWithS3(
+            "https://openbis.imm.rwth-aachen.de/openbis/webapp/eln-lims/",
+            s3_config_path="some.conf",
+        )
+        with open("pyironautouser") as f:
+            ob.login("pyironautouser", f.readline())
+
+        self.assertTrue(ob.is_session_active())
