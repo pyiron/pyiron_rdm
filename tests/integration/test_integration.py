@@ -1,8 +1,8 @@
 import json
 import os
-import pybis_aixtended 
 import unittest
 
+from pybis_aixtended import OpenbisAixTended
 
 
 class TestConf(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestConf(unittest.TestCase):
         self.assertTrue(os.path.isfile("some.conf"))
 
     def test_login_sfb1394_instance(self):
-        ob = pybis_aixtended.OpenbisWithS3(
+        ob = OpenbisAixTended.OpenbisWithS3(
             "https://openbis.imm.rwth-aachen.de/openbis/webapp/eln-lims/",
             s3_config_path="some.conf",
         )
