@@ -46,7 +46,11 @@ class TestConceptDict(unittest.TestCase):
     def test_process_structure_crystal(self):
         Fe = bulk("Fe", cubic=True)
         result = concept_dict.process_structure_crystal(
-            "path", "name", Fe, "structure_name", "structure_path"
+            path="path",
+            name="name",
+            structure=Fe,
+            structure_name="structure_name",
+            structure_path="structure_path"
         )
         self.assertDictEqual(
             result,
@@ -110,6 +114,9 @@ class TestConceptDict(unittest.TestCase):
                 "path": "structure_path",
             },
         )
+        json_path = "structure_pathstructure_name_concept_dict.json"
+        self.assertTrue(os.path.exists(json_path))
+        os.remove(json_path)
 
     def test_flatten_cdict(self):
         d = os.path.dirname(os.path.realpath(__file__))
