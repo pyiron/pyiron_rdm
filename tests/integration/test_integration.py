@@ -1,4 +1,3 @@
-
 import os
 import unittest
 
@@ -35,11 +34,13 @@ class TestOpenBISinteractions(unittest.TestCase):
             ob.login("pyironautouser", f.readline())
         cls.pybis_w_s3 = ob
         date = datetime.now()
-        date_code = f'{str(date.date()).replace("-","")}{date.hour}{date.minute}{date.second}'
-        cls.pybis_pr = ob.pybis_w_s3.new_project(
-        space       = 'PYIRONAUTOUSER',
-        code        = 'CiProject' + date_code,
-        description = 'Temporary CI project from pyiron_rdm'
+        date_code = (
+            f'{str(date.date()).replace("-","")}{date.hour}{date.minute}{date.second}'
+        )
+        cls.pybis_pr = cls.pybis_w_s3.new_project(
+            space="PYIRONAUTOUSER",
+            code="CiProject" + date_code,
+            description="Temporary CI project from pyiron_rdm",
         )
         cls.pybis_pr.save()
         super().setUpClass()
