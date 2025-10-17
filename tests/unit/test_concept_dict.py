@@ -50,7 +50,7 @@ class TestConceptDict(unittest.TestCase):
             name="name",
             structure=Fe,
             structure_name="structure_name",
-            structure_path="structure_path"
+            structure_path="structure_path",
         )
         self.assertDictEqual(
             result,
