@@ -13,6 +13,7 @@ jobs:
     secrets: inherit
     with:
       notebooks-env-files: .ci_support/lower-bounds.yml .ci_support/environment-notebooks.yml
+      coverage-test-dir: tests/benchmark tests/unit
       do-coveralls: false
       do-codecov: true
       # The test matrix supports up to four python versions
@@ -24,3 +25,22 @@ jobs:
       alternate-tests-env-files: .ci_support/lower-bounds.yml
       alternate-tests-python-version: '3.11'
       alternate-tests-dir: tests/unit
+
+  openbis:
+    runs-on: 'ubuntu-22.04' 
+    steps:
+    - uses: actions/checkout@v4
+    - name: write config
+      run: |
+        printf '%s' '${{ secrets.COSCINES3CONFIG }}' > some.conf
+        printf '%s' '${{ secrets.PYIRONAUTOUSER }}' > pyironautouser
+    - uses: pyiron/actions/add-to-python-path@actions-4.0.10
+      with:
+        path-dirs: 'pybis_aixtended'
+    - uses: pyiron/actions/unit-tests@actions-4.0.10
+      with:
+        python-version: '3.11' 
+        env-files: .ci_support/lower-bounds.yml .ci_support/environment-notebooks.yml
+        test-dir: 'tests/integration' 
+      timeout-minutes: 10 
+      
