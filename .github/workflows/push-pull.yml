@@ -33,6 +33,9 @@ jobs:
       run: |
         printf '%s' '${{ secrets.COSCINES3CONFIG }}' > some.conf
         printf '%s' '${{ secrets.PYIRONAUTOUSER }}' > pyironautouser
+    - uses: pyiron/actions/add-to-python-path@actions-4.0.10
+        with:
+          path-dirs: 'pybis_aixtended'
     - uses: pyiron/actions/unit-tests@actions-4.0.10
       with:
         python-version: '3.11' 
