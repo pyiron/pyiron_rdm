@@ -323,7 +323,6 @@ def upload_classic_pyiron(
     # --------------------------------------UPLOAD-------------------------------------------------
     from pyiron_rdm.ob_upload import openbis_upload_validated
 
-    # Structure
     ob_structure_id = openbis_upload_validated(
         o=o,
         space=space,
@@ -373,7 +372,6 @@ def upload_classic_pyiron(
 
         link_children(o, ob_job_id, ob_children_ids)
 
-    # Final structure upload (already included as equilibrium for murn)
     elif "final_structure" in validated_to_upload:
         ob_final_structure_id = openbis_upload_validated(
             o=o,
@@ -383,6 +381,3 @@ def upload_classic_pyiron(
             **validated_to_upload["final_structure"],
             parent_ids=[ob_structure_id, ob_job_id],
         )
-
-
-# ---------------------------------------------------------------------------------------------

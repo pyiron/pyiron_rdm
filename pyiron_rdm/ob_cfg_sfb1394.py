@@ -1,3 +1,4 @@
+import ast
 import json
 
 
@@ -252,15 +253,11 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
                 )
 
         if "kpoint_Monkhorst_Pack" in cdict.keys():
-            kpoint_algo = "KPOINTS_MP"
-            kpts_x = int(cdict["kpoint_Monkhorst_Pack"].split()[0])
-            kpts_y = int(cdict["kpoint_Monkhorst_Pack"].split()[1])
-            kpts_z = int(cdict["kpoint_Monkhorst_Pack"].split()[2])
             props |= {
-                "atom_kpoint_type": kpoint_algo,
-                "atomistic_n_kpt_x": kpts_x,
-                "atomistic_n_kpt_y": kpts_y,
-                "atomistic_n_kpt_z": kpts_z,
+                "atom_kpoint_type": "KPOINTS_MP",
+                "atomistic_n_kpt_x": int(cdict["kpoint_Monkhorst_Pack"].split()[0]),
+                "atomistic_n_kpt_y": int(cdict["kpoint_Monkhorst_Pack"].split()[1]),
+                "atomistic_n_kpt_z": int(cdict["kpoint_Monkhorst_Pack"].split()[2]),
             }
 
     else:
@@ -296,14 +293,11 @@ def map_struct_to_ob(
         props["composition_desc"] = "ATOMIC_FRACTION"
         sorted_atoms = sorted_atoms[:max_num_atoms]
         for i, species in enumerate(sorted_atoms, 1):
-            prop_el = f"element_{i}"
-            prop_el_pct = f"element_{i}_at_percent"
-            prop_el_num = f"element_{i}_number"
-            props[prop_el] = species["label"]
-            props[prop_el_pct] = np.round(
+            props[f"element_{i}"] = species["label"]
+            props[f"element_{i}_at_percent"] = np.round(
                 species["value"] * 100 / cdict["total_number_atoms"], decimals
             )
-            props[prop_el_num] = species["value"]
+            props[f"element_{i}_number"] = species["value"]
 
     if "simulation_cell_lengths" in cdict.keys():
         dim_list = [
@@ -361,31 +355,22 @@ def dataset_atom_struct_h5(
     )
     items = list(sorted_atoms.items())[:max_num_atoms]
     for i, (species, count) in enumerate(items, 1):
-        prop_el = f"element_{i}"
-        prop_el_pct = f"element_{i}_at_percent"
-        prop_el_num = f"element_{i}_number"
-        ds_props[prop_el] = species
-        ds_props[prop_el_pct] = np.round(
+        ds_props[f"element_{i}"] = species
+        ds_props[f"element_{i}_at_percent"] = np.round(
             count * 100 / cdict["total_number_atoms"], decimals
         )
-        ds_props[prop_el_num] = count
+        ds_props[f"element_{i}_number"] = count
 
     ds_props["number_of_atoms"] = cdict["total_number_atoms"]
     ds_props["number_of_species"] = len(sorted_atoms.keys())
     ds_props["list_of_species"] = ", ".join(sorted_atoms.keys())
     if "simulation_cell_angles" in cdict.keys():
-        angles = [
-            float(x) for x in cdict["simulation_cell_angles"].strip("[]").split(",")
-        ]
         ds_props["angle_alpha"], ds_props["angle_beta"], ds_props["angle_gamma"] = (
-            angles
+            ast.literal_eval(cdict["simulation_cell_angles"])
         )
     if "simulation_cell_lengths" in cdict.keys():
-        lengths = [
-            float(x) for x in cdict["simulation_cell_lengths"].strip("[]").split(",")
-        ]
         ds_props["box_length_a"], ds_props["box_length_b"], ds_props["box_length_c"] = (
-            lengths
+            ast.literal_eval(cdict["simulation_cell_lengths"])
         )
     if "space_group_number" in cdict.keys():
         ds_props["space_group"] = cdict["space_group_number"]
