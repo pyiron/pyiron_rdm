@@ -1,4 +1,5 @@
 import json
+import ast
 
 
 def format_json_string(json_string):
@@ -371,18 +372,12 @@ def dataset_atom_struct_h5(
     ds_props["number_of_species"] = len(sorted_atoms.keys())
     ds_props["list_of_species"] = ", ".join(sorted_atoms.keys())
     if "simulation_cell_angles" in cdict.keys():
-        angles = [
-            float(x) for x in cdict["simulation_cell_angles"].strip("[]").split(",")
-        ]
         ds_props["angle_alpha"], ds_props["angle_beta"], ds_props["angle_gamma"] = (
-            angles
+            ast.literal_eval(cdict["simulation_cell_angles"])
         )
     if "simulation_cell_lengths" in cdict.keys():
-        lengths = [
-            float(x) for x in cdict["simulation_cell_lengths"].strip("[]").split(",")
-        ]
         ds_props["box_length_a"], ds_props["box_length_b"], ds_props["box_length_c"] = (
-            lengths
+            ast.literal_eval(cdict["simulation_cell_lengths"])
         )
     if "space_group_number" in cdict.keys():
         ds_props["space_group"] = cdict["space_group_number"]
