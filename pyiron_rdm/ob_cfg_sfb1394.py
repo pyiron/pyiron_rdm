@@ -1,5 +1,5 @@
-import json
 import ast
+import json
 
 
 def format_json_string(json_string):
