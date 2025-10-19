@@ -361,14 +361,11 @@ def dataset_atom_struct_h5(
     )
     items = list(sorted_atoms.items())[:max_num_atoms]
     for i, (species, count) in enumerate(items, 1):
-        prop_el = f"element_{i}"
-        prop_el_pct = f"element_{i}_at_percent"
-        prop_el_num = f"element_{i}_number"
-        ds_props[prop_el] = species
-        ds_props[prop_el_pct] = np.round(
+        ds_props[f"element_{i}"] = species
+        ds_props[f"element_{i}_at_percent"] = np.round(
             count * 100 / cdict["total_number_atoms"], decimals
         )
-        ds_props[prop_el_num] = count
+        ds_props[f"element_{i}_number"] = count
 
     ds_props["number_of_atoms"] = cdict["total_number_atoms"]
     ds_props["number_of_species"] = len(sorted_atoms.keys())
