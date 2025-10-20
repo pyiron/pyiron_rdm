@@ -689,12 +689,16 @@ def get_unit_cell_parameters(structure: Atoms):
         structure_parameters["bravais_lattice"] = "bcc"
         if len(structure) == 1:
             structure_parameters["a"] = np.round(structure.cell[1][0] * 2, 4)
-            structure_parameters["volume"] = np.round((structure.cell[1][0] * 2) ** 3, 4)
+            structure_parameters["volume"] = np.round(
+                (structure.cell[1][0] * 2) ** 3, 4
+            )
     elif symmetry.spacegroup["InternationalTableSymbol"] == "Fm-3m":
         structure_parameters["bravais_lattice"] = "fcc"
         if len(structure) == 1:
             structure_parameters["a"] = np.round(structure.cell[1][0] * 2, 4)
-            structure_parameters["volume"] = np.round((structure.cell[1][0] * 2) ** 3, 4)
+            structure_parameters["volume"] = np.round(
+                (structure.cell[1][0] * 2) ** 3, 4
+            )
     elif symmetry.spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
         structure_parameters["c"] = np.round(structure.cell[2][2], 4)
         structure_parameters["gamma"] = 120.0
