@@ -1,4 +1,4 @@
-def get_dataset_assignments(o)
+def get_dataset_assignments(o):
     return {i.code: i.get_property_assignments().df for i in o.get_dataset_types()}
 
 
