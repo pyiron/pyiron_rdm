@@ -676,77 +676,32 @@ def _extract_murnaghan_calculated_quantities(job, method_dict):
 
 def get_unit_cell_parameters(structure: Atoms):
     symmetry = get_symmetry(structure)
+    structure_parameters = {
+        "a": np.round(structure.cell[0][0], 4),
+        "alpha": 90.0,
+        "beta": 90.0,
+        "gamma": 90.0,
+        "volume": np.round(structure.get_volume(), 4),
+        "space_group": symmetry.spacegroup["InternationalTableSymbol"],
+        "space_group_number": symmetry.spacegroup["Number"],
+    }
     if symmetry.spacegroup["InternationalTableSymbol"] == "Im-3m":
+        structure_parameters["bravais_lattice"] = "bcc"
         if len(structure) == 1:
-            structure_parameters = {
-                "a": np.round(structure.cell[1][0] * 2, 4),
-                "alpha": 90.0,
-                "beta": 90.0,
-                "gamma": 90.0,
-                "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
-                "space_group_number": symmetry.spacegroup["Number"],
-                "bravais_lattice": "bcc",
-            }
-        else:
-            structure_parameters = {
-                "a": np.round(structure.cell[1][1], 4),
-                "alpha": 90.0,
-                "beta": 90.0,
-                "gamma": 90.0,
-                "volume": np.round(structure.get_volume(), 4),
-                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
-                "space_group_number": symmetry.spacegroup["Number"],
-                "bravais_lattice": "bcc",
-            }
+            structure_parameters["a"] = np.round(structure.cell[1][0] * 2, 4)
+            structure_parameters["volume"] = np.round((structure.cell[1][0] * 2) ** 3, 4)
     elif symmetry.spacegroup["InternationalTableSymbol"] == "Fm-3m":
+        structure_parameters["bravais_lattice"] = "fcc"
         if len(structure) == 1:
             structure_parameters = {
-                "a": np.round(structure.cell[1][0] * 2, 4),
-                "alpha": 90.0,
-                "beta": 90.0,
-                "gamma": 90.0,
-                "volume": np.round((structure.cell[1][0] * 2) ** 3, 4),
-                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
-                "space_group_number": symmetry.spacegroup["Number"],
-                "bravais_lattice": "fcc",
-            }
-        else:
-            structure_parameters = {
-                "a": np.round(structure.cell[1][1], 4),
-                "alpha": 90.0,
-                "beta": 90.0,
-                "gamma": 90.0,
-                "volume": np.round(structure.get_volume(), 4),
-                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
-                "space_group_number": symmetry.spacegroup["Number"],
-                "bravais_lattice": "fcc",
-            }
+                structure_parameters["a"] = np.round(structure.cell[1][0] * 2, 4)
+                structure_parameters["volume"] = np.round((structure.cell[1][0] * 2) ** 3, 4)
     elif symmetry.spacegroup["InternationalTableSymbol"] == "P6_3/mmc":
+        structure_parameters["c"] = np.round(structure.cell[2][2], 4)
+        structure_parameters["gamma"] = 120.0
+        structure_parameters["bravais_lattice"] = "hcp"
         if len(structure) == 2:
-            structure_parameters = {
-                "a": np.round(structure.cell[0][0], 4),
-                "c": np.round(structure.cell[2][2], 4),
-                "alpha": 90.0,
-                "beta": 90.0,
-                "gamma": 120.0,
-                "volume": np.round(structure.get_volume() * 3, 4),
-                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
-                "space_group_number": symmetry.spacegroup["Number"],
-                "bravais_lattice": "hcp",
-            }
-        else:
-            structure_parameters = {
-                "a": np.round(structure.cell[0][0], 4),
-                "c": np.round(structure.cell[2][2], 4),
-                "alpha": 90.0,
-                "beta": 90.0,
-                "gamma": 120.0,
-                "volume": np.round(structure.get_volume(), 4),
-                "space_group": symmetry.spacegroup["InternationalTableSymbol"],
-                "space_group_number": symmetry.spacegroup["Number"],
-                "bravais_lattice": "hcp",
-            }
+            structure_parameters["volume"] = np.round(structure.get_volume() * 3, 4)
 
     return structure_parameters
 
