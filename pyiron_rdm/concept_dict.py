@@ -136,7 +136,7 @@ def _add_lammps_contexts():
         "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
         "time_step": "http://purls.helmholtz-metadaten.de/asmo/TimeStep",
         "simulation_time": "http://purls.helmholtz-metadaten.de/asmo/Time",
-        'LAMMPS', 'http://demo.fiz-karlsruhe.de/matwerk/E447986',
+        'LAMMPS': 'http://demo.fiz-karlsruhe.de/matwerk/E447986',
     }
 
 
