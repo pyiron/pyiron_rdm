@@ -33,9 +33,9 @@ def process_general_job(job):
 
 
 def process_lammps_job(job):
-    method_dict = {"@context": add_lammps_contexts()}
+    method_dict = {"@context": _add_lammps_contexts()}
     _identify_lammps_method(job, method_dict)
-    _method_dict["outputs"] = extract_lammps_calculated_quantities(
+    _method_dict["outputs"] = _extract_lammps_calculated_quantities(
         job, molecular_statics="molecular_statics" in method_dict.keys()
     )
     _add_simulation_software(job, method_dict)
