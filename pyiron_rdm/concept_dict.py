@@ -121,7 +121,8 @@ def _add_lammps_contexts():
         "target_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
         "target_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
         "ionic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
-        "force_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        # ToDo Fix spelling (was fixed on main, but not on latest release - fix on release)
+        "force_tolerace": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
         "maximum_iterations": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
         "potential": "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential",
         "average_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
@@ -135,6 +136,7 @@ def _add_lammps_contexts():
         "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
         "time_step": "http://purls.helmholtz-metadaten.de/asmo/TimeStep",
         "simulation_time": "http://purls.helmholtz-metadaten.de/asmo/Time",
+        'LAMMPS', 'http://demo.fiz-karlsruhe.de/matwerk/E447986',
     }
 
 
