@@ -89,7 +89,7 @@ def process_murnaghan_job(job):
 
 
 def process_vasp_job(job):
-    method_dict = {"@context": add_vasp_contexts()}
+    method_dict = {"@context": _add_vasp_contexts()}
     _identify_vasp_method(job, method_dict)
     _extract_vasp_calculated_quantities(job, method_dict)
     _add_simulation_software(job, method_dict)
@@ -952,7 +952,7 @@ def _add_structure_software(path, name, structure_name, sample_dict):
     ]
 
 
-def _add_vasp_contexts(method_dict):
+def _add_vasp_contexts():
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
