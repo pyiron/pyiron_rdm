@@ -575,7 +575,7 @@ def _get_simulation_folder(job, method_dict):
     method_dict["path"] = job.path
 
 
-def _add_murnaghan_contexts(method_dict):
+def _add_murnaghan_contexts():
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
