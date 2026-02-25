@@ -176,7 +176,7 @@ def openbis_upload_validated(
         try:
             upload_dataset(
                 o=o,
-                object_=object_,
+                ob_object=object_,
                 ds_type=ds_type,
                 ds_props=ds_props,
                 file_path=file_path,
