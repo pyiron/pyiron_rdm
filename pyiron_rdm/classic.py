@@ -314,7 +314,7 @@ def upload_classic_pyiron(
 
     validated_to_upload = openbis_validate(
         o=o,
-        cdicts_to_validate=cdicts_to_validate,
+        concept_dicts=cdicts_to_validate,
         options=options,
         require_parents=require_parents,
     )
