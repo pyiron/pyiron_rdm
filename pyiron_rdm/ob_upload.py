@@ -195,7 +195,7 @@ def openbis_upload_validated(
     if parent_ids:
         link_parents(
             o=o,
-            object_=object_,
+            ob_object=object_,
             parent_ids=parent_ids,
         )
 
