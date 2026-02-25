@@ -98,16 +98,16 @@ def murn_job_ot():
 
 def get_ot_info(cdict):
     if "structure_name" in cdict.keys():
-        return crystal_struct_ot
+        return crystal_struct_ot()
     elif "job_type" in cdict.keys():
         if "lammps" in cdict["job_type"].lower():
-            return lammps_job_ot
+            return lammps_job_ot()
         elif "vasp" in cdict["job_type"].lower():
-            return vasp_job_ot
+            return vasp_job_ot()
         elif "murn" in cdict["job_type"].lower():
-            return murn_job_ot
+            return murn_job_ot()
         else:
-            return pyiron_job_ot
+            return pyiron_job_ot()
     else:
         raise ValueError(
             "Neither structure_name nor job_type in conceptual dictionary. Cannot proceed."
