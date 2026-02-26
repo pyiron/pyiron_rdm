@@ -70,10 +70,7 @@ def openbis_validate(
         from pyiron_rdm.concept_dict import flatten_cdict
 
         cdict = flatten_cdict(concept_dict)
-        from importlib import import_module
-        print(f'Debug:  {import_module(o.ot)} \n',
-                        f'{import_module(o.ot).get_ot_info} \n ',
-                        f'{import_module(o.ot).get_ot_info(cdict)}')
+        from importlib import import_moduled
         object_type, ds_types, inv_parents = import_module(o.ot).get_ot_info(cdict)
         props_dict = import_module(o.mapping).map_cdict_to_ob(
             user_name=o.get_session_info().userName,
