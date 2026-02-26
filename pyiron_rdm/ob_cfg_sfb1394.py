@@ -171,7 +171,7 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
         if "equation_of_state_fit" in cdict.keys():
             if cdict["equation_of_state_fit"] == f"{asmo}/BirchMurnaghan":
                 props["murn_eqn_of_state"] = "EOS_BIRCH_MURNAGHAN"
-            elif cdict["equation_of_state_fit"] == f"{asma}/Murnaghan":
+            elif cdict["equation_of_state_fit"] == f"{asmo}/Murnaghan":
                 props["murn_eqn_of_state"] = "EOS_MURNAGHAN"
             elif cdict["equation_of_state_fit"] == f"{asmo}/Vinet":
                 props["murn_eqn_of_state"] = "EOS_VINET"
