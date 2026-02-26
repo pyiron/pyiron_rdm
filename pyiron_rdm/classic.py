@@ -226,9 +226,9 @@ def get_cdicts_to_validate(
         )
         cdicts_to_validate["job"] = job_cdict
         cdicts_to_validate["equilibrium_structure"] = equil_struct_dict
-        cdicts_to_validate["child_jobs"] = [
-            child_cdict for child_cdict in child_jobs_cdict
-        ]
+        cdicts_to_validate.update({
+            f"child_job_{n}": child_cdict for n, child_cdict in enumerate(child_jobs_cdict)
+        })
 
     else:
         print(f"The {job_type} job type is not implemented for OpenBIS upload yet.")
