@@ -358,7 +358,7 @@ def upload_classic_pyiron(
             parent_ids=str_parent,
         )
         ob_children_ids.append(ob_equil_struct_id)
-        for validated_child in validated_to_upload["child_jobs"]:
+        for validated_child in [validated_to_upload[key] for key in validated_to_upload if key.startswith("child_job")]:
             ob_child_id = openbis_upload_validated(
                 o=o,
                 space=space,
