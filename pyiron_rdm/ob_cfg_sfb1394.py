@@ -14,6 +14,12 @@ def format_json_string(json_string):
     json_string = "".join(result)
     return json_string
 
+def revert_json_string_formatting(formated_json_string):
+    return formated_json_string.replace(
+        "<br>", "\n"
+    ).replace("&nbsp;&nbsp;", " ")
+    
+
 
 def map_cdict_to_ob(user_name, cdict, concept_dict):
 
