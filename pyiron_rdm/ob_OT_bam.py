@@ -97,9 +97,6 @@ def murn_job_ot():
 
 
 def get_ot_info(cdict):
-    print('DEBUG: called get_ot_info of BAM OT')
-
-
     if "structure_name" in cdict.keys():
         return crystal_struct_ot()
     elif "job_type" in cdict.keys():

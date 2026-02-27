@@ -20,7 +20,6 @@ def revert_json_string_formatting(formated_json_string):
     ).replace("&nbsp;&nbsp;", " ")
     
 
-
 def map_cdict_to_ob(user_name, cdict, concept_dict):
 
     asmo = "http://purls.helmholtz-metadaten.de/asmo"

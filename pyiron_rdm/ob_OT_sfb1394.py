@@ -88,8 +88,6 @@ def murn_job_ot():
 
 
 def get_ot_info(cdict):
-    print('DEBUG: called get_ot_info of SFB OT')
-
     if "structure_name" in cdict.keys():
         return struct_ot()
     elif "job_type" in cdict.keys():
