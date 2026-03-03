@@ -14,11 +14,10 @@ def format_json_string(json_string):
     json_string = "".join(result)
     return json_string
 
+
 def revert_json_string_formatting(formated_json_string):
-    return formated_json_string.replace(
-        "<br>", "\n"
-    ).replace("&nbsp;&nbsp;", " ")
-    
+    return formated_json_string.replace("<br>", "\n").replace("&nbsp;&nbsp;", " ")
+
 
 def map_cdict_to_ob(user_name, cdict, concept_dict):
 
@@ -30,7 +29,9 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
         props["user_name"] = user_name
 
     props |= {
-        "pyiron_conceptual_dictionary": format_json_string(json.dumps(concept_dict, indent=2)),
+        "pyiron_conceptual_dictionary": format_json_string(
+            json.dumps(concept_dict, indent=2)
+        ),
         "description_multiline": '<p><span style="color:hsl(240,75%,60%);">'
         + "<strong>Scroll down below other properties to view conceptual dictionary with ontological ids of selected properties and values.</strong></span>"
         + '<br>The conceptual dictionary is in JSON-LD format. Learn more about it <a href="https://www.w3.org/ns/json-ld/">here</a></p>',
