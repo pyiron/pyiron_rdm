@@ -33,9 +33,9 @@ def process_general_job(job):
 
 
 def process_lammps_job(job):
-    method_dict = {"@context": add_lammps_contexts()}
+    method_dict = {"@context": _add_lammps_contexts()}
     _identify_lammps_method(job, method_dict)
-    _method_dict["outputs"] = extract_lammps_calculated_quantities(
+    method_dict["outputs"] = _extract_lammps_calculated_quantities(
         job, molecular_statics="molecular_statics" in method_dict.keys()
     )
     _add_simulation_software(job, method_dict)
@@ -89,7 +89,7 @@ def process_murnaghan_job(job):
 
 
 def process_vasp_job(job):
-    method_dict = {"@context": add_vasp_contexts()}
+    method_dict = {"@context": _add_vasp_contexts()}
     _identify_vasp_method(job, method_dict)
     _extract_vasp_calculated_quantities(job, method_dict)
     _add_simulation_software(job, method_dict)
@@ -121,7 +121,8 @@ def _add_lammps_contexts():
         "target_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
         "target_pressure": "http://purls.helmholtz-metadaten.de/asmo/Pressure",
         "ionic_energy_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
-        "force_tolerance": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
+        # ToDo Fix spelling (was fixed on main, but not on latest release - fix on release)
+        "force_tolerace": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
         "maximum_iterations": "http://purls.helmholtz-metadaten.de/asmo/InputParameter",
         "potential": "http://purls.helmholtz-metadaten.de/asmo/InteratomicPotential",
         "average_temperature": "http://purls.helmholtz-metadaten.de/asmo/Temperature",
@@ -135,6 +136,7 @@ def _add_lammps_contexts():
         "number_ionic_steps": "http://purls.helmholtz-metadaten.de/asmo/NumberOfIonicSteps",
         "time_step": "http://purls.helmholtz-metadaten.de/asmo/TimeStep",
         "simulation_time": "http://purls.helmholtz-metadaten.de/asmo/Time",
+        "LAMMPS": "http://demo.fiz-karlsruhe.de/matwerk/E447986",
     }
 
 
@@ -573,7 +575,7 @@ def _get_simulation_folder(job, method_dict):
     method_dict["path"] = job.path
 
 
-def _add_murnaghan_contexts(method_dict):
+def _add_murnaghan_contexts():
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",
@@ -950,7 +952,7 @@ def _add_structure_software(path, name, structure_name, sample_dict):
     ]
 
 
-def _add_vasp_contexts(method_dict):
+def _add_vasp_contexts():
     return {
         "sample": "http://purls.helmholtz-metadaten.de/cmso/AtomicScaleSample",
         "path": "http://purls.helmholtz-metadaten.de/cmso/hasPath",

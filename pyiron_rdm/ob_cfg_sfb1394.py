@@ -15,6 +15,10 @@ def format_json_string(json_string):
     return json_string
 
 
+def revert_json_string_formatting(formated_json_string):
+    return formated_json_string.replace("<br>", "\n").replace("&nbsp;&nbsp;", " ")
+
+
 def map_cdict_to_ob(user_name, cdict, concept_dict):
 
     asmo = "http://purls.helmholtz-metadaten.de/asmo"
@@ -25,7 +29,9 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
         props["user_name"] = user_name
 
     props |= {
-        "pyiron_conceptual_dictionary": json.dumps(concept_dict),
+        "pyiron_conceptual_dictionary": format_json_string(
+            json.dumps(concept_dict, indent=2)
+        ),
         "description_multiline": '<p><span style="color:hsl(240,75%,60%);">'
         + "<strong>Scroll down below other properties to view conceptual dictionary with ontological ids of selected properties and values.</strong></span>"
         + '<br>The conceptual dictionary is in JSON-LD format. Learn more about it <a href="https://www.w3.org/ns/json-ld/">here</a></p>',
@@ -171,7 +177,7 @@ def map_cdict_to_ob(user_name, cdict, concept_dict):
         if "equation_of_state_fit" in cdict.keys():
             if cdict["equation_of_state_fit"] == f"{asmo}/BirchMurnaghan":
                 props["murn_eqn_of_state"] = "EOS_BIRCH_MURNAGHAN"
-            elif cdict["equation_of_state_fit"] == f"{asma}/Murnaghan":
+            elif cdict["equation_of_state_fit"] == f"{asmo}/Murnaghan":
                 props["murn_eqn_of_state"] = "EOS_MURNAGHAN"
             elif cdict["equation_of_state_fit"] == f"{asmo}/Vinet":
                 props["murn_eqn_of_state"] = "EOS_VINET"

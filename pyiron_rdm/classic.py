@@ -226,9 +226,12 @@ def get_cdicts_to_validate(
         )
         cdicts_to_validate["job"] = job_cdict
         cdicts_to_validate["equilibrium_structure"] = equil_struct_dict
-        cdicts_to_validate["child_jobs"] = [
-            child_cdict for child_cdict in child_jobs_cdict
-        ]
+        cdicts_to_validate.update(
+            {
+                f"child_job_{n}": child_cdict
+                for n, child_cdict in enumerate(child_jobs_cdict)
+            }
+        )
 
     else:
         print(f"The {job_type} job type is not implemented for OpenBIS upload yet.")
@@ -277,10 +280,8 @@ def upload_classic_pyiron(
 
     structure = job.structure
     if not structure:
-        print(
-            "This job does not contain a structure and will not be uploaded. \
-                Please add structure before trying to upload."
-        )
+        print("This job does not contain a structure and will not be uploaded. \
+                Please add structure before trying to upload.")
         return
 
     # Project env file - TODO what is this for??
@@ -314,7 +315,7 @@ def upload_classic_pyiron(
 
     validated_to_upload = openbis_validate(
         o=o,
-        cdicts_to_validate=cdicts_to_validate,
+        concept_dicts=cdicts_to_validate,
         options=options,
         require_parents=require_parents,
     )
@@ -358,7 +359,11 @@ def upload_classic_pyiron(
             parent_ids=str_parent,
         )
         ob_children_ids.append(ob_equil_struct_id)
-        for validated_child in validated_to_upload["child_jobs"]:
+        for validated_child in [
+            validated_to_upload[key]
+            for key in validated_to_upload
+            if key.startswith("child_job")
+        ]:
             ob_child_id = openbis_upload_validated(
                 o=o,
                 space=space,
