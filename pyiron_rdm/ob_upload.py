@@ -1,5 +1,6 @@
 # TODO better imports for multiple openbis instances
 
+import hashlib
 import warnings
 
 
@@ -125,6 +126,12 @@ def openbis_upload_validated(
     found_objects_ids = [
         obj.identifier for obj in ob_coll.get_objects() if obj.p["$name"] == object_name
     ]
+
+    structure_type = 'CRYS-STRUCT_DATA'
+    if ds_types == structure_type:
+        hashdict = {ds.MD5_HASH: ds.identifier for ds in o.get_datasets(type=structure_type)}
+        if 'md5hash' in props_dict and props_dict['md5hash'] in hashdict:
+            return hashdict[props_dict['md5hash']]
 
     if found_objects_ids:
         print("===================\n")

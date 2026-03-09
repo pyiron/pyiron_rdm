@@ -54,6 +54,7 @@ def process_structure_crystal(
     structure_path,
     structure_parameters: dict = None,
     options=None,
+    md5hash=None,
 ) -> dict:
     if options is None:
         options = {}
@@ -70,6 +71,8 @@ def process_structure_crystal(
         sample_dict["defects"] = options["defects"]
     if options.get("comments"):
         sample_dict["comments"] = options["comments"]
+    if md5hash is not None:
+        sample_dict["md5hash"] = md5hash
     json_file_name = structure_path + structure_name + "_concept_dict.json"
     with open(json_file_name, "w") as f:
         json.dump(sample_dict, f, indent=2)
