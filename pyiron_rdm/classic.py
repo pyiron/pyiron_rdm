@@ -144,7 +144,7 @@ def validate_upload_options(ot_module: str, options: dict):
 
     importlib.import_module(ot_module).validate_options(**options)
 
-    if "materials" in options and not isinstance(materials, list):
+    if "materials" in options and not isinstance(options["materials"], list):
         options["materials"] = [options["materials"]]
     if "pseudopotentials" in options and not isinstance(
         options["pseudopotentials"], list
