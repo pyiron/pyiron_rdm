@@ -129,11 +129,13 @@ def openbis_upload_validated(
         obj.identifier for obj in ob_coll.get_objects() if obj.p["$name"] == object_name
     ]
 
-    structure_type = 'CRYS-STRUCT_DATA'
+    structure_type = "CRYS-STRUCT_DATA"
     if ds_types == structure_type:
-        hashdict = {ds.MD5_HASH: ds.identifier for ds in o.get_datasets(type=structure_type)}
-        if 'md5hash' in props_dict and props_dict['md5hash'] in hashdict:
-            return hashdict[props_dict['md5hash']]
+        hashdict = {
+            ds.MD5_HASH: ds.identifier for ds in o.get_datasets(type=structure_type)
+        }
+        if "md5hash" in props_dict and props_dict["md5hash"] in hashdict:
+            return hashdict[props_dict["md5hash"]]
 
     if found_objects_ids:
         print("===================\n")
@@ -155,12 +157,12 @@ def openbis_upload_validated(
         )
         object_.save()
     except Exception as e:
-        print('Error:')
-        print('type=',object_type)
-        print('space=',space)
-        print('experiment=',ob_coll)
-        print('parents=',ob_parents)
-        print('props=',props_dict)
+        print("Error:")
+        print("type=", object_type)
+        print("space=", space)
+        print("experiment=", ob_coll)
+        print("parents=", ob_parents)
+        print("props=", props_dict)
         raise e
 
     from importlib import import_module

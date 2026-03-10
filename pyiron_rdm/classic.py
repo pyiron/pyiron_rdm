@@ -11,8 +11,8 @@ def classic_structure(
 
     hdf = FileHDFio(structure_path + structure_name + ".h5")
     structure.to_hdf(hdf)
-    with open(hdf.file_name, 'rb', buffering=0) as f:
-        hdf5_hash = hashlib.file_digest(f, 'md5').hexdigest()
+    with open(hdf.file_name, "rb", buffering=0) as f:
+        hdf5_hash = hashlib.file_digest(f, "md5").hexdigest()
 
     from pyiron_rdm.concept_dict import (
         get_unit_cell_parameters,
@@ -36,7 +36,7 @@ def classic_structure(
         structure_path=structure_path,
         structure_parameters=struct_params,
         options=options,
-        md5hash=hdf5_hash
+        md5hash=hdf5_hash,
     )
 
     return struct_cdict
@@ -293,7 +293,6 @@ def create_concept_dicts(
 
         export_env(pr.path + pr.name)
 
-
     # ------------------------------------VALIDATION----------------------------------------------
     is_sfb = get_datamodel(o) == "sfb1394"
 
@@ -311,23 +310,24 @@ def create_concept_dicts(
 
 def validate_openbis_destination(o, space: str, project: str, collection: str):
     from pyiron_rdm.ob_upload import validate_ob_destination
-    
+
     space = space.upper()
     project = project.upper()
     collection = collection.upper()
 
     validate_ob_destination(o=o, space=space, project=project, collection=collection)
     return space, project, collection
-        
+
 
 def validate_concept_dicts(
-        cdicts_to_validate: list[dict],
-        o,
-        options: dict | None = None,
-        require_parents: bool = True):
-    
+    cdicts_to_validate: list[dict],
+    o,
+    options: dict | None = None,
+    require_parents: bool = True,
+):
+
     from pyiron_rdm.ob_upload import openbis_validate
-    
+
     options = options if options is not None else {}
 
     validated_to_upload = openbis_validate(
@@ -340,11 +340,14 @@ def validate_concept_dicts(
     return validated_to_upload
     # ---------------------------------------------------------------------------------------------
 
-def upload_cdicts_to_openbis(validated_to_upload: list[dict],
+
+def upload_cdicts_to_openbis(
+    validated_to_upload: list[dict],
     o,
     space: str,
     project: str,
-    collection: str | None = None):
+    collection: str | None = None,
+):
 
     # --------------------------------------UPLOAD-------------------------------------------------
     from pyiron_rdm.ob_upload import openbis_upload_validated
@@ -430,30 +433,33 @@ def upload_classic_pyiron(
     cdicts_to_validate = create_concept_dicts(
         job,
         o,
-        export_env_file = export_env_file,
-        is_init_struct = is_init_struct,
-        init_structure = init_structure,
-        options = options 
-        )
-    
+        export_env_file=export_env_file,
+        is_init_struct=is_init_struct,
+        init_structure=init_structure,
+        options=options,
+    )
+
     # Set sensible default if collection is not given
     if collection is None:
         collection = job.pr.name
-    
+
     # Validate openbis destination
-    space, project, collection = validate_openbis_destination(o, 
-                                                              space=space, 
-                                                              project=project, 
-                                                              collection=collection)
+    space, project, collection = validate_openbis_destination(
+        o, space=space, project=project, collection=collection
+    )
 
     # Validate conceptual dictionary compatibility to openBIS instance
-    validated_to_upload = validate_concept_dicts(cdicts_to_validate=cdicts_to_validate,
-                            o=o,
-                            options=options,
-                            require_parents=require_parents)
-    
-    upload_cdicts_to_openbis(validated_to_upload=validated_to_upload,
-                             o=o,
-                             space=space,
-                             project=project,
-                             collection=collection)
+    validated_to_upload = validate_concept_dicts(
+        cdicts_to_validate=cdicts_to_validate,
+        o=o,
+        options=options,
+        require_parents=require_parents,
+    )
+
+    upload_cdicts_to_openbis(
+        validated_to_upload=validated_to_upload,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+    )
