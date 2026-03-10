@@ -146,23 +146,14 @@ def openbis_upload_validated(
         return found_objects_ids
         # TODO: should return a single id to match 'else' return format, however, multiple objects of the same name possible
 
-    try:
-        object_ = o.new_object(
-            type=object_type,
-            space=space,
-            experiment=ob_coll,
-            parents=ob_parents,
-            props=props_dict,
-        )
-        object_.save()
-    except Exception as e:
-        print("Error:")
-        print("type=", object_type)
-        print("space=", space)
-        print("experiment=", ob_coll)
-        print("parents=", ob_parents)
-        print("props=", props_dict)
-        raise e
+    object_ = o.new_object(
+        type=object_type,
+        space=space,
+        experiment=ob_coll,
+        parents=ob_parents,
+        props=props_dict,
+    )
+    object_.save()
 
     from importlib import import_module
 
