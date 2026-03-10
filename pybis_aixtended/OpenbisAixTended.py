@@ -778,7 +778,7 @@ class ExtendedDataSet(
         if destination is None:
             destination = "data/" + self.openbis.download_prefix
         if not os.path.exists(destination):
-            os.mkdir(destination)
+            os.makedirs(destination)
 
         if create_default_folders:
             filename_dest = os.path.join(destination, self.permId, "original", filename)
