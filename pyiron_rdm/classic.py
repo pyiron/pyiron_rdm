@@ -1,3 +1,6 @@
+import hashlib
+
+
 def classic_structure(
     pr, structure, structure_name, options, is_init_struct: bool, init_structure=None
 ):
@@ -8,6 +11,8 @@ def classic_structure(
 
     hdf = FileHDFio(structure_path + structure_name + ".h5")
     structure.to_hdf(hdf)
+    with open(hdf.file_name, 'rb', buffering=0) as f:
+        hdf5_hash = hashlib.file_digest(f, 'md5').hexdigest()
 
     from pyiron_rdm.concept_dict import (
         get_unit_cell_parameters,
@@ -31,6 +36,7 @@ def classic_structure(
         structure_path=structure_path,
         structure_parameters=struct_params,
         options=options,
+        md5hash=hdf5_hash
     )
 
     return struct_cdict
@@ -322,6 +328,7 @@ def validate_concept_dicts(
     
     from pyiron_rdm.ob_upload import openbis_validate
     
+    options = options if options is not None else {}
 
     validated_to_upload = openbis_validate(
         o=o,
