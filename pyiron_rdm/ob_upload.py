@@ -88,6 +88,8 @@ def openbis_validate(
         )
         object_name = concept_dict["job_details"][0]["value"]
 
+        ob_parents = [parent for parent in ob_parents if parent is not None]
+
         outputs[key] = {
             "cdict": cdict,
             "props_dict": props_dict,
@@ -125,6 +127,14 @@ def openbis_upload_validated(
     found_objects_ids = [
         obj.identifier for obj in ob_coll.get_objects() if obj.p["$name"] == object_name
     ]
+
+    structure_type = "CRYS-STRUCT_DATA"
+    if ds_types == structure_type:
+        hashdict = {
+            ds.MD5_HASH: ds.identifier for ds in o.get_datasets(type=structure_type)
+        }
+        if "md5hash" in props_dict and props_dict["md5hash"] in hashdict:
+            return hashdict[props_dict["md5hash"]]
 
     if found_objects_ids:
         print("===================\n")

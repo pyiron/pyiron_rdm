@@ -777,13 +777,15 @@ class ExtendedDataSet(
         filename = self.file_list[0].split("/")[-1]
         if destination is None:
             destination = "data/" + self.openbis.download_prefix
-        if not os.path.exists(destination):
-            os.makedirs(destination)
 
         if create_default_folders:
             filename_dest = os.path.join(destination, self.permId, "original", filename)
         else:
             filename_dest = os.path.join(destination, filename)
+        
+        destination = os.path.dirname(filename_dest)
+        if not os.path.exists(destination):
+            os.makedirs(destination)
         try:
             max_retries = 5
             retries = 0

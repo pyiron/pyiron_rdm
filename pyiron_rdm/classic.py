@@ -1,3 +1,6 @@
+import hashlib
+
+
 def classic_structure(
     pr, structure, structure_name, options, is_init_struct: bool, init_structure=None
 ):
@@ -8,6 +11,8 @@ def classic_structure(
 
     hdf = FileHDFio(structure_path + structure_name + ".h5")
     structure.to_hdf(hdf)
+    with open(hdf.file_name, "rb", buffering=0) as f:
+        hdf5_hash = hashlib.file_digest(f, "md5").hexdigest()
 
     from pyiron_rdm.concept_dict import (
         get_unit_cell_parameters,
@@ -31,6 +36,7 @@ def classic_structure(
         structure_path=structure_path,
         structure_parameters=struct_params,
         options=options,
+        md5hash=hdf5_hash,
     )
 
     return struct_cdict
@@ -144,7 +150,7 @@ def validate_upload_options(ot_module: str, options: dict):
 
     importlib.import_module(ot_module).validate_options(**options)
 
-    if "materials" in options and not isinstance(materials, list):
+    if "materials" in options and not isinstance(options["materials"], list):
         options["materials"] = [options["materials"]]
     if "pseudopotentials" in options and not isinstance(
         options["pseudopotentials"], list
@@ -260,17 +266,13 @@ def get_cdicts_to_validate(
     return cdicts_to_validate
 
 
-def upload_classic_pyiron(
+def create_concept_dicts(
     job,
     o,
-    space: str,
-    project: str,
-    collection: str | None = None,
     export_env_file: bool = True,
     is_init_struct: bool = True,
     init_structure=None,
     options: dict | None = None,
-    require_parents: bool = True,
 ):
     # TODO should this return anything?
     if options is not None:
@@ -291,12 +293,6 @@ def upload_classic_pyiron(
 
         export_env(pr.path + pr.name)
 
-    if collection is None:
-        collection = pr.name
-    space = space.upper()
-    project = project.upper()
-    collection = collection.upper()
-
     # ------------------------------------VALIDATION----------------------------------------------
     is_sfb = get_datamodel(o) == "sfb1394"
 
@@ -309,9 +305,30 @@ def upload_classic_pyiron(
         upload_final_struct=is_sfb,
     )
 
-    from pyiron_rdm.ob_upload import openbis_validate, validate_ob_destination
+    return cdicts_to_validate
+
+
+def validate_openbis_destination(o, space: str, project: str, collection: str):
+    from pyiron_rdm.ob_upload import validate_ob_destination
+
+    space = space.upper()
+    project = project.upper()
+    collection = collection.upper()
 
     validate_ob_destination(o=o, space=space, project=project, collection=collection)
+    return space, project, collection
+
+
+def validate_concept_dicts(
+    cdicts_to_validate: list[dict],
+    o,
+    options: dict | None = None,
+    require_parents: bool = True,
+):
+
+    from pyiron_rdm.ob_upload import openbis_validate
+
+    options = options if options is not None else {}
 
     validated_to_upload = openbis_validate(
         o=o,
@@ -319,7 +336,18 @@ def upload_classic_pyiron(
         options=options,
         require_parents=require_parents,
     )
+
+    return validated_to_upload
     # ---------------------------------------------------------------------------------------------
+
+
+def upload_cdicts_to_openbis(
+    validated_to_upload: list[dict],
+    o,
+    space: str,
+    project: str,
+    collection: str | None = None,
+):
 
     # --------------------------------------UPLOAD-------------------------------------------------
     from pyiron_rdm.ob_upload import openbis_upload_validated
@@ -332,6 +360,7 @@ def upload_classic_pyiron(
         **validated_to_upload["structure"],
     )
 
+    is_sfb = get_datamodel(o) == "sfb1394"
     if is_sfb:
         job_parents = None  # job does not have init structure as parent
         str_parent = ob_structure_id  # equil structure has init as parent
@@ -386,3 +415,51 @@ def upload_classic_pyiron(
             **validated_to_upload["final_structure"],
             parent_ids=[ob_structure_id, ob_job_id],
         )
+
+
+def upload_classic_pyiron(
+    job,
+    o,
+    space: str,
+    project: str,
+    collection: str | None = None,
+    export_env_file: bool = True,
+    is_init_struct: bool = True,
+    init_structure=None,
+    options: dict | None = None,
+    require_parents: bool = True,
+):
+    # Create JSON-LD conceptual dictionaries for the job
+    cdicts_to_validate = create_concept_dicts(
+        job,
+        o,
+        export_env_file=export_env_file,
+        is_init_struct=is_init_struct,
+        init_structure=init_structure,
+        options=options,
+    )
+
+    # Set sensible default if collection is not given
+    if collection is None:
+        collection = job.pr.name
+
+    # Validate openbis destination
+    space, project, collection = validate_openbis_destination(
+        o, space=space, project=project, collection=collection
+    )
+
+    # Validate conceptual dictionary compatibility to openBIS instance
+    validated_to_upload = validate_concept_dicts(
+        cdicts_to_validate=cdicts_to_validate,
+        o=o,
+        options=options,
+        require_parents=require_parents,
+    )
+
+    upload_cdicts_to_openbis(
+        validated_to_upload=validated_to_upload,
+        o=o,
+        space=space,
+        project=project,
+        collection=collection,
+    )
