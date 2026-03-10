@@ -89,6 +89,8 @@ def openbis_validate(
         )
         object_name = concept_dict["job_details"][0]["value"]
 
+        ob_parents = [parent for parent in ob_parents if parent is not None]
+
         outputs[key] = {
             "cdict": cdict,
             "props_dict": props_dict,
@@ -143,14 +145,23 @@ def openbis_upload_validated(
         return found_objects_ids
         # TODO: should return a single id to match 'else' return format, however, multiple objects of the same name possible
 
-    object_ = o.new_object(
-        type=object_type,
-        space=space,
-        experiment=ob_coll,
-        parents=ob_parents,
-        props=props_dict,
-    )
-    object_.save()
+    try:
+        object_ = o.new_object(
+            type=object_type,
+            space=space,
+            experiment=ob_coll,
+            parents=ob_parents,
+            props=props_dict,
+        )
+        object_.save()
+    except Exception as e:
+        print('Error:')
+        print('type=',object_type)
+        print('space=',space)
+        print('experiment=',ob_coll)
+        print('parents=',ob_parents)
+        print('props=',props_dict)
+        raise e
 
     from importlib import import_module
 
