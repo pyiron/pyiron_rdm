@@ -1,6 +1,5 @@
 # TODO better imports for multiple openbis instances
 
-import hashlib
 import warnings
 
 
