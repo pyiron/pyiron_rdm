@@ -286,8 +286,11 @@ def _identify_lammps_method(job, method_dict):
     inpdict = job.input.to_dict()
     ps = inpdict["potential_inp/data_dict"]["Value"][0]
     name = inpdict["potential_inp/potential/Name"]
-    potstr = job.input.to_dict()["potential_inp/potential/Citations"]
-    potdict = ast.literal_eval(potstr[1:-1])
+    potstr = inpdict.get("potential_inp/potential/Citations", "")
+    if potstr:
+        potdict = ast.literal_eval(potstr[1:-1])
+    else:
+        potdict = {}
     if "meam" in ps:
         method_dict["@context"][
             "potential"
@@ -306,10 +309,11 @@ def _identify_lammps_method(job, method_dict):
         ] = "http://purls.helmholtz-metadaten.de/asmo/MachineLearningPotential"
 
     method_dict[md_method]["potential"] = {"label": name}
-    if "url" in potdict[list(potdict.keys())[0]].keys():
-        method_dict[md_method]["potential"]["url"] = potdict[list(potdict.keys())[0]][
-            "url"
-        ]
+    if potdict:
+        first_value = next(iter(potdict.values()))
+        url = first_value.get("url")
+        if url is not None:
+            method_dict[md_method]["potential"]["url"] = url
 
 
 def _extract_lammps_calculated_quantities(job, molecular_statics: bool = True):
