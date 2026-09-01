@@ -152,9 +152,10 @@ def validate_options(
         "partial dislocation",
         "superdislocation",
         "stacking fault",
+        "chemical stacking fault",
         "grain boundary",
         "surface",
-        "phase boundary",
+        "phase boundary" "antiphase boundary",
     }
     if defects is not None:
         if not isinstance(defects, list) or not all(
