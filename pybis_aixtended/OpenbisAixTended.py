@@ -68,7 +68,7 @@ def get_bucket_from_client(s3_client: boto3.client):
 
     except botocore.exceptions.ClientError as e:
 
-        logging.critical("Client does not have access to buckets.")
+        # logging.critical("Client does not have access to buckets.")
     return bucket
 
 
