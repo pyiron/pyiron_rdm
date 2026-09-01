@@ -155,8 +155,7 @@ def validate_options(
         "chemical stacking fault",
         "grain boundary",
         "surface",
-        "phase boundary"
-        "antiphase boundary",
+        "phase boundary" "antiphase boundary",
     }
     if defects is not None:
         if not isinstance(defects, list) or not all(
