@@ -67,7 +67,7 @@ def get_bucket_from_client(s3_client: boto3.client):
             raise RuntimeError("No bucket associated with s3 client.")
 
     except botocore.exceptions.ClientError as e:
-
+        pass
         # logging.critical("Client does not have access to buckets.")
     return bucket
 
