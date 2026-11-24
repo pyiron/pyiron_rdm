@@ -145,10 +145,12 @@ def get_datamodel(o):
     )
 
 
-def validate_upload_options(ot_module: str, options: dict):
+def validate_upload_options(ot_module: str, options: dict, masterdata_dict: dict):
     import importlib
 
-    importlib.import_module(ot_module).validate_options(**options)
+    importlib.import_module(ot_module).validate_options(
+        **options, masterdata_dict=masterdata_dict
+    )
 
     if "materials" in options and not isinstance(options["materials"], list):
         options["materials"] = [options["materials"]]
@@ -266,6 +268,33 @@ def get_cdicts_to_validate(
     return cdicts_to_validate
 
 
+def get_masterdata_dict(o):
+    """
+    Fetches master data required for validating upload options from an openBIS instance.
+
+    Retrieves the relevant master data and stores it in a dictionary for
+    subsequent use during validation.
+
+    Args:
+        o (pybis.Openbis): The openBIS session object used to retrieve master data.
+
+    Returns:
+        dict: A dictionary containing the retrieved master data.
+             Returns an empty dictionary if retrieval fails.
+    """
+    defect_vocab_code = "DEFECTS_VOCAB"
+    masterdata_dict = {}
+    try:
+        allowed_defects = {
+            d.lower().replace("_", " ")
+            for d in o.get_terms(defect_vocab_code).df.code.to_list()
+        }
+        masterdata_dict["allowed_defects"] = allowed_defects
+    except:
+        pass
+    return masterdata_dict
+
+
 def create_concept_dicts(
     job,
     o,
@@ -275,8 +304,11 @@ def create_concept_dicts(
     options: dict | None = None,
 ):
     # TODO should this return anything?
+    masterdata_dict = get_masterdata_dict(o)
     if options is not None:
-        options = validate_upload_options(o.ot, options)
+        options = validate_upload_options(
+            o.ot, options=options, masterdata_dict=masterdata_dict
+        )
     else:
         options = {}
 

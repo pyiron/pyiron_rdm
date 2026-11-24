@@ -141,6 +141,7 @@ def validate_options(
     materials: str | list[str] | None = None,
     pseudopotentials: str | list[str] | None = None,
     comments: str | None = None,
+    masterdata_dict: dict | None = None,
 ):
     """
     Validates the options dictionary for supported keys and values.
