@@ -129,6 +129,7 @@ def validate_options(
     defects: list[str] | None = None,
     pseudopotentials: str | list[str] | None = None,
     comments: str | None = None,
+    masterdata_dict: dict | None = None,
 ):
     """
     Validates the options dictionary for supported keys and values.
@@ -138,25 +139,16 @@ def validate_options(
         defects (list[str] | None): List of defect types or None.
         pseudopotentials (str | list[str] | None): Pseudopotential permId(s) or None.
         comments (str | None): Comments string or None.
+        masterdata_dict (dict | None): Dictionary containing openBIS master data needed for validation.
 
     Raises:
         TypeError: If the value associated with the "defects" key is not a list of strings.
         ValueError: If invalid defect types are found in the "defects" list.
     """
-    allowed_defects = {
-        "vacancy",
-        "antisite",
-        "substitutional",
-        "interstitial",
-        "perfect dislocation",
-        "partial dislocation",
-        "superdislocation",
-        "stacking fault",
-        "chemical stacking fault",
-        "grain boundary",
-        "surface",
-        "phase boundary" "antiphase boundary",
-    }
+    allowed_defects = (masterdata_dict or {}).get("allowed_defects")
+    if allowed_defects is None:
+        raise ValueError("Allowed defects should be fetched with client")
+
     if defects is not None:
         if not isinstance(defects, list) or not all(
             isinstance(d, str) for d in defects
